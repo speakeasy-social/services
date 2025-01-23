@@ -2,6 +2,13 @@
 
 A privacy extension for Bluesky enabling users to share posts with trusted followers only, with support for future E2EE implementation.
 
+For the MVP to avoid having to navigate compliance issues in providing E2EE encryption, this does store encryption keys and messages can be accessed by staff or agencies. The threat model model is "good enough" for casual use, but do not store your state secrets in this system 😉
+
+Do not use private messages if:
+
+- Unauthorised access to these messages would compromise your safety
+- You fear the actions of state sponsored adversaries
+
 ## Key Management
 
 ### Session Structure
@@ -19,6 +26,7 @@ A privacy extension for Bluesky enabling users to share posts with trusted follo
 - Data Encryption Key (DEK): Symmetric key used for all messages in a session
 - Per-Follower Keys: DEK encrypted with each follower's public key
 - One DEK per session, rotated on trust changes or periodic rotation
+- Unencrypted DEK stored separately for staff access
 
 ### Encryption Algorithms
 
@@ -98,6 +106,7 @@ A privacy extension for Bluesky enabling users to share posts with trusted follo
 2. If session needs rotation:
    - Generate new session with new DEK
    - Encrypt DEK with each follower's public key
+   - Store unencrypted DEK for staff access
 3. Encrypt content with session DEK
 4. Store encrypted message with session reference
 
@@ -128,17 +137,22 @@ CREATE TABLE trust_relationships (
 
 ```
 CREATE TABLE sessions (
-  session_id UUID PRIMARY KEY,
-  created_at TIMESTAMP,
-  expires_at TIMESTAMP,
-  previous_session_id UUID
+session_id UUID PRIMARY KEY,
+created_at TIMESTAMP,
+expires_at TIMESTAMP,
+previous_session_id UUID
 );
 
 CREATE TABLE session_keys (
-  session_id UUID,
-  did TEXT,
-  encrypted_dek BYTEA,
-  PRIMARY KEY (session_id, did)
+session_id UUID,
+did TEXT,
+encrypted_dek BYTEA,
+PRIMARY KEY (session_id, did)
+);
+
+CREATE TABLE staff_keys (
+session_id UUID PRIMARY KEY,
+dek BYTEA
 );
 ```
 
@@ -162,6 +176,7 @@ CREATE TABLE encrypted_messages (
 - DEK only exists in decrypted form in client memory
 - Public key operations only performed once per follower per session
 - Session rotation provides forward secrecy
+- Unencrypted DEKs stored separately for staff access
 
 ### Access Control
 
@@ -177,10 +192,10 @@ CREATE TABLE encrypted_messages (
 - Balance between immediate computational cost and access to history
 - Maintains security while managing performance
 
-## Future E2EE Migration Path
+## Migration to E2EE
 
-- Remove staff access to DEKs
-- Implement client-side DEK generation
+- Stop writing to staff_keys table
+- Delete staff_keys table
 - Add key verification system
 - Implement key transparency logging
 - Implement lazy key generation for historical access
