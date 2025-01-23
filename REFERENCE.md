@@ -140,16 +140,20 @@ CREATE TABLE trusted_followers (
 );
 ```
 
-### Key Service
+### User Key Service
 
 ```
 CREATE TABLE user_keys (
-did TEXT PRIMARY KEY,
-public_key BYTEA,
-private_key BYTEA,
-created_at TIMESTAMP
+  did TEXT PRIMARY KEY,
+  public_key BYTEA,
+  private_key BYTEA,
+  created_at TIMESTAMP
 );
+```
 
+### Session Key Service
+
+```
 CREATE TABLE sessions (
 session_id UUID PRIMARY KEY,
 created_at TIMESTAMP,
@@ -199,6 +203,7 @@ CREATE TABLE encrypted_messages (
 - Trust Service validates access before Key Service returns keys
 - All key operations logged with timestamps and DIDs
 - Session rotation on trust revocation prevents future access
+- User Key Service has stricter access controls than Session Key Service
 
 ### Historical Access
 
