@@ -130,13 +130,13 @@ Do not use private messages if:
 ### Trust Service
 
 ```
-CREATE TABLE trust_relationships (
+CREATE TABLE trusted_followers (
   truster_did TEXT,
   trustee_did TEXT,
   status TEXT,
   created_at TIMESTAMP,
   updated_at TIMESTAMP,
-  PRIMARY KEY (truster_did, trustee_did)
+  PRIMARY KEY (truster_did, trustee_did, status)
 );
 ```
 
