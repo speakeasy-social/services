@@ -2,7 +2,7 @@
 
 A privacy extension for Bluesky enabling users to share posts with trusted followers only, with support for future E2EE implementation.
 
-For the MVP to avoid having to navigate compliance issues in providing E2EE encryption, this does store encryption keys and messages can be accessed by staff or agencies. The threat model model is "good enough" for casual use, but do not store your state secrets in this system 😉
+For the MVP to avoid having to navigate compliance issues in providing E2EE encryption, this does store encryption keys and messages can be accessed by staff or agencies. The threat model is "good enough" for casual use, but do not store your state secrets in this system 😉
 
 Do not use private messages if:
 
