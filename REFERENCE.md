@@ -32,8 +32,8 @@ A privacy extension for Bluesky enabling users to share posts with trusted follo
 ### New Session Creation Triggers
 
 - Initial trust relationship established
+- Trust revocation (follower removal)
 - Periodic rotation (every 7 days)
-- Trust revocation
 - Manual rotation request
 
 ### Session State Management
@@ -51,6 +51,22 @@ A privacy extension for Bluesky enabling users to share posts with trusted follo
   }
 }
 ```
+
+## Follower Management
+
+### Adding New Followers
+
+- Uses existing session
+- Encrypts current session's DEK with new follower's public key
+- MVP: Only encrypts DEKs for sessions within last 30 days
+- Future: Implements lazy encryption of historical session DEKs on access
+
+### Removing Followers
+
+- Generates new session with new DEK
+- Encrypts new DEK for all remaining followers
+- Marks previous session as expired
+- Prevents removed follower's future access
 
 ## Message Structure
 
@@ -154,9 +170,17 @@ CREATE TABLE encrypted_messages (
 - All key operations logged with timestamps and DIDs
 - Session rotation on trust revocation prevents future access
 
+### Historical Access
+
+- MVP limits new follower access to recent sessions (30 days)
+- Future implementation will support lazy key generation for historical access
+- Balance between immediate computational cost and access to history
+- Maintains security while managing performance
+
 ## Future E2EE Migration Path
 
 - Remove staff access to DEKs
 - Implement client-side DEK generation
 - Add key verification system
 - Implement key transparency logging
+- Implement lazy key generation for historical access
