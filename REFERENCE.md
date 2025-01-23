@@ -11,6 +11,12 @@ Do not use private messages if:
 
 ## Key Management
 
+### User Keys
+
+- Server generates encryption key pair for each user
+- Keys stored centrally for device independence
+- Future enhancement: encrypt private keys with user password
+
 ### Session Structure
 
 - Each trusted relationship group maintains a session
@@ -23,6 +29,7 @@ Do not use private messages if:
 
 ### Key Hierarchy
 
+- User Keys: Public/private key pair for each user
 - Data Encryption Key (DEK): Symmetric key used for all messages in a session
 - Per-Follower Keys: DEK encrypted with each follower's public key
 - One DEK per session, rotated on trust changes or periodic rotation
@@ -136,6 +143,13 @@ CREATE TABLE trust_relationships (
 ### Key Service
 
 ```
+CREATE TABLE user_keys (
+did TEXT PRIMARY KEY,
+public_key BYTEA,
+private_key BYTEA,
+created_at TIMESTAMP
+);
+
 CREATE TABLE sessions (
 session_id UUID PRIMARY KEY,
 created_at TIMESTAMP,
@@ -177,6 +191,7 @@ CREATE TABLE encrypted_messages (
 - Public key operations only performed once per follower per session
 - Session rotation provides forward secrecy
 - Unencrypted DEKs stored separately for staff access
+- User private keys stored centrally for device independence
 
 ### Access Control
 
@@ -192,8 +207,9 @@ CREATE TABLE encrypted_messages (
 - Balance between immediate computational cost and access to history
 - Maintains security while managing performance
 
-## Migration to E2EE
+## Future Enhancements
 
+- Encrypt private keys with user password
 - Stop writing to staff_keys table
 - Delete staff_keys table
 - Add key verification system
