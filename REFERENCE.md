@@ -2,13 +2,6 @@
 
 A privacy extension for Bluesky enabling users to share posts with trusted followers only, with support for future E2EE implementation.
 
-For the MVP to avoid having to navigate compliance issues in providing E2EE encryption, this does store encryption keys and messages can be accessed by staff or agencies. The threat model is "good enough" for casual use, but do not store your state secrets in this system 😉
-
-Do not use private messages if:
-
-- Unauthorised access to these messages would compromise your safety
-- You fear the actions of state sponsored adversaries
-
 ## Key Management
 
 ### User Keys
@@ -26,6 +19,7 @@ Do not use private messages if:
   - List of authorized DIDs
   - Data Encryption Key (DEK)
   - Previous session ID (for key rotation)
+  - Revocation timestamp if trust revoked
 
 ### Key Hierarchy
 
@@ -58,6 +52,7 @@ Do not use private messages if:
   "sessionId": "uuid",
   "createdAt": "ISO8601",
   "expiresAt": "ISO8601",
+  "revokedAt": "ISO8601",
   "authorizedDids": ["did:1", "did:2"],
   "previousSessionId": "uuid",
   "encryptedDeks": {
@@ -78,10 +73,11 @@ Do not use private messages if:
 
 ### Removing Followers
 
-- Generates new session with new DEK
-- Encrypts new DEK for all remaining followers
-- Marks previous session as expired
-- Prevents removed follower's future access
+- Mark current session as revoked
+- Generate new session with new DEK
+- Encrypt new DEK for all remaining followers
+- If new session creation fails, old session remains revoked
+- Client must retry if no valid session exists
 
 ## Message Structure
 
@@ -99,23 +95,25 @@ Do not use private messages if:
 
 ## Trust Revocation Flow
 
-1. Create new session
-2. Generate new DEK
-3. Copy authorized DIDs except revoked DID
-4. Encrypt new DEK with each remaining follower's public key
-5. Mark previous session as expired
+1. Mark current session as revoked (guaranteed to succeed)
+2. Create new session
+3. Generate new DEK
+4. Copy authorized DIDs except revoked DID
+5. Encrypt new DEK with each remaining follower's public key
+6. If any step fails, client must retry with new session creation
 
 ## Data Flow Examples
 
 ### Posting New Message
 
-1. Client retrieves current session
-2. If session needs rotation:
+1. Client retrieves current valid session (not revoked, most recent)
+2. If no valid session exists, create new session
+3. If session needs rotation:
    - Generate new session with new DEK
    - Encrypt DEK with each follower's public key
    - Store unencrypted DEK for staff access
-3. Encrypt content with session DEK
-4. Store encrypted message with session reference
+4. Encrypt content with session DEK
+5. Store encrypted message with session reference
 
 ### Reading Messages
 
@@ -133,10 +131,9 @@ Do not use private messages if:
 CREATE TABLE trusted_followers (
   truster_did TEXT,
   trustee_did TEXT,
-  status TEXT,
-  created_at TIMESTAMP,
-  updated_at TIMESTAMP,
-  PRIMARY KEY (truster_did, trustee_did, status)
+  created_at TIMESTAMP NOT NULL,
+  deleted_at TIMESTAMP,
+  PRIMARY KEY (truster_did, trustee_did, created_at)
 );
 ```
 
@@ -156,10 +153,15 @@ CREATE TABLE user_keys (
 ```
 CREATE TABLE sessions (
 session_id UUID PRIMARY KEY,
-created_at TIMESTAMP,
+truster_did TEXT NOT NULL,
+created_at TIMESTAMP NOT NULL,
 expires_at TIMESTAMP,
+revoked_at TIMESTAMP,
 previous_session_id UUID
 );
+
+CREATE INDEX idx_sessions_current
+ON sessions(truster_did, created_at DESC);
 
 CREATE TABLE session_keys (
 session_id UUID,
@@ -202,7 +204,7 @@ CREATE TABLE encrypted_messages (
 - DEK encrypted separately for each follower
 - Trust Service validates access before Key Service returns keys
 - All key operations logged with timestamps and DIDs
-- Session rotation on trust revocation prevents future access
+- Session revocation prevents access even if new session creation fails
 - User Key Service has stricter access controls than Session Key Service
 
 ### Historical Access
