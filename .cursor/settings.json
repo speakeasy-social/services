@@ -1,0 +1,5 @@
+{
+  "terminal": {
+    "shellInit": "source ~/.zshrc && source ~/.nvm/nvm.sh"
+  }
+}

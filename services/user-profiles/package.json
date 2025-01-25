@@ -1,0 +1,32 @@
+{
+  "name": "@speakeasy/user-profiles",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx watch src/index.ts",
+    "start": "node dist/index.js",
+    "clean": "rimraf dist *.tsbuildinfo",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@atproto/xrpc": "^0.4.0",
+    "@atproto/xrpc-server": "^0.4.0",
+    "@prisma/client": "^5.10.2",
+    "@speakeasy/common": "workspace:*",
+    "dotenv": "^16.4.5",
+    "fastify": "^4.26.1",
+    "pino": "^8.19.0",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.19",
+    "prisma": "^5.10.2",
+    "rimraf": "^5.0.5",
+    "tsx": "^4.7.1",
+    "typescript": "^5.3.3"
+  }
+}
