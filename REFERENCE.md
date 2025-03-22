@@ -129,11 +129,11 @@ A privacy extension for Bluesky enabling users to share posts with trusted follo
 
 ```
 CREATE TABLE trusted_followers (
-  truster_did TEXT,
-  trustee_did TEXT,
+  author_did TEXT,
+  recipient_did TEXT,
   created_at TIMESTAMP NOT NULL,
   deleted_at TIMESTAMP,
-  PRIMARY KEY (truster_did, trustee_did, created_at)
+  PRIMARY KEY (author_did, recipient_did, created_at)
 );
 ```
 
@@ -153,7 +153,7 @@ CREATE TABLE user_keys (
 ```
 CREATE TABLE sessions (
 session_id UUID PRIMARY KEY,
-truster_did TEXT NOT NULL,
+author_did TEXT NOT NULL,
 created_at TIMESTAMP NOT NULL,
 expires_at TIMESTAMP,
 revoked_at TIMESTAMP,
@@ -161,13 +161,13 @@ previous_session_id UUID
 );
 
 CREATE INDEX idx_sessions_current
-ON sessions(truster_did, created_at DESC);
+ON sessions(author_did, created_at DESC);
 
 CREATE TABLE session_keys (
 session_id UUID,
-did TEXT,
+recipient_did TEXT,
 encrypted_dek BYTEA,
-PRIMARY KEY (session_id, did)
+PRIMARY KEY (session_id, recipient_did)
 );
 
 CREATE TABLE staff_keys (
@@ -194,14 +194,14 @@ CREATE TABLE encrypted_messages (
 
 - One DEK per session provides balance of security and performance
 - DEK only exists in decrypted form in client memory
-- Public key operations only performed once per follower per session
+- Public key operations only performed once per recipient per session
 - Session rotation provides forward secrecy
 - Unencrypted DEKs stored separately for staff access
 - User private keys stored centrally for device independence
 
 ### Access Control
 
-- DEK encrypted separately for each follower
+- DEK encrypted separately for each recipient
 - Trust Service validates access before Key Service returns keys
 - All key operations logged with timestamps and DIDs
 - Session revocation prevents access even if new session creation fails
@@ -209,7 +209,7 @@ CREATE TABLE encrypted_messages (
 
 ### Historical Access
 
-- MVP limits new follower access to recent sessions (30 days)
+- MVP limits new recipient access to recent sessions (30 days)
 - Future implementation may support lazy key generation for historical access
 - Balance between immediate computational cost and access to history
 - Maintains security while managing performance
