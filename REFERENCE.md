@@ -90,7 +90,7 @@ A privacy extension for Bluesky enabling users to share posts with trusted follo
 
 ## Data Flow Examples
 
-### Posting New Message
+### Posting New Post
 
 1. Client retrieves current valid session (not revoked, most recent)
 2. If no valid session exists, create new session
@@ -99,23 +99,23 @@ A privacy extension for Bluesky enabling users to share posts with trusted follo
    - Encrypt DEK with each follower's public key
    - Store unencrypted DEK for staff access
 4. Encrypt content with session DEK
-5. Store encrypted message with session reference
+5. Store encrypted post with session reference
 
-### Reading Messages
+### Reading Posts
 
-1. Client fetches encrypted messages
-2. For each message:
+1. Client fetches encrypted posts
+2. For each post:
    - Retrieve session data
    - Decrypt session DEK using reader's private key
    - Decrypt content using DEK
 
-## Message Structure
+## Post Structure
 
-### Encrypted Message Format
+### Encrypted Post Format
 
 ```
 {
-  "messageId": "uuid",
+  "postId": "uuid",
   "sessionId": "uuid",
   "encryptedContent": "base64",
   "timestamp": "ISO8601",
@@ -148,39 +148,56 @@ CREATE TABLE user_keys (
 );
 ```
 
-### Session Key Service
+### Private Sessions Service
+
+The private-sessions service combines session management and post storage to maintain operational efficiency while preserving security boundaries. This design decision is based on:
+
+1. **Security Boundaries**
+
+   - Critical security boundary (user private keys) remains in user-keys service
+   - DEKs are always encrypted with recipient public keys
+   - Posts are encrypted with DEKs
+   - No unencrypted data accessible without proper authorization
+
+2. **Operational Efficiency**
+
+   - Single service for related data reduces complexity
+   - Atomic operations for post + key management
+   - Efficient querying for post feeds
+   - No unnecessary service-to-service communication
+
+3. **Data Consistency**
+   - Posts and their keys are always in sync
+   - No risk of orphaned posts or keys
+   - Simplified error handling and recovery
 
 ```
 CREATE TABLE sessions (
-session_id UUID PRIMARY KEY,
-author_did TEXT NOT NULL,
-created_at TIMESTAMP NOT NULL,
-expires_at TIMESTAMP,
-revoked_at TIMESTAMP,
-previous_session_id UUID
+  session_id UUID PRIMARY KEY,
+  author_did TEXT NOT NULL,
+  created_at TIMESTAMP NOT NULL,
+  expires_at TIMESTAMP,
+  revoked_at TIMESTAMP,
+  previous_session_id UUID
 );
 
 CREATE INDEX idx_sessions_current
 ON sessions(author_did, created_at DESC);
 
 CREATE TABLE session_keys (
-session_id UUID,
-recipient_did TEXT,
-encrypted_dek BYTEA,
-PRIMARY KEY (session_id, recipient_did)
+  session_id UUID,
+  recipient_did TEXT,
+  encrypted_dek BYTEA,
+  PRIMARY KEY (session_id, recipient_did)
 );
 
 CREATE TABLE staff_keys (
-session_id UUID PRIMARY KEY,
-dek BYTEA
+  session_id UUID PRIMARY KEY,
+  dek BYTEA
 );
-```
 
-### Message Service
-
-```
-CREATE TABLE encrypted_messages (
-  message_id UUID PRIMARY KEY,
+CREATE TABLE encrypted_posts (
+  post_id UUID PRIMARY KEY,
   session_id UUID,
   author_did TEXT,
   encrypted_content BYTEA,
@@ -198,6 +215,7 @@ CREATE TABLE encrypted_messages (
 - Session rotation provides forward secrecy
 - Unencrypted DEKs stored separately for staff access
 - User private keys stored centrally for device independence
+- Posts and session keys combined in single service for operational efficiency while maintaining security boundaries
 
 ### Access Control
 
@@ -206,6 +224,7 @@ CREATE TABLE encrypted_messages (
 - All key operations logged with timestamps and DIDs
 - Session revocation prevents access even if new session creation fails
 - User Key Service has stricter access controls than Session Key Service
+- Combined service maintains clear separation of concerns while optimizing for common operations
 
 ### Historical Access
 
