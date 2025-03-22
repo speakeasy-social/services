@@ -79,20 +79,6 @@ A privacy extension for Bluesky enabling users to share posts with trusted follo
 - If new session creation fails, old session remains revoked
 - Client must retry if no valid session exists
 
-## Message Structure
-
-### Encrypted Message Format
-
-```
-{
-  "messageId": "uuid",
-  "sessionId": "uuid",
-  "encryptedContent": "base64",
-  "timestamp": "ISO8601",
-  "authorDid": "did:example"
-}
-```
-
 ## Trust Revocation Flow
 
 1. Mark current session as revoked (guaranteed to succeed)
@@ -122,6 +108,20 @@ A privacy extension for Bluesky enabling users to share posts with trusted follo
    - Retrieve session data
    - Decrypt session DEK using reader's private key
    - Decrypt content using DEK
+
+## Message Structure
+
+### Encrypted Message Format
+
+```
+{
+  "messageId": "uuid",
+  "sessionId": "uuid",
+  "encryptedContent": "base64",
+  "timestamp": "ISO8601",
+  "authorDid": "did:example"
+}
+```
 
 ## Database Schemas
 
