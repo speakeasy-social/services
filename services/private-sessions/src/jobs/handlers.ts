@@ -2,7 +2,7 @@ import { PrismaClient } from '@prisma/client'
 import { JOB_NAMES } from '@packages/common/src/queue'
 import type { AddRecipientToSessionJob } from '@packages/common/src/queue/types'
 import { Queue } from '@packages/common/src/queue'
-import { createSession, addRecipientToSession } from '../sessions'
+import { addRecipientToSession } from '../sessions'
 
 const prisma = new PrismaClient()
 
