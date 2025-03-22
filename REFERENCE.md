@@ -128,7 +128,7 @@ A privacy extension for Bluesky enabling users to share posts with trusted follo
 ### Trust Service
 
 ```
-CREATE TABLE trusted_followers (
+CREATE TABLE trusted_users (
   author_did TEXT,
   recipient_did TEXT,
   created_at TIMESTAMP NOT NULL,
