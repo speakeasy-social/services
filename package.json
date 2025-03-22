@@ -9,7 +9,13 @@
     "build": "tsc --build",
     "clean": "tsc --build --clean",
     "lint": "eslint .",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate deploy"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.10.0",
+    "pg-boss": "^9.0.0"
   },
   "devDependencies": {
     "@types/node": "^20.11.19",
@@ -18,9 +24,10 @@
     "eslint": "^8.56.0",
     "eslint-config-prettier": "^9.1.0",
     "prettier": "^3.2.5",
+    "prisma": "^5.10.0",
     "typescript": "^5.3.3"
   },
   "engines": {
-    "node": ">=20.0.0"
+    "node": "20.11.1"
   }
 }
