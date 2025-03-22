@@ -20,7 +20,7 @@ A privacy extension enabling Bluesky users to share posts with trusted followers
 ├── services/                     # Individual microservices
 │   ├── user-profiles/          # User profile and preferences management
 │   ├── user-keys/              # User encryption key management
-│   ├── follower-relations/     # Follower relationship management
+│   ├── trusted-users/          # Trust relationship management
 │   ├── private-sessions/       # Encryption session and private post management
 │   ├── group-sessions/         # (Future)
 │   ├── group-members/          # (Future)
@@ -45,7 +45,7 @@ A set of microservices handling:
 
 - User profiles and preferences
 - User encryption keys
-- Follower relationships
+- Trust relationships
 - Encryption sessions and private posts
 
 ## Technical Stack
