@@ -27,7 +27,7 @@ A privacy extension for Bluesky enabling users to share posts with trusted follo
 - Data Encryption Key (DEK): Symmetric key used for all messages in a session
 - Per-Follower Keys: DEK encrypted with each follower's public key
 - One DEK per session, rotated on trust changes or periodic rotation
-- Unencrypted DEK stored separately for staff access
+- Unencrypted DEK stored separately for staff access (and eventually deleted when we move to E2E encryption)
 
 ### Encryption Algorithms
 
@@ -210,7 +210,7 @@ CREATE TABLE encrypted_messages (
 ### Historical Access
 
 - MVP limits new follower access to recent sessions (30 days)
-- Future implementation will support lazy key generation for historical access
+- Future implementation may support lazy key generation for historical access
 - Balance between immediate computational cost and access to history
 - Maintains security while managing performance
 
