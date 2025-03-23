@@ -34,8 +34,11 @@
   "dependencies": {
     "@atproto/xrpc": "^0.6.11",
     "@casl/ability": "^6.7.3",
+    "@atproto/xrpc-server": "^0.7.13",
     "dotenv": "^16.4.7",
     "fastify": "^5.2.1",
+    "node-cache": "^5.1.2",
+    "node-fetch": "^3.3.2",
     "pino": "^9.6.0",
     "pino-pretty": "^13.0.0",
     "tsup": "^8.4.0",
@@ -44,6 +47,7 @@
   },
   "devDependencies": {
     "@types/node": "^22.13.11",
+    "@types/node-cache": "^4.2.5",
     "eslint": "^8.56.0",
     "typescript": "^5.8.2"
   }

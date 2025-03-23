@@ -3,21 +3,10 @@ import { z } from 'zod';
 import { SessionServiceImpl } from '../services/session.service.js';
 import { ServiceError, ValidationError, NotFoundError, DatabaseError, AuthorizationError } from '@speakeasy-services/common';
 import { LexiconDoc } from '@atproto/lexicon';
-import { createServer, XRPCHandlerConfig, XRPCHandler, XRPCReqContext, HandlerOutput, AuthVerifier, AuthVerifierContext, AuthOutput } from '@atproto/xrpc-server';
-import { AppAbility, authorize } from '@speakeasy-services/common';
+import { createServer, XRPCHandlerConfig, XRPCHandler, XRPCReqContext, HandlerOutput } from '@atproto/xrpc-server';
+import { AppAbility, authorize, verifyAuth } from '@speakeasy-services/common';
 
 const sessionService = new SessionServiceImpl();
-
-// Auth verifier function
-const verifyAuth: AuthVerifier = async (ctx: AuthVerifierContext): Promise<AuthOutput> => {
-  // TODO: Implement proper auth verification
-  return {
-    credentials: {
-      did: 'test-did',
-      handle: 'test-handle'
-    }
-  };
-};
 
 // Define method handlers
 const methodHandlers = {
