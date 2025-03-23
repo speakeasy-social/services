@@ -33,6 +33,7 @@
   },
   "dependencies": {
     "@atproto/xrpc": "^0.6.11",
+    "@casl/ability": "^6.7.3",
     "dotenv": "^16.4.7",
     "fastify": "^5.2.1",
     "pino": "^9.6.0",

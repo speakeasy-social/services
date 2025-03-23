@@ -8,6 +8,7 @@ export interface ServerOptions {
   port?: number;
   methods: Record<string, XRPCHandlerConfig>;
   onShutdown?: () => Promise<void>;
+  middleware?: Array<(request: fastify.FastifyRequest, reply: fastify.FastifyReply) => Promise<void>>;
 }
 
 export class Server {
@@ -21,7 +22,16 @@ export class Server {
       logger: true
     });
     this.xrpcServer = createServer();
+    this.setupMiddleware();
     this.setupXRPC();
+  }
+
+  private async setupMiddleware() {
+    if (this.options.middleware) {
+      for (const middleware of this.options.middleware) {
+        this.app.addHook('preHandler', middleware);
+      }
+    }
   }
 
   private async setupXRPC() {

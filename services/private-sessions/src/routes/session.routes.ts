@@ -1,14 +1,10 @@
-/**
- * TODO: This is a placeholder structure that will be replaced with Fastify XML-RPC endpoints
- * The actual implementation will use Fastify's XML-RPC plugin
- */
-
 import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { SessionServiceImpl } from '../services/session.service.js';
-import { ServiceError, ValidationError, NotFoundError, DatabaseError } from '@speakeasy-services/common';
+import { ServiceError, ValidationError, NotFoundError, DatabaseError, AuthorizationError } from '@speakeasy-services/common';
 import { LexiconDoc } from '@atproto/lexicon';
 import { createServer, XRPCHandlerConfig, XRPCHandler, XRPCReqContext, HandlerOutput, AuthVerifier, AuthVerifierContext, AuthOutput } from '@atproto/xrpc-server';
+import { AppAbility, authorize } from '@speakeasy-services/common';
 
 const sessionService = new SessionServiceImpl();
 
@@ -28,6 +24,9 @@ const methodHandlers = {
   // Session management
   'social.speakeasy.private_sessions.revoke': async (ctx: XRPCReqContext): Promise<HandlerOutput> => {
     const { sessionId } = ctx.params as { sessionId: string };
+    const session = await sessionService.getSession(sessionId);
+    authorize(ctx.req, 'revoke', 'private_session', { authorDid: session.authorDid });
+
     const result = await sessionService.revokeSession(sessionId);
     return {
       encoding: 'application/json',
@@ -36,6 +35,9 @@ const methodHandlers = {
   },
   'social.speakeasy.private_sessions.add_user': async (ctx: XRPCReqContext): Promise<HandlerOutput> => {
     const { sessionId, did } = ctx.params as { sessionId: string; did: string };
+    const session = await sessionService.getSession(sessionId);
+    authorize(ctx.req, 'create', 'private_session', { authorDid: session.authorDid });
+
     const result = await sessionService.addUser(sessionId, did);
     return {
       encoding: 'application/json',
@@ -46,6 +48,8 @@ const methodHandlers = {
   // Post management
   'social.speakeasy.private_posts.get_posts': async (ctx: XRPCReqContext): Promise<HandlerOutput> => {
     const { recipient, limit, cursor } = ctx.params as { recipient: string; limit?: number; cursor?: string };
+    authorize(ctx.req, 'list', 'private_post', { recipientDid: recipient });
+
     const result = await sessionService.getPosts({ recipient, limit, cursor });
     return {
       encoding: 'application/json',
@@ -54,6 +58,9 @@ const methodHandlers = {
   },
   'social.speakeasy.private_posts.get_bulk': async (ctx: XRPCReqContext): Promise<HandlerOutput> => {
     const { postIds } = ctx.params as { postIds: string[] };
+    const posts = await sessionService.getPostsByIds(postIds);
+    authorize(ctx.req, 'list', 'private_post', { recipientDid: ctx.req.user.did });
+
     const result = await sessionService.getBulk(postIds);
     return {
       encoding: 'application/json',
@@ -62,11 +69,17 @@ const methodHandlers = {
   },
   'social.speakeasy.private_posts.create': async (ctx: XRPCReqContext): Promise<HandlerOutput> => {
     const { sessionId, text, recipients } = ctx.params as { sessionId: string; text: string; recipients: string[] };
+    const session = await sessionService.getSession(sessionId);
+    authorize(ctx.req, 'createPost', 'post', { authorDid: session.authorDid });
+
     // TODO: Implement create post logic
     throw new Error('Not implemented');
   },
   'social.speakeasy.private_posts.delete': async (ctx: XRPCReqContext): Promise<HandlerOutput> => {
     const { uri } = ctx.params as { uri: string };
+    const post = await sessionService.getPost(uri);
+    authorize(ctx.req, 'deletePost', 'post', { authorDid: post.authorDid });
+
     // TODO: Implement delete post logic
     throw new Error('Not implemented');
   }
