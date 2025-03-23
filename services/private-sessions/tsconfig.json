@@ -1,0 +1,21 @@
+{
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "src",
+    "composite": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "tsBuildInfoFile": "./dist/.tsbuildinfo",
+    "paths": {
+      "@speakeasy-services/common/*": ["../../packages/common/src/*"],
+      "@speakeasy-services/crypto/*": ["../../packages/crypto/src/*"]
+    }
+  },
+  "include": ["src/**/*.ts"],
+  "references": [
+    { "path": "../../packages/common" },
+    { "path": "../../packages/crypto" }
+  ]
+}

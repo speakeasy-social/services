@@ -13,10 +13,14 @@ social.speakeasy.users.add_trusted             - Add a new trusted user
 social.speakeasy.users.remove_trusted          - Remove a trusted user
 
 # Session Management
-social.speakeasy.follower_sessions.get_posts   - List private posts accessible to a recipient
-social.speakeasy.follower_sessions.get_bulk    - Bulk fetch session details by IDs
-social.speakeasy.follower_sessions.revoke      - Revoke an active session
-social.speakeasy.follower_sessions.add_user    - Add new trusted user to existing session
+social.speakeasy.private_sessions.revoke      - Revoke an active session
+social.speakeasy.private_sessions.add_user    - Add new trusted user to existing session
+
+# Post Management
+social.speakeasy.private_posts.get_posts     - List private posts accessible to a recipient
+social.speakeasy.private_posts.get_bulk      - Bulk fetch posts by IDs
+social.speakeasy.private_posts.create        - Create a new private post
+social.speakeasy.private_posts.delete        - Delete a private post
 
 # Key Management
 social.speakeasy.keys.get_public_key          - Get user's public key for encryption
@@ -99,10 +103,61 @@ Removes a user from the trusted followers list.
 
 ## Session Management
 
+### Revoke Session
+
+```typescript
+POST / xrpc / social.speakeasy.private_sessions.revoke;
+```
+
+Revokes an active session, forcing creation of a new session for future posts.
+
+**Request Body:**
+
+```typescript
+{
+  "sessionId": string
+}
+```
+
+**Response:**
+
+```typescript
+{
+  "success": boolean
+}
+```
+
+### Add User to Session
+
+```typescript
+POST / xrpc / social.speakeasy.private_sessions.add_user;
+```
+
+Adds a new trusted user to an existing session.
+
+**Request Body:**
+
+```typescript
+{
+  "sessionId": string
+  "did": string
+}
+```
+
+**Response:**
+
+```typescript
+{
+  "success": boolean
+}
+```
+
+## Post Management
+
 ### Fetch Posts for a Recipient
 
 ```typescript
-GET / xrpc / social.speakeasy.follower_sessions.get_posts;
+GET / xrpc / social.speakeasy.private_posts.get_posts;
 ```
 
 Returns a list of private posts that the specified recipient has access to.
@@ -132,19 +187,19 @@ Returns a list of private posts that the specified recipient has access to.
 }
 ```
 
-### Bulk Fetch Sessions
+### Bulk Fetch Posts
 
 ```typescript
-POST / xrpc / social.speakeasy.follower_sessions.get_bulk;
+POST / xrpc / social.speakeasy.private_posts.get_bulk;
 ```
 
-Returns session details for multiple session IDs in a single request.
+Returns post details for multiple post IDs in a single request.
 
 **Request Body:**
 
 ```typescript
 {
-  "sessionIds": string[]
+  "postIds": string[]
 }
 ```
 
@@ -152,29 +207,35 @@ Returns session details for multiple session IDs in a single request.
 
 ```typescript
 {
-  "sessions": Array<{
-    sessionId: string
-    authorDid: string
+  "posts": Array<{
+    uri: string
+    cid: string
+    author: {
+      did: string
+      handle: string
+    }
+    text: string
     createdAt: string
-    expiresAt?: string
-    revokedAt?: string
+    sessionId: string
   }>
 }
 ```
 
-### Revoke Session
+### Create Post
 
 ```typescript
-POST / xrpc / social.speakeasy.follower_sessions.revoke;
+POST / xrpc / social.speakeasy.private_posts.create;
 ```
 
-Revokes an active session, forcing creation of a new session for future posts.
+Creates a new private post in the specified session.
 
 **Request Body:**
 
 ```typescript
 {
   "sessionId": string
+  "text": string
+  "recipients": string[]  // Array of recipient DIDs
 }
 ```
 
@@ -182,24 +243,31 @@ Revokes an active session, forcing creation of a new session for future posts.
 
 ```typescript
 {
-  "success": boolean
+  "uri": string
+  "cid": string
+  "author": {
+    "did": string
+    "handle": string
+  }
+  "text": string
+  "createdAt": string
+  "sessionId": string
 }
 ```
 
-### Add User to Session
+### Delete Post
 
 ```typescript
-POST / xrpc / social.speakeasy.follower_sessions.add_user;
+POST / xrpc / social.speakeasy.private_posts.delete;
 ```
 
-Adds a new trusted user to an existing session.
+Deletes a private post. Only the author can delete their own posts.
 
 **Request Body:**
 
 ```typescript
 {
-  "sessionId": string
-  "did": string
+  "uri": string  // The URI of the post to delete
 }
 ```
 
@@ -210,80 +278,3 @@ Adds a new trusted user to an existing session.
   "success": boolean
 }
 ```
-
-## Key Management
-
-### Get Public Key
-
-```typescript
-GET / xrpc / social.speakeasy.keys.get_public_key;
-```
-
-Returns a user's public key for encryption.
-
-**Parameters:**
-
-- `did` (required): The DID of the user whose public key to fetch
-
-**Response:**
-
-```typescript
-{
-  "publicKey": string  // Base64 encoded public key
-  "createdAt": string
-  "expiresAt": string
-}
-```
-
-### Get Private Key
-
-```typescript
-GET / xrpc / social.speakeasy.keys.get_private_key;
-```
-
-Returns the authenticated user's private key. Only accessible to the key owner.
-
-**Response:**
-
-```typescript
-{
-  "privateKey": string  // Base64 encoded private key
-  "createdAt": string
-  "expiresAt": string
-}
-```
-
-### Request Key Rotation
-
-```typescript
-POST / xrpc / social.speakeasy.keys.request_rotation;
-```
-
-Requests rotation of the user's key pair. Only accessible to the key owner.
-
-**Response:**
-
-```typescript
-{
-  "success": boolean
-  "newPublicKey": string  // Base64 encoded new public key
-  "createdAt": string
-  "expiresAt": string
-}
-```
-
-## Implementation Notes
-
-1. All endpoints will use the AT Protocol's authentication system
-2. Responses will be paginated where appropriate
-3. Session fetching is optimized for bulk operations to reduce round trips
-4. Posts are returned with their associated session IDs to enable efficient session lookup
-5. All timestamps are in ISO 8601 format
-
-## Future Considerations
-
-1. Add filtering options for posts (e.g., by date range)
-2. Add sorting options for posts
-3. Consider adding a websocket endpoint for real-time updates
-4. Add rate limiting and caching strategies
-5. Consider adding batch operations for trust management

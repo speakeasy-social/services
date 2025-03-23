@@ -1,33 +1,33 @@
 {
-  "name": "speakeasy-server",
+  "name": "speakeasy-services",
   "private": true,
-  "workspaces": [
-    "packages/*",
-    "services/*"
-  ],
   "scripts": {
-    "build": "tsc --build",
-    "clean": "tsc --build --clean",
-    "lint": "eslint .",
-    "format": "prettier --write .",
-    "prisma:generate": "prisma generate",
-    "prisma:migrate": "prisma migrate deploy"
-  },
-  "dependencies": {
-    "@prisma/client": "^5.10.0",
-    "pg-boss": "^9.0.0"
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "test": "turbo run test",
+    "format": "prettier --write \"**/*.{ts,tsx,md}\"",
+    "setup:dev": "chmod +x scripts/setup-dev.sh && ./scripts/setup-dev.sh",
+    "db:migrate": "prisma migrate deploy",
+    "db:generate": "prisma generate",
+    "db:studio": "prisma studio"
   },
   "devDependencies": {
-    "@types/node": "^20.11.19",
+    "@types/node": "^22.13.11",
     "@typescript-eslint/eslint-plugin": "^7.0.1",
     "@typescript-eslint/parser": "^7.0.1",
     "eslint": "^8.56.0",
-    "eslint-config-prettier": "^9.1.0",
     "prettier": "^3.2.5",
-    "prisma": "^5.10.0",
+    "prisma": "^6.5.0",
+    "turbo": "^2.4.4",
     "typescript": "^5.3.3"
   },
+  "packageManager": "pnpm@8.15.4",
   "engines": {
-    "node": "20.11.1"
-  }
+    "node": ">=18.0.0"
+  },
+  "workspaces": [
+    "packages/*",
+    "services/*"
+  ]
 }

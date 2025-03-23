@@ -1,5 +1,5 @@
 {
-  "name": "@speakeasy-services/common",
+  "name": "@speakeasy-services/queue",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -12,16 +12,8 @@
       "types": "./dist/index.d.ts"
     },
     "./types": {
-      "import": "./dist/types/index.js",
-      "types": "./dist/types/index.d.ts"
-    },
-    "./constants": {
-      "import": "./dist/constants/index.js",
-      "types": "./dist/constants/index.d.ts"
-    },
-    "./utils": {
-      "import": "./dist/utils/index.js",
-      "types": "./dist/utils/index.d.ts"
+      "import": "./dist/types.js",
+      "types": "./dist/types.d.ts"
     }
   },
   "scripts": {
@@ -32,11 +24,10 @@
     "test": "jest"
   },
   "dependencies": {
-    "@atproto/xrpc": "^0.6.11",
+    "@speakeasy-services/common": "workspace:*",
     "dotenv": "^16.4.7",
     "fastify": "^5.2.1",
-    "pino": "^9.6.0",
-    "pino-pretty": "^13.0.0",
+    "pg-boss": "^9.0.0",
     "tsup": "^8.4.0",
     "tsx": "^4.19.3",
     "zod": "^3.24.2"

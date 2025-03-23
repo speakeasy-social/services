@@ -1,5 +1,5 @@
 {
-  "name": "@speakeasy-services/common",
+  "name": "@speakeasy-services/service-base",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -11,17 +11,13 @@
       "import": "./dist/index.js",
       "types": "./dist/index.d.ts"
     },
-    "./types": {
-      "import": "./dist/types/index.js",
-      "types": "./dist/types/index.d.ts"
+    "./server": {
+      "import": "./dist/server.js",
+      "types": "./dist/server.d.ts"
     },
-    "./constants": {
-      "import": "./dist/constants/index.js",
-      "types": "./dist/constants/index.d.ts"
-    },
-    "./utils": {
-      "import": "./dist/utils/index.js",
-      "types": "./dist/utils/index.d.ts"
+    "./worker": {
+      "import": "./dist/worker.js",
+      "types": "./dist/worker.d.ts"
     }
   },
   "scripts": {
@@ -32,11 +28,12 @@
     "test": "jest"
   },
   "dependencies": {
-    "@atproto/xrpc": "^0.6.11",
+    "@atproto/lexicon": "^0.4.9",
+    "@atproto/xrpc-server": "^0.7.13",
+    "@speakeasy-services/common": "workspace:*",
+    "@speakeasy-services/queue": "workspace:*",
     "dotenv": "^16.4.7",
     "fastify": "^5.2.1",
-    "pino": "^9.6.0",
-    "pino-pretty": "^13.0.0",
     "tsup": "^8.4.0",
     "tsx": "^4.19.3",
     "zod": "^3.24.2"

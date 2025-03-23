@@ -1,0 +1,38 @@
+{
+  "name": "@speakeasy-services/user-keys",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc --build",
+    "dev:api": "tsx watch src/api.ts",
+    "dev:worker": "tsx watch src/worker.ts",
+    "start:api": "node dist/api.js",
+    "start:worker": "node dist/worker.js",
+    "clean": "rm -rf dist",
+    "lint": "eslint src",
+    "test": "jest",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate deploy"
+  },
+  "dependencies": {
+    "@atproto/xrpc-server": "^0.7.13",
+    "@prisma/client": "^6.5.0",
+    "@speakeasy-services/common": "workspace:*",
+    "@speakeasy-services/crypto": "workspace:*",
+    "@speakeasy-services/service-base": "workspace:^",
+    "dotenv": "^16.4.7",
+    "fastify": "^5.2.1",
+    "pino": "^9.6.0",
+    "pino-pretty": "^13.0.0",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.11",
+    "eslint": "^8.56.0",
+    "prisma": "^6.5.0",
+    "tsup": "^8.4.0",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.2"
+  }
+}

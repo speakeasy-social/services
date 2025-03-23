@@ -1,5 +1,6 @@
 import { XRPCError } from '@atproto/xrpc';
 import { StatusCodes } from '../constants/index.js';
+export { createLogger } from '../logger.js';
 
 export function createError(
   status: number,

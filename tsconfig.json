@@ -16,7 +16,7 @@
     "outDir": "dist",
     "baseUrl": ".",
     "paths": {
-      "@speakeasy/*": ["packages/*/src"]
+      "@speakeasy-services/*": ["packages/*/src"]
     }
   },
   "exclude": [

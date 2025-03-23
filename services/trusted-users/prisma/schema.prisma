@@ -1,0 +1,23 @@
+// This is your Prisma schema file for the trusted-users service
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  schemas   = ["trusted_users"]
+}
+
+model TrustedUser {
+  authorDid    String
+  recipientDid String
+  createdAt    DateTime  @default(now())
+  deletedAt    DateTime?
+
+  @@id([authorDid, recipientDid, createdAt])
+  @@index([authorDid, deletedAt, createdAt(sort: Desc)], name: "idx_trusted_users_by_author")
+  @@index([recipientDid, deletedAt, createdAt(sort: Desc)], name: "idx_trusted_users_by_recipient")
+  @@map("trusted_users")
+}
