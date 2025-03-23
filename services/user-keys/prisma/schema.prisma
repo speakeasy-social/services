@@ -1,0 +1,23 @@
+// This is your Prisma schema file for the user-keys service
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  schemas   = ["user_keys"]
+}
+
+model Key {
+  id         String   @id @default(uuid())
+  userId     String
+  publicKey  String
+  privateKey String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([userId])
+  @@map("user_keys")
+}
