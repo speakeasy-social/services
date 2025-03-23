@@ -7,25 +7,24 @@ This document outlines the required XRPC endpoints for the private posts service
 Each line represents a required XRPC endpoint with its purpose:
 
 ```
-# Trust Management
-social.speakeasy.users.get_trusted_by          - List users who trust a given DID
-social.speakeasy.users.add_trusted             - Add a new trusted user
-social.speakeasy.users.remove_trusted          - Remove a trusted user
+# Trust Management (Graph)
+social.spkeasy.graph.getTrusts            - List users who trust a given DID
+social.spkeasy.graph.addTrusted           - Add a new trusted user
+social.spkeasy.graph.removeTrusted        - Remove a trusted user
 
 # Session Management
-social.speakeasy.private_sessions.revoke      - Revoke an active session
-social.speakeasy.private_sessions.add_user    - Add new trusted user to existing session
+social.spkeasy.privateSession.revoke      - Revoke an active session
+social.spkeasy.privateSession.addUser     - Add new trusted user to existing session
 
 # Post Management
-social.speakeasy.private_posts.get_posts     - List private posts accessible to a recipient
-social.speakeasy.private_posts.get_bulk      - Bulk fetch posts by IDs
-social.speakeasy.private_posts.create        - Create a new private post
-social.speakeasy.private_posts.delete        - Delete a private post
+social.spkeasy.privatePosts.getPosts      - List private posts accessible to a recipient
+social.spkeasy.privatePosts.createPost    - Create a new private post
+social.spkeasy.privatePosts.deletePost    - Delete a private post
 
 # Key Management
-social.speakeasy.keys.get_public_key          - Get user's public key for encryption
-social.speakeasy.keys.get_private_key         - Get user's private key (owner only)
-social.speakeasy.keys.request_rotation        - Request key rotation
+social.spkeasy.keys.getPublicKey          - Get user's public key for encryption
+social.spkeasy.keys.getPrivateKey         - Get user's private key (owner only)
+social.spkeasy.keys.rotate                - Request key rotation
 ```
 
 ## Trust Management
@@ -33,7 +32,7 @@ social.speakeasy.keys.request_rotation        - Request key rotation
 ### Get Users Who Trust a DID
 
 ```typescript
-GET / xrpc / social.speakeasy.users.get_trusted_by;
+GET / xrpc / social.spkeasy.graph.getTrusts;
 ```
 
 Returns a list of users who trust the specified DID.
@@ -56,7 +55,7 @@ Returns a list of users who trust the specified DID.
 ### Add Trusted User
 
 ```typescript
-POST / xrpc / social.speakeasy.users.add_trusted;
+POST / xrpc / social.spkeasy.graph.addTrusted;
 ```
 
 Adds a new user to the trusted followers list.
@@ -80,7 +79,7 @@ Adds a new user to the trusted followers list.
 ### Remove Trusted User
 
 ```typescript
-POST / xrpc / social.speakeasy.users.remove_trusted;
+POST / xrpc / social.spkeasy.graph.removeTrusted;
 ```
 
 Removes a user from the trusted followers list.
@@ -106,7 +105,7 @@ Removes a user from the trusted followers list.
 ### Revoke Session
 
 ```typescript
-POST / xrpc / social.speakeasy.private_sessions.revoke;
+POST / xrpc / social.spkeasy.privateSession.revoke;
 ```
 
 Revokes an active session, forcing creation of a new session for future posts.
@@ -130,7 +129,7 @@ Revokes an active session, forcing creation of a new session for future posts.
 ### Add User to Session
 
 ```typescript
-POST / xrpc / social.speakeasy.private_sessions.add_user;
+POST / xrpc / social.spkeasy.privateSession.addUser;
 ```
 
 Adds a new trusted user to an existing session.
@@ -157,7 +156,7 @@ Adds a new trusted user to an existing session.
 ### Fetch Posts for a Recipient
 
 ```typescript
-GET / xrpc / social.speakeasy.private_posts.get_posts;
+GET / xrpc / social.spkeasy.privatePosts.getPosts;
 ```
 
 Returns a list of private posts that the specified recipient has access to.
@@ -167,6 +166,7 @@ Returns a list of private posts that the specified recipient has access to.
 - `recipient` (required): The DID of the recipient
 - `limit` (optional): Number of posts to return (default: 50)
 - `cursor` (optional): Pagination cursor
+- `uris` (optional): Array of specific post URIs to fetch
 
 **Response:**
 
@@ -187,44 +187,10 @@ Returns a list of private posts that the specified recipient has access to.
 }
 ```
 
-### Bulk Fetch Posts
-
-```typescript
-POST / xrpc / social.speakeasy.private_posts.get_bulk;
-```
-
-Returns post details for multiple post IDs in a single request.
-
-**Request Body:**
-
-```typescript
-{
-  "postIds": string[]
-}
-```
-
-**Response:**
-
-```typescript
-{
-  "posts": Array<{
-    uri: string
-    cid: string
-    author: {
-      did: string
-      handle: string
-    }
-    text: string
-    createdAt: string
-    sessionId: string
-  }>
-}
-```
-
 ### Create Post
 
 ```typescript
-POST / xrpc / social.speakeasy.private_posts.create;
+POST / xrpc / social.spkeasy.privatePosts.createPost;
 ```
 
 Creates a new private post in the specified session.
@@ -258,7 +224,7 @@ Creates a new private post in the specified session.
 ### Delete Post
 
 ```typescript
-POST / xrpc / social.speakeasy.private_posts.delete;
+POST / xrpc / social.spkeasy.privatePosts.deletePost;
 ```
 
 Deletes a private post. Only the author can delete their own posts.
@@ -270,6 +236,60 @@ Deletes a private post. Only the author can delete their own posts.
   "uri": string  // The URI of the post to delete
 }
 ```
+
+**Response:**
+
+```typescript
+{
+  "success": boolean
+}
+```
+
+## Key Management
+
+### Get Public Key
+
+```typescript
+GET / xrpc / social.spkeasy.keys.getPublicKey;
+```
+
+Returns a user's public key for encryption.
+
+**Parameters:**
+
+- `did` (required): The DID of the user whose public key to fetch
+
+**Response:**
+
+```typescript
+{
+  "publicKey": string  // Base64 encoded public key
+}
+```
+
+### Get Private Key
+
+```typescript
+GET / xrpc / social.spkeasy.keys.getPrivateKey;
+```
+
+Returns the authenticated user's private key. Only accessible to the key owner.
+
+**Response:**
+
+```typescript
+{
+  "privateKey": string  // Base64 encoded private key
+}
+```
+
+### Rotate Keys
+
+```typescript
+POST / xrpc / social.spkeasy.keys.rotate;
+```
+
+Requests rotation of the user's key pair.
 
 **Response:**
 

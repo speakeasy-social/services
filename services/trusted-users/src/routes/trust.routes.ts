@@ -12,7 +12,7 @@ const trustService = new TrustService();
 
 // Define methods using XRPC lexicon
 export const methods: Record<string, MethodSchema> = {
-  'social.speakeasy.users.get_trusted_by': {
+  'social.spkeasy.graph.getTrusts': {
     description: 'List users who trust a given DID',
     parameters: {
       did: { type: 'string', required: true },
@@ -21,7 +21,7 @@ export const methods: Record<string, MethodSchema> = {
       return await trustService.getTrustedBy(params.did);
     },
   },
-  'social.speakeasy.users.add_trusted': {
+  'social.spkeasy.graph.addTrusted': {
     description: 'Add a new trusted user',
     parameters: {
       did: { type: 'string', required: true },
@@ -30,7 +30,7 @@ export const methods: Record<string, MethodSchema> = {
       return await trustService.addTrusted(params.did);
     },
   },
-  'social.speakeasy.users.remove_trusted': {
+  'social.spkeasy.graph.removeTrusted': {
     description: 'Remove a trusted user',
     parameters: {
       did: { type: 'string', required: true },

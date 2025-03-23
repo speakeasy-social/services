@@ -22,7 +22,7 @@ const verifyAuth: AuthVerifier = async (ctx: AuthVerifierContext): Promise<AuthO
 // Define method handlers
 const methodHandlers = {
   // Session management
-  'social.speakeasy.private_sessions.revoke': async (ctx: XRPCReqContext): Promise<HandlerOutput> => {
+  'social.spkeasy.privateSession.revoke': async (ctx: XRPCReqContext): Promise<HandlerOutput> => {
     const { sessionId } = ctx.params as { sessionId: string };
     const session = await sessionService.getSession(sessionId);
     authorize(ctx.req, 'revoke', 'private_session', { authorDid: session.authorDid });
@@ -33,7 +33,7 @@ const methodHandlers = {
       body: result
     };
   },
-  'social.speakeasy.private_sessions.add_user': async (ctx: XRPCReqContext): Promise<HandlerOutput> => {
+  'social.spkeasy.privateSession.addUser': async (ctx: XRPCReqContext): Promise<HandlerOutput> => {
     const { sessionId, did } = ctx.params as { sessionId: string; did: string };
     const session = await sessionService.getSession(sessionId);
     authorize(ctx.req, 'create', 'private_session', { authorDid: session.authorDid });
@@ -46,7 +46,7 @@ const methodHandlers = {
   },
 
   // Post management
-  'social.speakeasy.private_posts.get_posts': async (ctx: XRPCReqContext): Promise<HandlerOutput> => {
+  'social.spkeasy.privatePosts.getPosts': async (ctx: XRPCReqContext): Promise<HandlerOutput> => {
     const { recipient, limit, cursor } = ctx.params as { recipient: string; limit?: number; cursor?: string };
     authorize(ctx.req, 'list', 'private_post', { recipientDid: recipient });
 
@@ -56,7 +56,7 @@ const methodHandlers = {
       body: result
     };
   },
-  'social.speakeasy.private_posts.get_bulk': async (ctx: XRPCReqContext): Promise<HandlerOutput> => {
+  'social.spkeasy.privatePosts.get_bulk': async (ctx: XRPCReqContext): Promise<HandlerOutput> => {
     const { postIds } = ctx.params as { postIds: string[] };
     const posts = await sessionService.getPostsByIds(postIds);
     authorize(ctx.req, 'list', 'private_post', { recipientDid: ctx.req.user.did });
@@ -67,7 +67,7 @@ const methodHandlers = {
       body: result
     };
   },
-  'social.speakeasy.private_posts.create': async (ctx: XRPCReqContext): Promise<HandlerOutput> => {
+  'social.spkeasy.privatePosts.createPost': async (ctx: XRPCReqContext): Promise<HandlerOutput> => {
     const { sessionId, text, recipients } = ctx.params as { sessionId: string; text: string; recipients: string[] };
     const session = await sessionService.getSession(sessionId);
     authorize(ctx.req, 'createPost', 'post', { authorDid: session.authorDid });
@@ -75,7 +75,7 @@ const methodHandlers = {
     // TODO: Implement create post logic
     throw new Error('Not implemented');
   },
-  'social.speakeasy.private_posts.delete': async (ctx: XRPCReqContext): Promise<HandlerOutput> => {
+  'social.spkeasy.privatePosts.deletePost': async (ctx: XRPCReqContext): Promise<HandlerOutput> => {
     const { uri } = ctx.params as { uri: string };
     const post = await sessionService.getPost(uri);
     authorize(ctx.req, 'deletePost', 'post', { authorDid: post.authorDid });
@@ -90,31 +90,31 @@ type MethodName = keyof typeof methodHandlers;
 // Define methods using XRPC lexicon
 export const methods: Record<MethodName, XRPCHandlerConfig> = {
   // Session management methods
-  'social.speakeasy.private_sessions.revoke': {
+  'social.spkeasy.privateSession.revoke': {
     auth: verifyAuth,
-    handler: methodHandlers['social.speakeasy.private_sessions.revoke']
+    handler: methodHandlers['social.spkeasy.privateSession.revoke']
   },
-  'social.speakeasy.private_sessions.add_user': {
+  'social.spkeasy.privateSession.addUser': {
     auth: verifyAuth,
-    handler: methodHandlers['social.speakeasy.private_sessions.add_user']
+    handler: methodHandlers['social.spkeasy.privateSession.addUser']
   },
 
   // Post management methods
-  'social.speakeasy.private_posts.get_posts': {
+  'social.spkeasy.privatePosts.getPosts': {
     auth: verifyAuth,
-    handler: methodHandlers['social.speakeasy.private_posts.get_posts']
+    handler: methodHandlers['social.spkeasy.privatePosts.getPosts']
   },
-  'social.speakeasy.private_posts.get_bulk': {
+  'social.spkeasy.privatePosts.get_bulk': {
     auth: verifyAuth,
-    handler: methodHandlers['social.speakeasy.private_posts.get_bulk']
+    handler: methodHandlers['social.spkeasy.privatePosts.get_bulk']
   },
-  'social.speakeasy.private_posts.create': {
+  'social.spkeasy.privatePosts.createPost': {
     auth: verifyAuth,
-    handler: methodHandlers['social.speakeasy.private_posts.create']
+    handler: methodHandlers['social.spkeasy.privatePosts.createPost']
   },
-  'social.speakeasy.private_posts.delete': {
+  'social.spkeasy.privatePosts.deletePost': {
     auth: verifyAuth,
-    handler: methodHandlers['social.speakeasy.private_posts.delete']
+    handler: methodHandlers['social.spkeasy.privatePosts.deletePost']
   }
 };
 

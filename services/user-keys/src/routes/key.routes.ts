@@ -12,7 +12,7 @@ const keyService = new KeyServiceImpl();
 
 // Define methods using XRPC lexicon
 const methods: Record<string, MethodSchema> = {
-  'social.speakeasy.keys.get_public_key': {
+  'social.spkeasy.keys.getPublicKey': {
     description: 'Get user\'s public key for encryption',
     parameters: {
       did: { type: 'string', required: true },
@@ -21,14 +21,14 @@ const methods: Record<string, MethodSchema> = {
       return await keyService.getPublicKey(params.did);
     },
   },
-  'social.speakeasy.keys.get_private_key': {
+  'social.spkeasy.keys.getPrivateKey': {
     description: 'Get user\'s private key (owner only)',
     parameters: {},
     handler: async () => {
       return await keyService.getPrivateKey();
     },
   },
-  'social.speakeasy.keys.request_rotation': {
+  'social.spkeasy.keys.rotate': {
     description: 'Request key rotation',
     parameters: {},
     handler: async () => {
