@@ -39,7 +39,47 @@ export class SessionServiceImpl implements SessionService {
     }>;
     cursor: string;
   }> {
-    throw new Error('Not implemented');
+    // If cursor is provided, return empty posts to indicate end of pagination
+    if (params.cursor) {
+      return {
+        posts: [],
+        cursor: ''
+      };
+    }
+
+    const now = new Date();
+    const oneMinuteAgo = new Date(now.getTime() - 60 * 1000);
+    const twentyMinutesAgo = new Date(now.getTime() - 20 * 60 * 1000);
+
+    const mockPosts = [
+      {
+        uri: 'at://did:plc:mock1/post/1',
+        cid: 'bafyreidfayvfuwqa7qlnopdjiqrxzs6blmoeu4rujcjtnci5beludkz3pe',
+        author: {
+          did: 'did:plc:mock1',
+          handle: 'mockuser1.bsky.social'
+        },
+        text: 'I am an a private post',
+        createdAt: oneMinuteAgo.toISOString(),
+        sessionId: 'session-1'
+      },
+      {
+        uri: 'at://did:plc:mock2/post/2',
+        cid: 'bafyreidfayvfuwqa7qlnopdjiqrxzs6blmoeu4rujcjtnci5beludkz3pe',
+        author: {
+          did: 'did:plc:mock2',
+          handle: 'mockuser2.bsky.social'
+        },
+        text: 'I am a slightly older private post',
+        createdAt: twentyMinutesAgo.toISOString(),
+        sessionId: 'session-2'
+      }
+    ];
+
+    return {
+      posts: mockPosts,
+      cursor: 'mock-cursor'
+    };
   }
 
   async getBulk(sessionIds: string[]): Promise<Array<{

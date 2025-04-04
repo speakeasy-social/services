@@ -7,7 +7,6 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
-  schemas   = ["private_sessions"]
 }
 
 model Session {
@@ -16,11 +15,11 @@ model Session {
   createdAt         DateTime  @default(now())
   expiresAt         DateTime?
   revokedAt         DateTime?
-  previousSessionId String?   @db.Uuid
+  previousSessionId String?   @unique @db.Uuid
 
   // Relationships
   previousSession   Session?  @relation("SessionHistory", fields: [previousSessionId], references: [id])
-  nextSession       Session?  @relation("SessionHistory")
+  nextSession      Session?  @relation("SessionHistory")
   sessionKeys       SessionKey[]
   staffKey         StaffKey?
   posts            EncryptedPost[]
