@@ -3,15 +3,19 @@
 # Exit on error
 set -e
 
+# Store the root directory
+ROOT_DIR=$(pwd)
+
 # Copy .env.example to .env if .env doesn't exist
 if [ ! -f .env ]; then
   echo "Creating .env file from .env.example..."
   cp .env.example .env
 fi
 
-# Load environment variables
+# Load and export environment variables
 if [ -f .env ]; then
-  source .env
+  echo "Loading environment variables..."
+  export $(grep -v '^#' .env | xargs)
 fi
 
 # Start Docker services
@@ -30,11 +34,15 @@ for service in services/*/prisma; do
   if [ -d "$service" ]; then
     service_name=$(basename $(dirname "$service"))
     echo "Running migrations for $service_name..."
-    cd $(dirname "$service")/..
-    # Ensure the schema exists before running migrations
-    PGPASSWORD=speakeasy psql -h localhost -U speakeasy -d speakeasy -c "CREATE SCHEMA IF NOT EXISTS ${service_name//-/_};"
+    
+    # Create schema
+    docker-compose exec -T postgres psql -U speakeasy -d speakeasy -c "CREATE SCHEMA IF NOT EXISTS ${service_name//-/_};"
+    
+    # Run migrations from the service directory
+    cd "$ROOT_DIR/services/$service_name"
+    echo "Running migrations in $(pwd)"
     pnpm prisma migrate deploy
-    cd ../../..
+    cd "$ROOT_DIR"
   fi
 done
 
@@ -44,9 +52,10 @@ for service in services/*/prisma; do
   if [ -d "$service" ]; then
     service_name=$(basename $(dirname "$service"))
     echo "Generating client for $service_name..."
-    cd $(dirname "$service")/..
+    cd "$ROOT_DIR/services/$service_name"
+    echo "Generating Prisma client in $(pwd)"
     pnpm prisma generate
-    cd ../../..
+    cd "$ROOT_DIR"
   fi
 done
 

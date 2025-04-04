@@ -2,12 +2,12 @@
 
 generator client {
   provider = "prisma-client-js"
+  previewFeatures = ["multiSchema"]
 }
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
-  schemas   = ["trusted_users"]
+  url      = env("TRUSTED_USERS_DATABASE_URL")
 }
 
 model TrustedUser {
