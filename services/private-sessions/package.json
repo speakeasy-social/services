@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "prebuild": "prisma generate",
     "build": "tsc --build",
     "dev:api": "tsx watch src/api.ts",
     "dev:api:debug": "tsx watch  --onError quit src/api.ts",

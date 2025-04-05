@@ -4,8 +4,10 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "prebuild": "prisma generate",
     "build": "tsc --build",
     "dev:api": "tsx watch src/api.ts",
+    "dev:api:debug": "tsx watch  --onError quit src/api.ts",
     "dev:worker": "tsx watch src/worker.ts",
     "start:api": "node dist/api.js",
     "start:worker": "node dist/worker.js",
