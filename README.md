@@ -110,86 +110,60 @@ The services are built as a collection of microservices that share a common deve
   - Job names partition processing by service
   - Web UI available at http://localhost:8080
 
-## Development Setup
+## Development Environment Setup
 
-### Prerequisites
-
-- Node.js >= 18.0.0
-- pnpm >= 8.15.4
+## Prerequisites
+- Node.js (v18 or later)
 - Docker and Docker Compose
+- pnpm
 
-### Initial Setup
-
-1. Clone the repository:
-
+## Initial Setup
+1. Install dependencies:
    ```bash
-   git clone <repository-url>
-   cd speakeasy-services
+   pnpm install
    ```
 
-2. Copy the environment template:
-
+2. Start the development environment:
    ```bash
-   cp .env.example .env
+   pnpm setup
    ```
+   This will:
+   - Create a `.env` file from `.env.example` if it doesn't exist
+   - Start all services in Docker
+   - Run database migrations
+   - Build and start the services
 
-3. Run the development setup script:
-   ```bash
-   pnpm setup:dev
-   ```
+## Common Issues
 
-This will:
+### Database Migrations
+If you see errors about database migrations:
+- Check that your `.env` file has the correct database URLs
+- Each service has its own database URL (e.g. `PRIVATE_SESSIONS_DB_URL`, `TRUSTED_USERS_DB_URL`)
+- The main `DATABASE_URL` is used for migrations
 
-- Start Docker services (PostgreSQL, PgBoss)
-- Create necessary database schemas
-- Run Prisma migrations for each service
-- Generate Prisma clients
-- Install dependencies
-- Build all packages
-
-### Development Workflow
-
-1. Start all services in development mode:
-
-   ```bash
-   pnpm dev
-   ```
-
-2. Access service endpoints:
-
-   - User Profiles: http://localhost:3001
-   - Private Sessions: http://localhost:3002
-   - Trusted Users: http://localhost:3003
-   - PgBoss UI: http://localhost:8080
-
-3. Database Management:
-
-   ```bash
-   # Run migrations
-   pnpm db:migrate
-
-   # Generate Prisma clients
-   pnpm db:generate
-
-   # Open Prisma Studio
-   pnpm db:studio
-   ```
+### TypeScript Build Errors
+If you see TypeScript errors:
+- Make sure all dependencies are installed
+- Check that the common package is built
+- Run `pnpm build` in the common package if needed
 
 ### Service Dependencies
+Services depend on each other in this order:
+1. `user-keys` - Provides key management
+2. `trusted-users` - Manages trust relationships
+3. `private-sessions` - Handles private sessions
+4. `private-posts` - Manages private posts
 
-- Each service has its own Prisma schema and migrations
-- Services communicate via HTTP APIs
-- Job processing is coordinated through PgBoss
-- Cross-service jobs are handled through job names (e.g., `add-recipient-to-session`)
+If a service fails to start, check its dependencies are running first.
 
-### Testing
+## Development Workflow
+1. Make changes to the code
+2. Run `pnpm build` to rebuild affected packages
+3. Restart services as needed with `pnpm dev`
 
+## Testing
+Run tests with:
 ```bash
-# Run all tests
-pnpm test
-
-# Run tests for a specific service
-cd services/<service-name>
 pnpm test
 ```
 
