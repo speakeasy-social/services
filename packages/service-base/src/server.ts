@@ -1,7 +1,6 @@
 import fastify from 'fastify';
 import { config } from './config.js';
 import { createServer, XRPCHandlerConfig } from '@atproto/xrpc-server';
-import { LexiconDoc } from '@atproto/lexicon';
 
 export interface ServerOptions {
   name: string;

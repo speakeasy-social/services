@@ -10,7 +10,9 @@
     "setup:dev": "chmod +x scripts/setup-dev.sh && ./scripts/setup-dev.sh",
     "db:migrate": "prisma migrate deploy",
     "db:generate": "prisma generate",
-    "db:studio": "prisma studio"
+    "db:studio": "prisma studio",
+    "dev:private-sessions": "./scripts/run-private-sessions.sh",
+    "dev:private-sessions:debug": "./scripts/run-private-sessions.sh --fail-fast"
   },
   "devDependencies": {
     "@types/node": "^22.13.11",

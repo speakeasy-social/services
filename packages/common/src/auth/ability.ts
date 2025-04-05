@@ -123,7 +123,8 @@ export async function authorizationMiddleware(
 export function authorize(
   request: FastifyRequest,
   action: Action,
-  subject: Subject
+  // FIXME
+  subject: any
 ): void {
   const ability = request.ability as AppAbility;
   if (!ability.can(action, subject)) {

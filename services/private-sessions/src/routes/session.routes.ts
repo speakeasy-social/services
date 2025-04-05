@@ -5,69 +5,119 @@ import { ServiceError, ValidationError, NotFoundError, DatabaseError, Authorizat
 import { LexiconDoc } from '@atproto/lexicon';
 import { createServer, XRPCHandlerConfig, XRPCHandler, XRPCReqContext, HandlerOutput } from '@atproto/xrpc-server';
 import { AppAbility, authorize, verifyAuth } from '@speakeasy-services/common';
+import { lexicons } from '../lexicon/index.js';
 
 const sessionService = new SessionServiceImpl();
 
-// Define method handlers
+// Helper function to validate against lexicon schema
+function validateAgainstLexicon(lexicon: any, params: any) {
+  const schema = lexicon.defs.main.parameters;
+  if (!schema) return;
+
+  // Check required fields
+  if (schema.required) {
+    for (const field of schema.required) {
+      if (params[field] === undefined) {
+        throw new ValidationError(`${field} is required`);
+      }
+    }
+  }
+
+  // Check field types
+  if (schema.properties) {
+    for (const [field, def] of Object.entries(schema.properties)) {
+      const value = params[field];
+      if (value === undefined) continue;
+
+      const type = (def as any).type;
+      if (type === 'string' && typeof value !== 'string') {
+        throw new ValidationError(`${field} must be a string`);
+      } else if (type === 'number' && typeof value !== 'number') {
+        throw new ValidationError(`${field} must be a number`);
+      } else if (type === 'boolean' && typeof value !== 'boolean') {
+        throw new ValidationError(`${field} must be a boolean`);
+      } else if (type === 'array' && !Array.isArray(value)) {
+        throw new ValidationError(`${field} must be an array`);
+      }
+    }
+  }
+}
+
+// Define method handlers with lexicon validation
 const methodHandlers = {
   // Session management
   'social.spkeasy.privateSession.revoke': async (ctx: XRPCReqContext): Promise<HandlerOutput> => {
+    const lexicon = lexicons.revoke;
     const { sessionId } = ctx.params as { sessionId: string };
+    
+    // Validate input against lexicon
+    validateAgainstLexicon(lexicon, { sessionId });
+
     const session = await sessionService.getSession(sessionId);
-    authorize(ctx.req, 'revoke', 'private_session', { authorDid: session.authorDid });
+    authorize(ctx.req, 'revoke', session);
 
     const result = await sessionService.revokeSession(sessionId);
     return {
       encoding: 'application/json',
-      body: result
+      body: { success: true }
     };
   },
   'social.spkeasy.privateSession.addUser': async (ctx: XRPCReqContext): Promise<HandlerOutput> => {
+    const lexicon = lexicons.addUser;
     const { sessionId, did } = ctx.params as { sessionId: string; did: string };
+    
+    // Validate input against lexicon
+    validateAgainstLexicon(lexicon, { sessionId, did });
+
     const session = await sessionService.getSession(sessionId);
-    authorize(ctx.req, 'create', 'private_session', { authorDid: session.authorDid });
+    authorize(ctx.req, 'create', session);
 
     const result = await sessionService.addUser(sessionId, did);
     return {
       encoding: 'application/json',
-      body: result
+      body: { success: true }
     };
   },
 
   // Post management
   'social.spkeasy.privatePosts.getPosts': async (ctx: XRPCReqContext): Promise<HandlerOutput> => {
+    const lexicon = lexicons.getPosts;
     const { recipient, limit, cursor } = ctx.params as { recipient: string; limit?: number; cursor?: string };
-    authorize(ctx.req, 'list', 'private_post', { recipientDid: recipient });
+    
+    // Validate input against lexicon
+    validateAgainstLexicon(lexicon, { recipient, limit, cursor });
 
     const result = await sessionService.getPosts({ recipient, limit, cursor });
-    return {
-      encoding: 'application/json',
-      body: result
-    };
-  },
-  'social.spkeasy.privatePosts.get_bulk': async (ctx: XRPCReqContext): Promise<HandlerOutput> => {
-    const { postIds } = ctx.params as { postIds: string[] };
-    const posts = await sessionService.getPostsByIds(postIds);
-    authorize(ctx.req, 'list', 'private_post', { recipientDid: ctx.req.user.did });
+    authorize(ctx.req, 'list', result);
 
-    const result = await sessionService.getBulk(postIds);
     return {
       encoding: 'application/json',
       body: result
     };
   },
+
   'social.spkeasy.privatePosts.createPost': async (ctx: XRPCReqContext): Promise<HandlerOutput> => {
+    const lexicon = lexicons.createPost;
     const { sessionId, text, recipients } = ctx.params as { sessionId: string; text: string; recipients: string[] };
+    
+    // Validate input against lexicon
+    validateAgainstLexicon(lexicon, { sessionId, text, recipients });
+
     const session = await sessionService.getSession(sessionId);
-    authorize(ctx.req, 'createPost', 'post', { authorDid: session.authorDid });
+    authorize(ctx.req, 'create', session);
 
     // TODO: Implement create post logic
     throw new Error('Not implemented');
   },
   'social.spkeasy.privatePosts.deletePost': async (ctx: XRPCReqContext): Promise<HandlerOutput> => {
+    const lexicon = lexicons.deletePost;
     const { uri } = ctx.params as { uri: string };
+    
+    // Validate input against lexicon
+    validateAgainstLexicon(lexicon, { uri });
+
     const post = await sessionService.getPost(uri);
-    authorize(ctx.req, 'deletePost', 'post', { authorDid: post.authorDid });
+    authorize(ctx.req, 'delete', post);
 
     // TODO: Implement delete post logic
     throw new Error('Not implemented');
@@ -93,10 +143,6 @@ export const methods: Record<MethodName, XRPCHandlerConfig> = {
     auth: verifyAuth,
     handler: methodHandlers['social.spkeasy.privatePosts.getPosts']
   },
-  'social.spkeasy.privatePosts.get_bulk': {
-    auth: verifyAuth,
-    handler: methodHandlers['social.spkeasy.privatePosts.get_bulk']
-  },
   'social.spkeasy.privatePosts.createPost': {
     auth: verifyAuth,
     handler: methodHandlers['social.spkeasy.privatePosts.createPost']
@@ -114,9 +160,11 @@ export const registerRoutes = async (fastify: FastifyInstance) => {
     if (name in methodHandlers) {
       const methodName = name as MethodName;
       const handler = methodHandlers[methodName];
+      const lexicon = lexicons[methodName];
+      
       fastify.route({
         method: 'POST',
-        url: `/${name}`,
+        url: `/xrpc/${name}`,
         handler: async (request, reply) => {
           try {
             const result = await handler(request as unknown as XRPCReqContext);

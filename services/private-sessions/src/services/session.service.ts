@@ -1,10 +1,13 @@
-import { PrismaClient, Prisma } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 import { encryptSessionKey } from '@speakeasy-services/crypto';
 import { ServiceError, NotFoundError, ValidationError, DatabaseError } from '@speakeasy-services/common';
 
 const prisma = new PrismaClient();
 
 export interface SessionService {
+  getSession(sessionId: string): Promise<{ authorDid: string }>;
+  getPost(uri: string): Promise<{ authorDid: string }>;
+  getPostsByIds(postIds: string[]): Promise<Array<{ authorDid: string }>>;
   getPosts(params: { recipient: string; limit?: number; cursor?: string }): Promise<{
     posts: Array<{
       uri: string;
@@ -28,6 +31,45 @@ export interface SessionService {
 }
 
 export class SessionServiceImpl implements SessionService {
+  async getSession(sessionId: string): Promise<{ authorDid: string }> {
+    const session = await prisma.privateSession.findUnique({
+      where: { id: sessionId },
+      select: { authorDid: true }
+    });
+
+    if (!session) {
+      throw new NotFoundError('Session not found');
+    }
+
+    return session;
+  }
+
+  async getPost(uri: string): Promise<{ authorDid: string }> {
+    const post = await prisma.privatePost.findUnique({
+      where: { uri },
+      select: { authorDid: true }
+    });
+
+    if (!post) {
+      throw new NotFoundError('Post not found');
+    }
+
+    return post;
+  }
+
+  async getPostsByIds(postIds: string[]): Promise<Array<{ authorDid: string }>> {
+    const posts = await prisma.privatePost.findMany({
+      where: { uri: { in: postIds } },
+      select: { authorDid: true }
+    });
+
+    if (posts.length !== postIds.length) {
+      throw new NotFoundError('One or more posts not found');
+    }
+
+    return posts;
+  }
+
   async getPosts(params: { recipient: string; limit?: number; cursor?: string }): Promise<{
     posts: Array<{
       uri: string;
@@ -48,37 +90,39 @@ export class SessionServiceImpl implements SessionService {
     }
 
     const now = new Date();
-    const oneMinuteAgo = new Date(now.getTime() - 60 * 1000);
-    const twentyMinutesAgo = new Date(now.getTime() - 20 * 60 * 1000);
-
-    const mockPosts = [
-      {
-        uri: 'at://did:plc:mock1/post/1',
-        cid: 'bafyreidfayvfuwqa7qlnopdjiqrxzs6blmoeu4rujcjtnci5beludkz3pe',
-        author: {
-          did: 'did:plc:mock1',
-          handle: 'mockuser1.bsky.social'
+    const posts = await prisma.privatePost.findMany({
+      where: {
+        recipients: {
+          some: {
+            did: params.recipient
+          }
         },
-        text: 'I am an a private post',
-        createdAt: oneMinuteAgo.toISOString(),
-        sessionId: 'session-1'
+        createdAt: {
+          lte: now
+        }
       },
-      {
-        uri: 'at://did:plc:mock2/post/2',
-        cid: 'bafyreidfayvfuwqa7qlnopdjiqrxzs6blmoeu4rujcjtnci5beludkz3pe',
+      orderBy: {
+        createdAt: 'desc'
+      },
+      take: params.limit || 50,
+      select: {
+        uri: true,
+        cid: true,
         author: {
-          did: 'did:plc:mock2',
-          handle: 'mockuser2.bsky.social'
+          select: {
+            did: true,
+            handle: true
+          }
         },
-        text: 'I am a slightly older private post',
-        createdAt: twentyMinutesAgo.toISOString(),
-        sessionId: 'session-2'
+        text: true,
+        createdAt: true,
+        sessionId: true
       }
-    ];
+    });
 
     return {
-      posts: mockPosts,
-      cursor: 'mock-cursor'
+      posts,
+      cursor: posts.length > 0 ? posts[posts.length - 1].createdAt.toISOString() : ''
     };
   }
 
@@ -89,60 +133,54 @@ export class SessionServiceImpl implements SessionService {
     expiresAt?: string;
     revokedAt?: string;
   }>> {
-    throw new Error('Not implemented');
+    const sessions = await prisma.privateSession.findMany({
+      where: { id: { in: sessionIds } },
+      select: {
+        id: true,
+        authorDid: true,
+        createdAt: true,
+        expiresAt: true,
+        revokedAt: true
+      }
+    });
+
+    if (sessions.length !== sessionIds.length) {
+      throw new NotFoundError('One or more sessions not found');
+    }
+
+    return sessions.map((session: { 
+      id: string; 
+      authorDid: string; 
+      createdAt: Date; 
+      expiresAt?: Date | null; 
+      revokedAt?: Date | null; 
+    }) => ({
+      sessionId: session.id,
+      authorDid: session.authorDid,
+      createdAt: session.createdAt.toISOString(),
+      expiresAt: session.expiresAt?.toISOString(),
+      revokedAt: session.revokedAt?.toISOString()
+    }));
   }
 
   async revokeSession(sessionId: string): Promise<{ success: boolean }> {
-    throw new Error('Not implemented');
+    await prisma.privateSession.update({
+      where: { id: sessionId },
+      data: { revokedAt: new Date() }
+    });
+
+    return { success: true };
   }
 
   async addUser(sessionId: string, did: string): Promise<{ success: boolean }> {
-    try {
-      await this.addRecipientToSession(sessionId, did);
-      return { success: true };
-    } catch (error) {
-      if (error instanceof ServiceError) {
-        throw error;
-      }
-      throw new DatabaseError('Failed to add user to session');
-    }
-  }
-
-  async addRecipientToSession(sessionId: string, recipientDid: string): Promise<void> {
-    const session = await prisma.sessions.findUnique({
-      where: { id: sessionId },
-      include: {
-        sessionKeys: {
-          where: { recipientDid },
-          select: { id: true }
-        }
-      }
-    });
-
-    if (!session) {
-      throw new NotFoundError('Session or recipient not found');
-    }
-
-    if (session.revokedAt) {
-      throw new ValidationError('Session is revoked');
-    }
-
-    if (session.sessionKeys.length > 0) {
-      throw new ValidationError('Recipient already has access to this session');
-    }
-
-    const sessionKey = await prisma.sessionKeys.create({
+    await prisma.privateSessionRecipient.create({
       data: {
         sessionId,
-        recipientDid,
-        encryptedKey: await encryptSessionKey(session.key),
-        createdAt: new Date()
+        did
       }
     });
 
-    if (!sessionKey) {
-      throw new DatabaseError('Failed to create session key');
-    }
+    return { success: true };
   }
 }
 
