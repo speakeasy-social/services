@@ -1,4 +1,3 @@
-import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { SessionServiceImpl } from '../services/session.service.js';
 import { ServiceError, ValidationError, NotFoundError, DatabaseError, AuthorizationError } from '@speakeasy-services/common';
@@ -49,11 +48,10 @@ function validateAgainstLexicon(lexicon: any, params: any) {
 const methodHandlers = {
   // Session management
   'social.spkeasy.privateSession.revoke': async (ctx: XRPCReqContext): Promise<HandlerOutput> => {
-    const lexicon = revokeSessionDef.defs.main;
     const { sessionId } = ctx.params as { sessionId: string };
     
     // Validate input against lexicon
-    validateAgainstLexicon(lexicon, { sessionId });
+    validateAgainstLexicon(revokeSessionDef, { sessionId });
 
     const session = await sessionService.getSession(sessionId);
     authorize(ctx.req, 'revoke', session);
@@ -65,11 +63,10 @@ const methodHandlers = {
     };
   },
   'social.spkeasy.privateSession.addUser': async (ctx: XRPCReqContext): Promise<HandlerOutput> => {
-    const lexicon = addUserDef.defs.main;
     const { sessionId, recipientDid } = ctx.params as { sessionId: string; recipientDid: string };
     
     // Validate input against lexicon
-    validateAgainstLexicon(lexicon, { sessionId, recipientDid });
+    validateAgainstLexicon(addUserDef, { sessionId, recipientDid });
 
     const session = await sessionService.getSession(sessionId);
     authorize(ctx.req, 'create', session);
@@ -83,13 +80,18 @@ const methodHandlers = {
 
   // Post management
   'social.spkeasy.privatePosts.getPosts': async (ctx: XRPCReqContext): Promise<HandlerOutput> => {
-    const lexicon = getPostsDef.defs.main;
-    const { recipient, limit, cursor } = ctx.params as { recipient: string; limit?: number; cursor?: string };
+    const { recipient, limit, cursor } = ctx.params as { recipient: string; limit?: string; cursor?: string };
+    
+    // Convert limit to number if provided
+    const limitNum = limit ? parseInt(limit, 10) : undefined;
+    
+    console.log('Extracted parameters:', { recipient, limit: limitNum, cursor });
     
     // Validate input against lexicon
-    validateAgainstLexicon(lexicon, { recipient, limit, cursor });
+    validateAgainstLexicon(getPostsDef, { recipient, limit: limitNum, cursor });
 
-    const result = await sessionService.getPosts({ recipient, limit, cursor });
+    const result = await sessionService.getPosts({ recipient, limit: limitNum, cursor });
+
     // authorize(ctx.req, 'list', result);
 
     return {
@@ -126,8 +128,6 @@ const methodHandlers = {
   }
 } as const;
 
-type MethodName = keyof typeof methodHandlers;
-
 // Define methods using XRPC lexicon
 export const methods: Record<MethodName, XRPCHandlerConfig> = {
   // Session management methods
@@ -155,39 +155,4 @@ export const methods: Record<MethodName, XRPCHandlerConfig> = {
   }
 };
 
-// Register routes with Fastify
-export const registerRoutes = async (fastify: FastifyInstance) => {
-  // Register each method
-  for (const [name, config] of Object.entries(methods)) {
-    if (name in methodHandlers) {
-      const methodName = name as MethodName;
-      const handler = methodHandlers[methodName];
-      
-      // Determine HTTP method based on lexicon type
-      const lexicon = name.includes('getPosts') ? getPostsDef.defs.main : 
-                     name.includes('revoke') ? revokeSessionDef.defs.main :
-                     name.includes('addUser') ? addUserDef.defs.main :
-                     name.includes('createPost') ? createPostDef.defs.main :
-                     deletePostDef.defs.main;
-      
-      const httpMethod = lexicon.type === 'query' ? 'GET' : 'POST';
-      
-      fastify.route({
-        method: httpMethod,
-        url: `/xrpc/${name}`,
-        handler: async (request, reply) => {
-          try {
-            const result = await handler(request as unknown as XRPCReqContext);
-            reply.send(result);
-          } catch (error) {
-            if (error instanceof ServiceError) {
-              reply.status(400).send({ error: error.message });
-            } else {
-              reply.status(500).send({ error: 'Internal server error' });
-            }
-          }
-        }
-      });
-    }
-  }
-};
+type MethodName = keyof typeof methodHandlers;

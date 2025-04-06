@@ -7,7 +7,7 @@
   "scripts": {
     "build": "tsc --build",
     "clean": "rm -rf dist",
-    "dev": "tsc --build --watch"
+    "dev": "tsc --build --watch --preserveWatchOutput"
   },
   "devDependencies": {
     "eslint": "^8.56.0",

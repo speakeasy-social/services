@@ -1,11 +1,5 @@
 /**
- * TODO: This is a placeholder structure that will be replaced with Fastify XML-RPC endpoints
- * The actual implementation will use Fastify's XML-RPC plugin
+ * Export the methods for use by the XRPC server
  */
 
-import { FastifyInstance } from 'fastify';
-import { registerRoutes } from './session.routes.js';
-
-export async function registerAllRoutes(fastify: FastifyInstance) {
-  await registerRoutes(fastify);
-}
+export { methods } from './session.routes.js';

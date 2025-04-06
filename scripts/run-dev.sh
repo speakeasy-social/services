@@ -1,7 +1,10 @@
 #!/bin/bash
 
+# Ensure we're in the project root
+cd "$(dirname "$0")/.."
+
 # Default to running all services if none specified
-DEFAULT_SERVICES=("private-sessions" "public-sessions" "user-sessions")
+DEFAULT_SERVICES=("private-sessions" "trusted-users" "user-keys")
 PACKAGES=("service-base" "queue" "common" "crypto")
 
 # Store PIDs of background processes
@@ -21,27 +24,42 @@ cleanup() {
 # Set up signal handlers
 trap cleanup SIGINT SIGTERM
 
-# Parse services from environment variable
+# Parse command line arguments
+SERVICES="all"
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    --services=*)
+      SERVICES="${1#*=}"
+      shift
+      ;;
+    --)
+      shift
+      ;;
+    *)
+      echo "Unknown argument: $1"
+      shift
+      ;;
+  esac
+done
+
+# Parse services
 if [ "$SERVICES" = "all" ]; then
     SERVICES=("${DEFAULT_SERVICES[@]}")
 else
     IFS=',' read -ra SERVICES <<< "$SERVICES"
 fi
 
-# Start all packages in watch mode
 for package in "${PACKAGES[@]}"; do
   echo "Starting $package in watch mode..."
-  cd "packages/$package" && pnpm dev &
+  (cd "packages/$package" && pnpm dev) &
   PIDS+=($!)
-  cd ../..
 done
 
-# Start the specified services
+# Start only the specified services
 for service in "${SERVICES[@]}"; do
   echo "Starting $service..."
-  cd "services/$service" && pnpm dev &
+  (cd "services/$service" && pnpm dev) &
   PIDS+=($!)
-  cd ../..
 done
 
 # Wait for all background processes

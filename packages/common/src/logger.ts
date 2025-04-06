@@ -18,8 +18,8 @@ export function createLogger({ serviceName, level = 'info', pretty = true }: Log
     options.transport = {
       target: 'pino-pretty',
       options: {
-        colorize: true,
         translateTime: 'SYS:standard',
+        clearScreen: false
       },
     };
   }
