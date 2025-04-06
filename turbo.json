@@ -16,6 +16,21 @@
       "persistent": true,
       "inputs": ["src/**/*.ts", "src/**/*.tsx", "prisma/**/*.prisma"]
     },
+    "dev:prisma": {
+      "cache": false,
+      "persistent": true,
+      "inputs": ["prisma/**/*.prisma"]
+    },
+    "dev:api": {
+      "cache": false,
+      "persistent": true,
+      "inputs": ["src/**/*.ts", "src/**/*.tsx"]
+    },
+    "dev:worker": {
+      "cache": false,
+      "persistent": true,
+      "inputs": ["src/**/*.ts", "src/**/*.tsx"]
+    },
     "clean": {
       "cache": false
     },

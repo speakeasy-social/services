@@ -6,17 +6,13 @@
   "scripts": {
     "prebuild": "prisma generate",
     "build": "tsc --build",
-    "dev": "concurrently --no-clear \"pnpm dev:prisma\" \"pnpm dev:api\" \"pnpm dev:worker\"",
+    "dev": "turbo run dev:prisma dev:api dev:worker --filter=@speakeasy-services/user-keys",
     "dev:prisma": "prisma generate --watch",
-    "dev:api": "FORCE_COLOR=0 tsx watch src/api.ts",
-    "dev:api:debug": "FORCE_COLOR=0 tsx watch --onError quit src/api.ts",
-    "dev:worker": "FORCE_COLOR=0 tsx watch src/worker.ts",
-    "start:api": "node dist/api.js",
-    "start:worker": "node dist/worker.js",
+    "dev:api": "tsx watch src/api.ts",
+    "dev:worker": "tsx watch src/worker.ts",
     "clean": "rm -rf dist",
     "lint": "eslint src",
     "test": "jest",
-    "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate deploy"
   },
   "dependencies": {
@@ -33,7 +29,8 @@
   },
   "devDependencies": {
     "@types/node": "^22.13.11",
-    "concurrently": "^8.2.2",
+    "@typescript-eslint/eslint-plugin": "^7.0.1",
+    "@typescript-eslint/parser": "^7.0.1",
     "eslint": "^8.56.0",
     "prisma": "^6.5.0",
     "tsup": "^8.4.0",
