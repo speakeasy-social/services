@@ -11,6 +11,7 @@
     "dev:api": "tsx watch src/api.ts",
     "dev:api:debug": "tsx watch  --onError quit src/api.ts",
     "dev:worker": "tsx watch src/worker.ts",
+    "dev:watch": "nodemon --watch ../../packages/service-base/dist --watch src -e js,ts --exec 'tsx src/index.ts'",
     "start:api": "node dist/api.js",
     "start:worker": "node dist/worker.js",
     "clean": "rm -rf dist",

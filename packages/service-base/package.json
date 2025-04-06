@@ -29,7 +29,8 @@
     "dev": "tsc --build --watch",
     "clean": "rm -rf dist",
     "lint": "eslint src",
-    "test": "jest"
+    "test": "jest",
+    "watch": "tsc --watch --preserveWatchOutput"
   },
   "dependencies": {
     "@atproto/lexicon": "^0.4.9",

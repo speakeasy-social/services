@@ -12,7 +12,9 @@
     "db:generate": "prisma generate",
     "db:studio": "prisma studio",
     "dev:private-sessions": "./scripts/run-private-sessions.sh",
-    "dev:private-sessions:debug": "./scripts/run-private-sessions.sh --fail-fast"
+    "dev:private-sessions:debug": "./scripts/run-private-sessions.sh --fail-fast",
+    "dev:all": "./scripts/run-dev.sh",
+    "dev": "SERVICES=${npm_config_services:-all} ./scripts/run-dev.sh"
   },
   "devDependencies": {
     "@types/node": "^22.13.11",
