@@ -27,12 +27,12 @@ export interface SessionService {
     revokedAt?: string;
   }>>;
   revokeSession(sessionId: string): Promise<{ success: boolean }>;
-  addUser(sessionId: string, did: string): Promise<{ success: boolean }>;
+  addRecipientToSession(sessionId: string, did: string): Promise<{ success: boolean }>;
 }
 
 export class SessionServiceImpl implements SessionService {
   async getSession(sessionId: string): Promise<{ authorDid: string }> {
-    const session = await prisma.privateSession.findUnique({
+    const session = await prisma.session.findUnique({
       where: { id: sessionId },
       select: { authorDid: true }
     });
@@ -45,8 +45,8 @@ export class SessionServiceImpl implements SessionService {
   }
 
   async getPost(uri: string): Promise<{ authorDid: string }> {
-    const post = await prisma.privatePost.findUnique({
-      where: { uri },
+    const post = await prisma.encryptedPost.findUnique({
+      where: { postId: uri },
       select: { authorDid: true }
     });
 
@@ -58,8 +58,8 @@ export class SessionServiceImpl implements SessionService {
   }
 
   async getPostsByIds(postIds: string[]): Promise<Array<{ authorDid: string }>> {
-    const posts = await prisma.privatePost.findMany({
-      where: { uri: { in: postIds } },
+    const posts = await prisma.encryptedPost.findMany({
+      where: { postId: { in: postIds } },
       select: { authorDid: true }
     });
 
@@ -90,11 +90,13 @@ export class SessionServiceImpl implements SessionService {
     }
 
     const now = new Date();
-    const posts = await prisma.privatePost.findMany({
+    const posts = await prisma.encryptedPost.findMany({
       where: {
-        recipients: {
-          some: {
-            did: params.recipient
+        session: {
+          sessionKeys: {
+            some: {
+              recipientDid: params.recipient
+            }
           }
         },
         createdAt: {
@@ -106,22 +108,30 @@ export class SessionServiceImpl implements SessionService {
       },
       take: params.limit || 50,
       select: {
-        uri: true,
-        cid: true,
-        author: {
-          select: {
-            did: true,
-            handle: true
-          }
-        },
-        text: true,
+        postId: true,
+        sessionId: true,
+        authorDid: true,
         createdAt: true,
-        sessionId: true
+        session: {
+          select: {
+            authorDid: true
+          }
+        }
       }
     });
 
     return {
-      posts,
+      posts: posts.map(post => ({
+        uri: post.postId,
+        cid: '', // TODO: Add CID field to schema
+        author: {
+          did: post.authorDid,
+          handle: '' // TODO: Get handle from user service
+        },
+        text: '', // TODO: Decrypt content
+        createdAt: post.createdAt.toISOString(),
+        sessionId: post.sessionId
+      })),
       cursor: posts.length > 0 ? posts[posts.length - 1].createdAt.toISOString() : ''
     };
   }
@@ -133,7 +143,7 @@ export class SessionServiceImpl implements SessionService {
     expiresAt?: string;
     revokedAt?: string;
   }>> {
-    const sessions = await prisma.privateSession.findMany({
+    const sessions = await prisma.session.findMany({
       where: { id: { in: sessionIds } },
       select: {
         id: true,
@@ -148,13 +158,7 @@ export class SessionServiceImpl implements SessionService {
       throw new NotFoundError('One or more sessions not found');
     }
 
-    return sessions.map((session: { 
-      id: string; 
-      authorDid: string; 
-      createdAt: Date; 
-      expiresAt?: Date | null; 
-      revokedAt?: Date | null; 
-    }) => ({
+    return sessions.map(session => ({
       sessionId: session.id,
       authorDid: session.authorDid,
       createdAt: session.createdAt.toISOString(),
@@ -164,19 +168,34 @@ export class SessionServiceImpl implements SessionService {
   }
 
   async revokeSession(sessionId: string): Promise<{ success: boolean }> {
-    await prisma.privateSession.update({
+    const session = await prisma.session.update({
       where: { id: sessionId },
-      data: { revokedAt: new Date() }
+      data: { revokedAt: new Date() },
+      select: { id: true }
     });
+
+    if (!session) {
+      throw new NotFoundError('Session not found');
+    }
 
     return { success: true };
   }
 
-  async addUser(sessionId: string, did: string): Promise<{ success: boolean }> {
-    await prisma.privateSessionRecipient.create({
+  async addRecipientToSession(sessionId: string, did: string): Promise<{ success: boolean }> {
+    const session = await prisma.session.findUnique({
+      where: { id: sessionId },
+      select: { id: true }
+    });
+
+    if (!session) {
+      throw new NotFoundError('Session not found');
+    }
+
+    await prisma.sessionKey.create({
       data: {
         sessionId,
-        did
+        recipientDid: did,
+        encryptedDek: Buffer.from('') // TODO: Generate and encrypt DEK
       }
     });
 

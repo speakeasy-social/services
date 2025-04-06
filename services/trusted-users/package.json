@@ -6,6 +6,8 @@
   "scripts": {
     "prebuild": "prisma generate",
     "build": "tsc --build",
+    "dev": "concurrently \"pnpm dev:prisma\" \"pnpm dev:api\" \"pnpm dev:worker\"",
+    "dev:prisma": "prisma generate --watch",
     "dev:api": "tsx watch src/api.ts",
     "dev:api:debug": "tsx watch  --onError quit src/api.ts",
     "dev:worker": "tsx watch src/worker.ts",
@@ -30,6 +32,7 @@
   },
   "devDependencies": {
     "@types/node": "^22.13.11",
+    "concurrently": "^8.2.2",
     "prisma": "^6.5.0",
     "tsup": "^8.4.0",
     "tsx": "^4.19.3",

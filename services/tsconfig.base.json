@@ -7,10 +7,17 @@
     "typeRoots": [
       "../node_modules/@types",
       "./node_modules/@types",
-      "./src/types"
-    ]
+      "./src/types",
+      "./prisma/generated"
+    ],
+    "paths": {
+      "@prisma/client": ["./node_modules/@prisma/client"]
+    }
   },
-  "include": ["src/**/*"],
+  "include": [
+    "src/**/*",
+    "prisma/generated/**/*"
+  ],
   "exclude": [
     "node_modules",
     "dist",

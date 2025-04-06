@@ -15,7 +15,7 @@ export async function initializeJobHandlers(): Promise<void> {
       const { authorDid, recipientDid } = job.data
 
       // Find current valid session
-      const currentSession = await prisma.sessions.findFirst({
+      const currentSession = await prisma.session.findFirst({
         where: {
           authorDid,
           revokedAt: null
@@ -24,7 +24,7 @@ export async function initializeJobHandlers(): Promise<void> {
 
       if (currentSession) {
         // Add recipient to existing session
-        await addRecipientToSession(currentSession.sessionId, recipientDid)
+        await addRecipientToSession(currentSession.id, recipientDid)
       }
     }
   )

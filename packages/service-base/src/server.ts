@@ -1,68 +1,87 @@
 import fastify from 'fastify';
-import { config } from './config.js';
-import { createServer, XRPCHandlerConfig } from '@atproto/xrpc-server';
+import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
+import { validateEnv, baseSchema } from './config.js';
+import { createServer, XRPCHandlerConfig, XRPCError } from '@atproto/xrpc-server';
+import { LexiconDoc } from '@atproto/lexicon';
+import z from 'zod';
 
 export interface ServerOptions {
   name: string;
-  port?: number;
+  port: number;
   methods: Record<string, XRPCHandlerConfig>;
+  middleware?: any[];
   onShutdown?: () => Promise<void>;
-  middleware?: Array<(request: fastify.FastifyRequest, reply: fastify.FastifyReply) => Promise<void>>;
+  lexicons?: LexiconDoc[];
+}
+
+interface RouteParams {
+  method: string;
 }
 
 export class Server {
-  private app: fastify.FastifyInstance;
+  private fastify: FastifyInstance;
+  private config: ReturnType<typeof validateEnv<typeof baseSchema>>;
   private options: ServerOptions;
   private xrpcServer: ReturnType<typeof createServer>;
 
   constructor(options: ServerOptions) {
     this.options = options;
-    this.app = fastify({
+    this.config = validateEnv(z.object(baseSchema));
+    this.xrpcServer = createServer(options.lexicons);
+    this.fastify = this.createServer();
+  }
+
+  private createServer(): FastifyInstance {
+    const app = fastify({
       logger: true
     });
-    this.xrpcServer = createServer();
-    this.setupMiddleware();
-    this.setupXRPC();
-  }
 
-  private async setupMiddleware() {
-    if (this.options.middleware) {
-      for (const middleware of this.options.middleware) {
-        this.app.addHook('preHandler', middleware);
-      }
-    }
-  }
-
-  private async setupXRPC() {
     // Register all methods with the XRPC server
     Object.entries(this.options.methods).forEach(([name, method]) => {
       this.xrpcServer.method(name, method);
     });
 
     // Mount XRPC routes in Fastify
-    this.app.register(async (fastify) => {
+    app.register(async (fastify: FastifyInstance) => {
       fastify.route({
         method: ['GET', 'POST'],
-        url: '/xrpc/*',
-        handler: (request, reply) => {
-          return this.xrpcServer.router(request.raw, reply.raw);
+        url: '/xrpc/:method',
+        handler: async (request: FastifyRequest<{ Params: RouteParams }>, reply: FastifyReply) => {
+          try {
+            const result = await this.xrpcServer.router(request.raw, reply.raw);
+            if (!reply.sent) {
+              return reply.send(result);
+            }
+          } catch (error: unknown) {
+            if (error instanceof XRPCError) {
+              return reply.status(400).send({ error: error.message });
+            } else {
+              const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+              return reply.status(500).send({ error: errorMessage });
+            }
+          }
         }
       });
     });
+
+    if (this.options.middleware) {
+      for (const middleware of this.options.middleware) {
+        app.addHook('preHandler', middleware);
+      }
+    }
+
+    return app;
   }
 
   public async start() {
-    const port = this.options.port || config.PORT;
-
     try {
-      await this.app.listen({ port, host: '0.0.0.0' });
-      console.log(`🚀 ${this.options.name} service running on port ${port}`);
+      await this.fastify.listen({ port: this.options.port, host: '0.0.0.0' });
+      console.log(`🚀 ${this.options.name} service running on port ${this.options.port}`);
     } catch (err) {
       console.error('Error starting server:', err);
       process.exit(1);
     }
 
-    // Handle graceful shutdown
     process.on('SIGTERM', () => this.shutdown());
     process.on('SIGINT', () => this.shutdown());
   }
@@ -74,7 +93,7 @@ export class Server {
       await this.options.onShutdown();
     }
 
-    await this.app.close();
+    await this.fastify.close();
     console.log('✅ Server closed');
     process.exit(0);
   }

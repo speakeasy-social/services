@@ -1,25 +1,48 @@
-import { z } from 'zod';
-import { ValidationError } from '@speakeasy-services/common';
+import z from 'zod';
+import { config as loadEnv } from 'dotenv';
+import { join } from 'path';
 
-const envSchema = z.object({
-  NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
-  PORT: z.string().transform(Number).default('3000'),
-  DATABASE_URL: z.string(),
-  PGBOSS_SCHEMA: z.string().default('pgboss'),
-  LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).default('info'),
-});
+// Load environment variables from root .env and service-specific .env
+loadEnv({ path: join(process.cwd(), '../../.env') });
+loadEnv({ path: join(process.cwd(), '.env') });
 
-export type Config = z.infer<typeof envSchema>;
+/**
+ * Base configuration schema that services can extend.
+ * These are truly shared configurations that should be in the root .env
+ */
+export const baseSchema = {
+  NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
+  LOG_LEVEL: z.string().default('info'),
+  // Worker (PgBoss) database - shared across all services
+  DATABASE_URL: z.string().url().describe('Shared database URL for PgBoss worker'),
+  PGBOSS_SCHEMA: z.string().default('pgboss').describe('Schema for PgBoss jobs'),
+} as const;
 
-export function loadConfig(): Config {
-  const result = envSchema.safeParse(process.env);
-
-  if (!result.success) {
-    console.error('❌ Invalid environment variables:', result.error.format());
-    throw new ValidationError('Invalid environment variables');
+export class ValidationError extends Error {
+  constructor(
+    message: string,
+    public readonly errors?: Array<{ path: string; message: string }>
+  ) {
+    super(message);
+    this.name = 'ValidationError';
   }
-
-  return result.data;
 }
 
-export const config = loadConfig();
+/**
+ * Helper function to create a validated config from environment variables.
+ * Services should use this to create their own config with their specific schema.
+ */
+export function validateEnv<T extends z.ZodRawShape>(schema: z.ZodObject<T>) {
+  const result = schema.safeParse(process.env);
+  
+  if (!result.success) {
+    const errors = result.error.errors.map(err => ({
+      path: err.path.join('.'),
+      message: err.message
+    }));
+    
+    throw new ValidationError('Invalid environment variables', errors);
+  }
+  
+  return result.data;
+}

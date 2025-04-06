@@ -18,6 +18,10 @@
     "./worker": {
       "import": "./dist/worker.js",
       "types": "./dist/worker.d.ts"
+    },
+    "./config": {
+      "import": "./dist/config.js",
+      "types": "./dist/config.d.ts"
     }
   },
   "scripts": {

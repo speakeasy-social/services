@@ -1,10 +1,20 @@
-import { Queue } from '@speakeasy-services/queue';
+import { Queue, QueueConfig } from '@speakeasy-services/queue';
+
+export interface WorkerOptions {
+  name: string;
+  queueConfig?: QueueConfig;
+}
 
 export class Worker {
   private queue: Queue;
+  private options: WorkerOptions;
 
-  constructor() {
-    this.queue = Queue.getInstance();
+  constructor(options: WorkerOptions) {
+    this.options = options;
+    this.queue = Queue.getInstance({
+      connectionString: process.env.DATABASE_URL!,
+      schema: process.env.PGBOSS_SCHEMA || 'pgboss'
+    });
   }
 
   async start(): Promise<void> {
