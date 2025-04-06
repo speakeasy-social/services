@@ -19,8 +19,8 @@ export class Queue {
   private constructor() {}
 
   static getInstance(config?: QueueConfig): PgBoss {
-    if (!Queue.instance) {
-      if (!config || !process.env.DATABASE_URL) {
+    if (!Queue.instance) {      
+      if (!config && !process.env.DATABASE_URL) {
         throw new ValidationError('Queue config or DATABASE_URL environment variable is required');
       }
 

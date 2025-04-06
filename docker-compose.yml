@@ -3,6 +3,7 @@ version: "3.8"
 services:
   postgres:
     image: postgres:15-alpine
+    container_name: speakeasy-services-postgres
     environment:
       POSTGRES_USER: speakeasy
       POSTGRES_PASSWORD: speakeasy
@@ -17,6 +18,12 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    networks:
+      - speakeasy-services
+
+networks:
+  speakeasy-services:
+    name: speakeasy-services
 
 volumes:
   postgres_data:

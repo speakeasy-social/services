@@ -2,6 +2,20 @@
 
 A collection of microservices for the Speakeasy platform enabling Bluesky users to share posts with trusted followers only, built with post-quantum encryption and user convenience in mind.
 
+## Quickstart
+
+```
+# First time
+pnpm install
+pnpm dev:setup
+
+# Launch dev environment
+pnpm dev
+
+# Or to launch just one service
+pnpm dev:private-sessions
+```
+
 ## Project Structure
 
 ```
@@ -125,7 +139,7 @@ The services are built as a collection of microservices that share a common deve
 
 2. Start the development environment:
    ```bash
-   pnpm setup
+   pnpm dev:setup
    ```
    This will:
    - Create a `.env` file from `.env.example` if it doesn't exist

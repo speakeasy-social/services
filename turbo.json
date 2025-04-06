@@ -37,6 +37,10 @@
     "test": {
       "dependsOn": ["^build"],
       "inputs": ["src/**/*.tsx", "src/**/*.ts", "test/**/*.ts", "test/**/*.tsx"]
+    },
+    "setup:db": {
+      "cache": false,
+      "inputs": ["src/**/*.ts"]
     }
   }
 }
