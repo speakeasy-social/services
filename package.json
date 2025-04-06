@@ -3,17 +3,17 @@
   "private": true,
   "scripts": {
     "build": "turbo run build",
-    "dev": "./scripts/run-dev.sh",
+    "dev": "turbo run dev",
+    "dev:private-sessions": "turbo run dev --filter=@speakeasy-services/private-sessions...",
+    "dev:trusted-users": "turbo run dev --filter=@speakeasy-services/trusted-users...",
+    "dev:user-keys": "turbo run dev --filter=@speakeasy-services/user-keys...",
     "lint": "turbo run lint",
     "test": "turbo run test",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "setup:dev": "chmod +x scripts/setup-dev.sh && ./scripts/setup-dev.sh",
     "db:migrate": "prisma migrate deploy",
     "db:generate": "prisma generate",
-    "db:studio": "prisma studio",
-    "dev:private-sessions": "./scripts/run-private-sessions.sh",
-    "dev:private-sessions:debug": "./scripts/run-private-sessions.sh --fail-fast",
-    "dev:all": "./scripts/run-dev.sh"
+    "db:studio": "prisma studio"
   },
   "devDependencies": {
     "@types/node": "^22.13.11",

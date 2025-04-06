@@ -53,25 +53,25 @@ export const verifyAuth: AuthVerifier = async (ctx: AuthVerifierContext): Promis
     }
   };
 
-  const token = authHeader.split(' ')[1];
-  try {
-    // TODO Check if it's bluesky or one of our own services
+  // const token = authHeader.split(' ')[1];
+  // try {
+  //   // TODO Check if it's bluesky or one of our own services
 
-    const session = await verifyBlueskySession(token);
+  //   const session = await verifyBlueskySession(token);
 
-    // Attach user info to the request object for the authorization middleware
-    ctx.req.user = {
-      did: session.did,
-      handle: session.handle
-    };
+  //   // Attach user info to the request object for the authorization middleware
+  //   ctx.req.user = {
+  //     did: session.did,
+  //     handle: session.handle
+  //   };
 
-    return {
-      credentials: {
-        did: session.did,
-        handle: session.handle
-      }
-    };
-  } catch (error) {
-    throw new AuthenticationError('Invalid Bluesky session');
-  }
+  //   return {
+  //     credentials: {
+  //       did: session.did,
+  //       handle: session.handle
+  //     }
+  //   };
+  // } catch (error) {
+  //   throw new AuthenticationError('Invalid Bluesky session');
+  // }
 };
