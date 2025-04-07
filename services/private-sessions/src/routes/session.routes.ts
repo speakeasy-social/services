@@ -85,8 +85,6 @@ const methodHandlers = {
     // Convert limit to number if provided
     const limitNum = limit ? parseInt(limit, 10) : undefined;
     
-    console.log('Extracted parameters:', { recipient, limit: limitNum, cursor });
-    
     // Validate input against lexicon
     validateAgainstLexicon(getPostsDef, { recipient, limit: limitNum, cursor });
 
