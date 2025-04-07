@@ -1,14 +1,16 @@
 import { Server } from '@speakeasy-services/service-base';
-import { config } from './config.js';
-import { registerRoutes } from './routes/index.js';
+import config from './config.js';
+import { methods } from './routes/key.routes.js';
+import { authorizationMiddleware } from '@speakeasy-services/common';
+import { lexicons } from './lexicon/index.js';
 import logger from './utils/logger.js';
 
 const server = new Server({
   name: 'user-keys',
-  port: config.USER_KEYS_PORT,
-  methods: {
-    registerRoutes,
-  },
+  port: config.PORT,
+  methods,
+  middleware: [authorizationMiddleware],
+  lexicons
 });
 
 server.start().catch((error: Error) => {

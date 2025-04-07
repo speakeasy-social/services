@@ -42,7 +42,7 @@ export type AppAbility = PureAbility<[Action, Subject]>;
  * 3. conditions: An object that must match the properties of the subject being accessed
  * 
  * When checking permissions with authorize(request, action, subject):
- * - The action must match exactly
+ * - The action must match exactly (unless it's 'manage' which is a wildcard)
  * - The subject must be an instance of the specified type (subject.constructor.name must match the string defined in can())
  * - The subject must have properties that exactly match the conditions object
  * 
