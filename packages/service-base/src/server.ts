@@ -5,6 +5,7 @@ import { createServer, XRPCHandlerConfig } from '@atproto/xrpc-server';
 import { ResponseType, XRPCError } from '@atproto/xrpc';
 import { LexiconDoc } from '@atproto/lexicon';
 import z from 'zod';
+import { createLogger } from '@speakeasy-services/common';
 
 export interface ServerOptions {
   name: string;
@@ -20,11 +21,16 @@ export class Server {
   private config: ReturnType<typeof validateEnv<typeof baseSchema>>;
   private options: ServerOptions;
   private xrpcServer: ReturnType<typeof createServer>;
+  private logger: ReturnType<typeof createLogger>;
 
   constructor(options: ServerOptions) {
     this.options = options;
     this.config = validateEnv(z.object(baseSchema));
     this.xrpcServer = createServer(options.lexicons);
+    this.logger = createLogger({ 
+      serviceName: options.name,
+      level: this.config.LOG_LEVEL
+    });
     this.express = this.createServer();
   }
 
@@ -56,13 +62,16 @@ export class Server {
 
     // Mount XRPC routes
     app.all('/xrpc/:method', async (req: Request, res: Response) => {
+      const startTime = Date.now();
+      const method = req.params.method;
+      
       try {
         // Create the XRPC request context
         const xrpcReq = {
           req,
           res,
           params: {
-            method: req.params.method,
+            method,
             ...Object.fromEntries(
               Object.entries(req.query).map(([key, value]) => [
                 key,
@@ -77,36 +86,61 @@ export class Server {
           },
           resetRouteRateLimits: async () => {
             // TODO: Implement rate limiting
-            console.log('Rate limits reset');
+            this.logger.debug('Rate limits reset');
             return Promise.resolve();
           }
         };
 
         // Get the method handler
-        const method = this.options.methods[req.params.method];
-        if (!method) {
+        const methodHandler = this.options.methods[method];
+        if (!methodHandler) {
+          this.logger.warn({ method }, 'Method not found');
           res.status(404).json({ error: 'Method not found' });
           return;
         }
 
         // Call the method handler directly
-        const output = await method.handler(xrpcReq);
+        const output = await methodHandler.handler(xrpcReq);
         if (!output || !('body' in output)) {
+          this.logger.error({ method }, 'Invalid handler output');
           res.status(500).json({ error: 'Internal server error' });
           return;
         }
 
         // Send the JSON response
         res.status(200).json(output.body);
+        
+        this.logger.info({ 
+          method,
+          duration: Date.now() - startTime,
+          status: 200
+        });
       } catch (error: unknown) {
+        const duration = Date.now() - startTime;
+        
         if (error instanceof XRPCError) {
           const status = Number(error.status);
+          this.logger.warn({ 
+            method,
+            duration,
+            status,
+            error: error.error || 'InternalServerError',
+            message: error.message 
+          }, 'Request failed with XRPC error');
+          
           res.status(isNaN(status) ? 400 : status).json({ 
             error: error.error || 'InternalServerError',
             message: error.message 
           });
         } else {
           const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+          this.logger.error({ 
+            method,
+            duration,
+            error: error instanceof Error ? error : { message: errorMessage },
+            status: 500
+          }, 'Request failed with unexpected error');
+          
           res.status(500).json({ 
             error: 'InternalServerError',
             message: errorMessage 
@@ -128,10 +162,10 @@ export class Server {
   public async start() {
     try {
       this.express.listen(this.options.port, '0.0.0.0', () => {
-        console.log(`🚀 ${this.options.name} service running on port ${this.options.port}`);
+        this.logger.info(`🚀 ${this.options.name} service running on port ${this.options.port}`);
       });
     } catch (err) {
-      console.error('Error starting server:', err);
+      this.logger.error({ error: err }, 'Error starting server');
       process.exit(1);
     }
 
@@ -140,14 +174,14 @@ export class Server {
   }
 
   private async shutdown() {
-    console.log('Shutting down server...');
+    this.logger.info('Shutting down server...');
     try {
       if (this.options.onShutdown) {
         await this.options.onShutdown();
       }
       process.exit(0);
     } catch (err) {
-      console.error('Error during shutdown:', err);
+      this.logger.error({ error: err }, 'Error during shutdown');
       process.exit(1);
     }
   }

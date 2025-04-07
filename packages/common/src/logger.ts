@@ -19,7 +19,8 @@ export function createLogger({ serviceName, level = 'info', pretty = true }: Log
       target: 'pino-pretty',
       options: {
         translateTime: 'SYS:standard',
-        clearScreen: false
+        clearScreen: false,
+        singleLine: true
       },
     };
   }
