@@ -17,16 +17,19 @@
       "inputs": ["src/**/*.ts", "src/**/*.tsx", "prisma/**/*.prisma"]
     },
     "dev:prisma": {
+      "dependsOn": ["^build"],
       "cache": false,
       "persistent": true,
       "inputs": ["prisma/**/*.prisma"]
     },
     "dev:api": {
+      "dependsOn": ["^build"],
       "cache": false,
       "persistent": true,
       "inputs": ["src/**/*.ts", "src/**/*.tsx"]
     },
     "dev:worker": {
+      "dependsOn": ["^build"],
       "cache": false,
       "persistent": true,
       "inputs": ["src/**/*.ts", "src/**/*.tsx"]

@@ -6,7 +6,7 @@
   "scripts": {
     "prebuild": "prisma generate",
     "build": "tsc --build",
-    "dev": "turbo run dev:prisma dev:api dev:worker --filter=@speakeasy-services/trusted-users",
+    "dev": "tsx watch src/api.ts",
     "dev:prisma": "prisma generate --watch",
     "dev:api": "tsx watch src/api.ts",
     "dev:worker": "tsx watch src/worker.ts",
