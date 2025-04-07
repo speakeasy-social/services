@@ -4,9 +4,9 @@
 
 import { TrustService } from '../services/trust.service.js';
 import { XRPCHandlerConfig, XRPCReqContext, HandlerOutput } from '@atproto/xrpc-server';
-import { FastifyInstance } from 'fastify';
+import { Request, Response } from 'express';
 import { z } from 'zod';
-import { ServiceError, ValidationError, AuthorizationError, authorize, verifyAuth } from '@speakeasy-services/common';
+import { ServiceError, ValidationError, AuthorizationError, NotFoundError, DatabaseError, authorize, verifyAuth } from '@speakeasy-services/common';
 import { lexicons } from '../lexicon/index.js';
 import { getTrustsDef, addTrustedDef, removeTrustedDef } from '../lexicon/types/trust.js';
 
@@ -52,36 +52,61 @@ const methodHandlers = {
     const { did } = ctx.params as { did: string };
     // Validate input against lexicon
     validateAgainstLexicon(getTrustsDef, { did });
-    // Anyone can see who trusts a DID
-    const result = await trustService.getTrustedBy(did);
-    return {
-      encoding: 'application/json',
-      body: result
-    };
+    
+    try {
+      const result = await trustService.getTrustedBy(did);
+      return {
+        encoding: 'application/json',
+        body: result
+      };
+    } catch (error) {
+      if (error instanceof ServiceError) {
+        throw error;
+      }
+      throw new DatabaseError('Failed to get trusted users');
+    }
   },
   'social.spkeasy.graph.addTrusted': async (ctx: XRPCReqContext): Promise<HandlerOutput> => {
-    const { did } = ctx.params as { did: string };
+    const { recipientDid } = ctx.params as { recipientDid: string };
     // Validate input against lexicon
-    validateAgainstLexicon(addTrustedDef, { did });
-    // Only the author can add trusted users
-    authorize(ctx.req, 'create', { authorDid: ctx.req.user.did });
-    const result = await trustService.addTrusted(did);
-    return {
-      encoding: 'application/json',
-      body: result
-    };
+    validateAgainstLexicon(addTrustedDef, { recipientDid });
+    
+    try {
+      // Only the author can add trusted users
+      authorize(ctx.req, 'create', { authorDid: ctx.req.user.did });
+      
+      const result = await trustService.addTrusted(recipientDid);
+      return {
+        encoding: 'application/json',
+        body: { success: true }
+      };
+    } catch (error) {
+      if (error instanceof ServiceError) {
+        throw error;
+      }
+      throw new DatabaseError('Failed to add trusted user');
+    }
   },
   'social.spkeasy.graph.removeTrusted': async (ctx: XRPCReqContext): Promise<HandlerOutput> => {
-    const { did } = ctx.params as { did: string };
+    const { recipientDid } = ctx.params as { recipientDid: string };
     // Validate input against lexicon
-    validateAgainstLexicon(removeTrustedDef, { did });
-    // Only the author can remove trusted users
-    authorize(ctx.req, 'delete', { authorDid: ctx.req.user.did });
-    const result = await trustService.removeTrusted(did);
-    return {
-      encoding: 'application/json',
-      body: result
-    };
+    validateAgainstLexicon(removeTrustedDef, { recipientDid });
+    
+    try {
+      // Only the author can remove trusted users
+      authorize(ctx.req, 'delete', { authorDid: ctx.req.user.did });
+      
+      const result = await trustService.removeTrusted(recipientDid);
+      return {
+        encoding: 'application/json',
+        body: { success: true }
+      };
+    } catch (error) {
+      if (error instanceof ServiceError) {
+        throw error;
+      }
+      throw new DatabaseError('Failed to remove trusted user');
+    }
   },
 } as const;
 
@@ -100,31 +125,4 @@ export const methods: Record<MethodName, XRPCHandlerConfig> = {
     auth: verifyAuth,
     handler: methodHandlers['social.spkeasy.graph.removeTrusted']
   },
-};
-
-// Register routes with Fastify
-export const registerRoutes = async (fastify: FastifyInstance) => {
-  // Register each method
-  for (const [name, config] of Object.entries(methods)) {
-    if (name in methodHandlers) {
-      const methodName = name as MethodName;
-      const handler = methodHandlers[methodName];
-      fastify.route({
-        method: 'POST',
-        url: `/xrpc/${name}`,
-        handler: async (request: any, reply: any) => {
-          try {
-            const result = await handler(request as unknown as XRPCReqContext);
-            reply.send(result);
-          } catch (error) {
-            if (error instanceof ServiceError) {
-              reply.status(error.statusCode).send({ error: error.message });
-            } else {
-              reply.status(500).send({ error: 'Internal server error' });
-            }
-          }
-        }
-      });
-    }
-  }
 };

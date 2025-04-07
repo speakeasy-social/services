@@ -6,6 +6,7 @@ export const getTrustsDef: LexiconDoc = {
   defs: {
     main: {
       type: 'query',
+      description: 'Get all users trusted by a given DID',
       parameters: {
         type: 'params',
         required: ['did'],
@@ -36,11 +37,12 @@ export const addTrustedDef: LexiconDoc = {
   defs: {
     main: {
       type: 'procedure',
+      description: 'Add a user to the trusted users list',
       parameters: {
         type: 'params',
-        required: ['did'],
+        required: ['recipientDid'],
         properties: {
-          did: { type: 'string' }
+          recipientDid: { type: 'string' }
         }
       },
       output: {
@@ -63,11 +65,12 @@ export const removeTrustedDef: LexiconDoc = {
   defs: {
     main: {
       type: 'procedure',
+      description: 'Remove a user from the trusted users list',
       parameters: {
         type: 'params',
-        required: ['did'],
+        required: ['recipientDid'],
         properties: {
-          did: { type: 'string' }
+          recipientDid: { type: 'string' }
         }
       },
       output: {
