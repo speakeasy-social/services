@@ -6,35 +6,15 @@
 import { FastifyInstance } from 'fastify';
 import { methods } from './trust.routes.js';
 import { z } from 'zod';
-import { ServiceError, ValidationError } from '@speakeasy-services/common/errors.js';
+import { ServiceError, ValidationError } from '@speakeasy-services/common';
 
 export async function registerRoutes(fastify: FastifyInstance) {
   // Register all methods with the XRPC server
   Object.entries(methods).forEach(([methodName, method]) => {
     fastify.post(`/xrpc/${methodName}`, {
-      schema: {
-        body: z.object({
-          ...Object.entries(method.parameters).reduce((acc, [key, param]) => {
-            if (param.type === 'array' && param.items?.type === 'string') {
-              return {
-                ...acc,
-                [key]: z.array(z.string()),
-              };
-            }
-            return {
-              ...acc,
-              [key]: param.type === 'number'
-                ? z.number()
-                : param.type === 'boolean'
-                ? z.boolean()
-                : z.string(),
-            };
-          }, {}),
-        }),
-      },
-      handler: async (request, reply) => {
+      handler: async (request: any, reply: any) => {
         try {
-          const result = await method.handler(request.body);
+          const result = await method.handler(request as any);
           return reply.send(result);
         } catch (error) {
           if (error instanceof z.ZodError) {

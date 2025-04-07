@@ -1,7 +1,6 @@
-import { PrismaClient, Prisma } from '@prisma/client';
-import { scheduleAddRecipientToSession } from '@speakeasy-services/common/src/queue.js';
-import { JOB_NAMES, Queue } from '@speakeasy-services/private-sessions/worker.js';
-import { ServiceError, NotFoundError, ValidationError, DatabaseError } from '@speakeasy-services/common/errors.js';
+import { PrismaClient, Prisma } from '@prisma/client/edge';
+// import { scheduleAddRecipientToSession } from '@speakeasy-services/common/src/queue.js';
+import { ServiceError, NotFoundError, ValidationError, DatabaseError } from '@speakeasy-services/common';
 
 const prisma = new PrismaClient();
 
@@ -64,7 +63,7 @@ export class TrustService {
   private async addTrustedUser(authorDid: string, recipientDid: string): Promise<void> {
     await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       // Check if relationship already exists
-      const existingRelation = await tx.trustedUsers.findFirst({
+      const existingRelation = await tx.trustedUser.findFirst({
         where: {
           authorDid,
           recipientDid,
@@ -77,7 +76,7 @@ export class TrustService {
       }
 
       // Create trust relationship
-      await tx.trustedUsers.create({
+      await tx.trustedUser.create({
         data: {
           authorDid,
           recipientDid,
@@ -87,13 +86,13 @@ export class TrustService {
     });
 
     // Schedule session update after transaction completes
-    await scheduleAddRecipientToSession(authorDid, recipientDid);
+    // await scheduleAddRecipientToSession(authorDid, recipientDid);
   }
 
   private async removeTrustedUser(authorDid: string, recipientDid: string): Promise<void> {
     await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       // Find and mark existing relationship as deleted
-      const existingRelation = await tx.trustedUsers.findFirst({
+      const existingRelation = await tx.trustedUser.findFirst({
         where: {
           authorDid,
           recipientDid,
@@ -106,7 +105,7 @@ export class TrustService {
       }
 
       // Mark relationship as deleted
-      await tx.trustedUsers.update({
+      await tx.trustedUser.update({
         where: {
           authorDid_recipientDid_createdAt: {
             authorDid,
@@ -118,38 +117,13 @@ export class TrustService {
           deletedAt: new Date()
         }
       });
-
-      // Revoke sessions where this was the only recipient
-      await tx.sessions.updateMany({
-        where: {
-          authorDid,
-          revokedAt: null,
-          sessionKeys: {
-            some: { recipientDid },
-            // Check if this is the only recipient
-            every: { recipientDid }
-          }
-        },
-        data: {
-          revokedAt: new Date()
-        }
-      });
-
-      // Remove all session keys for this recipient
-      await tx.sessionKeys.deleteMany({
-        where: {
-          recipientDid,
-          session: {
-            authorDid,
-            revokedAt: null
-          }
-        }
-      });
     });
+
+    // FIXME: Revoke sessions where this was the only recipient
   }
 
   private async getTrustedRecipients(authorDid: string): Promise<Array<{ did: string; createdAt: Date }>> {
-    const relations = await prisma.trustedUsers.findMany({
+    const relations = await prisma.trustedUser.findMany({
       where: {
         authorDid,
         deletedAt: null
@@ -160,7 +134,7 @@ export class TrustService {
       }
     });
 
-    return relations.map(r => ({
+    return relations.map((r: { recipientDid: string; createdAt: Date }) => ({
       did: r.recipientDid,
       createdAt: r.createdAt
     }));

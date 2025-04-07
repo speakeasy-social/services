@@ -7,12 +7,10 @@
     "dev:setup:infra": "docker-compose up -d",
     "dev:setup:db": "./scripts/create-schemas.sh && pnpm --filter @speakeasy-services/queue setup:db",
     "dev:setup": "pnpm dev:setup:env && pnpm dev:setup:infra && pnpm dev:setup:db",
-    "dev:api": "turbo run dev:api",
-    "dev:worker": "turbo run dev:worker",
     "dev:prisma": "turbo run dev:prisma",
-    "dev": "concurrently \"pnpm dev:api\" \"pnpm dev:worker\" \"pnpm dev:prisma\"",
     "build": "turbo run build",
     "clean": "turbo run clean",
+    "dev": "turbo run dev ",
     "dev:private-sessions": "turbo run dev --filter=@speakeasy-services/private-sessions",
     "dev:trusted-users": "turbo run dev --filter=@speakeasy-services/trusted-users",
     "dev:user-keys": "turbo run dev --filter=@speakeasy-services/user-keys",
@@ -31,8 +29,7 @@
     "prettier": "^3.2.5",
     "prisma": "^6.5.0",
     "turbo": "^2.4.4",
-    "typescript": "^5.3.3",
-    "concurrently": "^8.2.2"
+    "typescript": "^5.3.3"
   },
   "packageManager": "pnpm@8.15.4",
   "engines": {
