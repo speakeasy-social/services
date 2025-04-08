@@ -73,7 +73,7 @@ const methodHandlers = {
     
     try {
       // Only the author can add trusted users
-      authorize(ctx.req, 'create', { authorDid: ctx.req.user.did });
+      authorize(ctx, 'create', { authorDid: ctx.params.did });
       
       const result = await trustService.addTrusted(recipientDid);
       return {
@@ -94,7 +94,7 @@ const methodHandlers = {
     
     try {
       // Only the author can remove trusted users
-      authorize(ctx.req, 'delete', { authorDid: ctx.req.user.did });
+      authorize(ctx, 'delete', { authorDid: ctx.params.did });
       
       const result = await trustService.removeTrusted(recipientDid);
       return {

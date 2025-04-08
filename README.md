@@ -61,7 +61,7 @@ A set of microservices handling:
 ## Technical Stack
 
 - TypeScript
-- Fastify with XRPC (@atproto/xrpc-server)
+- XRPC (@atproto/xrpc-server)
 - PostgreSQL with Prisma ORM
 - Authentication using AT Protocol JWT tokens
 - Post-quantum encryption (CRYSTALS-Kyber)
