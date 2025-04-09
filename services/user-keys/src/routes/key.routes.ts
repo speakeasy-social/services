@@ -6,7 +6,7 @@ import { z } from 'zod';
 import { KeyServiceImpl } from '../services/key.service.js';
 import { ServiceError, ValidationError, AuthorizationError, DatabaseError, NotFoundError } from '@speakeasy-services/common';
 import { XRPCHandlerConfig, XRPCReqContext, HandlerOutput } from '@atproto/xrpc-server';
-import { authorize, verifyAuth } from '@speakeasy-services/common';
+import { authorize } from '@speakeasy-services/common';
 import { lexicons } from '../lexicon/index.js';
 import { getPublicKeyDef, getPrivateKeyDef, rotateKeyDef } from '../lexicon/types/key.js';
 
@@ -133,15 +133,12 @@ type MethodName = keyof typeof methodHandlers;
 // Define methods using XRPC lexicon
 export const methods: Record<MethodName, XRPCHandlerConfig> = {
   'social.spkeasy.keys.getPublicKey': {
-    auth: verifyAuth,
     handler: methodHandlers['social.spkeasy.keys.getPublicKey']
   },
   'social.spkeasy.keys.getPrivateKey': {
-    auth: verifyAuth,
     handler: methodHandlers['social.spkeasy.keys.getPrivateKey']
   },
   'social.spkeasy.keys.rotate': {
-    auth: verifyAuth,
     handler: methodHandlers['social.spkeasy.keys.rotate']
   }
 };

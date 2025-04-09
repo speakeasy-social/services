@@ -6,7 +6,7 @@ import { TrustService } from '../services/trust.service.js';
 import { XRPCHandlerConfig, XRPCReqContext, HandlerOutput } from '@atproto/xrpc-server';
 import { Request, Response } from 'express';
 import { z } from 'zod';
-import { ServiceError, ValidationError, AuthorizationError, NotFoundError, DatabaseError, authorize, verifyAuth } from '@speakeasy-services/common';
+import { ServiceError, ValidationError, AuthorizationError, NotFoundError, DatabaseError, authorize } from '@speakeasy-services/common';
 import { lexicons } from '../lexicon/index.js';
 import { getTrustsDef, addTrustedDef, removeTrustedDef } from '../lexicon/types/trust.js';
 
@@ -118,11 +118,9 @@ export const methods: Record<MethodName, XRPCHandlerConfig> = {
     handler: methodHandlers['social.spkeasy.graph.getTrusts']
   },
   'social.spkeasy.graph.addTrusted': {
-    auth: verifyAuth,
     handler: methodHandlers['social.spkeasy.graph.addTrusted']
   },
   'social.spkeasy.graph.removeTrusted': {
-    auth: verifyAuth,
     handler: methodHandlers['social.spkeasy.graph.removeTrusted']
   },
 };

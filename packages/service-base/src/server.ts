@@ -55,6 +55,13 @@ export class Server {
     // Parse JSON bodies
     app.use(express.json());
 
+    // Add middleware
+    if (this.options.middleware) {
+      for (const middleware of this.options.middleware) {
+        app.use(middleware);
+      }
+    }
+
     // Register all methods with the XRPC server
     Object.entries(this.options.methods).forEach(([name, method]) => {
       this.xrpcServer.method(name, method);
@@ -148,13 +155,6 @@ export class Server {
         }
       }
     });
-
-    // Add middleware
-    if (this.options.middleware) {
-      for (const middleware of this.options.middleware) {
-        app.use(middleware);
-      }
-    }
 
     return app;
   }

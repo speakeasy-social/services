@@ -1,10 +1,7 @@
-import { AuthVerifier, AuthVerifierContext, AuthOutput } from '@atproto/xrpc-server';
-import { AuthenticationError } from '../errors.js';
-import NodeCache from 'node-cache';
-import fetch from 'node-fetch';
-
-// Cache session responses for 5 minutes
-const sessionCache = new NodeCache({ stdTTL: 300 });
+import { AuthenticationError } from "../errors.js";
+import fetch from "node-fetch";
+import jwt from "jsonwebtoken";
+import { asyncCache } from "../utils/index.js";
 
 interface BlueskySession {
   did: string;
@@ -15,63 +12,68 @@ interface BlueskySession {
 }
 
 async function verifyBlueskySession(token: string): Promise<BlueskySession> {
-  // Check cache first
-  const cachedSession = sessionCache.get<BlueskySession>(token);
-  if (cachedSession) {
-    return cachedSession;
+  let host = "https://bsky.social";
+
+  try {
+    const decoded = jwt.decode(token) as jwt.JwtPayload;
+
+    // Are we in development?
+    if (
+      ["test", "development"].includes(process.env.NODE_ENV || "") &&
+      decoded?.aud === "did:web:localhost"
+    ) {
+      host = "http://localhost:2583";
+    }
+  } catch (error) {
+    throw new AuthenticationError("Corrupt session token");
   }
 
   // Make request to Bluesky API
-  const response = await fetch('https://bsky.social/xrpc/com.atproto.server.getSession', {
+  const response = await fetch(`${host}/xrpc/com.atproto.server.getSession`, {
     headers: {
-      'Authorization': `Bearer ${token}`
-    }
+      Authorization: `Bearer ${token}`,
+    },
   });
 
   if (!response.ok) {
-    throw new AuthenticationError('Invalid or expired session');
+    throw new AuthenticationError("Invalid session");
   }
 
-  const session = await response.json() as BlueskySession;
-
-  // Cache the session
-  sessionCache.set(token, session);
+  const session = (await response.json()) as BlueskySession;
 
   return session;
 }
 
-export const verifyAuth: AuthVerifier = async (ctx: AuthVerifierContext): Promise<AuthOutput> => {
-  const authHeader = ctx.req.headers.authorization;
-  if (!authHeader?.startsWith('Bearer ')) {
-    throw new AuthenticationError('Missing or invalid authorization header');
+export const authenticateToken = async (req: any, res: any, next: any) => {
+  const authHeader = Array.isArray(req.headers.authorization)
+    ? req.headers.authorization[0]
+    : req.headers.authorization;
+
+  if (!authHeader?.startsWith("Bearer ")) {
+    throw new AuthenticationError("Missing authorization header");
   }
 
-  return {
-    credentials: {
-      did: 'did:test',
-      handle: 'test.test'
-    }
+  const token = authHeader.split(" ")[1];
+
+  const user = {
+    did: "did",
+    handle: "handle",
   };
 
-  // const token = authHeader.split(' ')[1];
-  // try {
-  //   // TODO Check if it's bluesky or one of our own services
+  req.user = user;
 
-  //   const session = await verifyBlueskySession(token);
+  try {
+    // Check cache first
+    const session = await asyncCache(token, 300, verifyBlueskySession, [token]);
 
-  //   // Attach user info to the request object for the authorization middleware
-  //   ctx.req.user = {
-  //     did: session.did,
-  //     handle: session.handle
-  //   };
+    // Attach user info to the request object for the authorization middleware
+    req.user = {
+      did: session.did,
+      handle: session.handle,
+    };
+  } catch (error) {
+    throw new AuthenticationError("Invalid Bluesky session");
+  }
 
-  //   return {
-  //     credentials: {
-  //       did: session.did,
-  //       handle: session.handle
-  //     }
-  //   };
-  // } catch (error) {
-  //   throw new AuthenticationError('Invalid Bluesky session');
-  // }
+  next();
 };
