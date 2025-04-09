@@ -20,20 +20,25 @@
       "persistent": true,
       "inputs": ["src/**/*.ts", "src/**/*.tsx", "prisma/**/*.prisma"]
     },
-    "dev:prisma": {
+    "prisma:generate": {
       "dependsOn": ["^build"],
+      "outputs": ["src/generated/**"],
+      "inputs": ["prisma/**/*.prisma"]
+    },
+    "dev:prisma": {
+      "dependsOn": ["prisma:generate"],
       "cache": false,
       "persistent": true,
       "inputs": ["prisma/**/*.prisma"]
     },
     "dev:api": {
-      "dependsOn": ["^build"],
+      "dependsOn": ["^build", "prisma:generate"],
       "cache": false,
       "persistent": true,
       "inputs": ["src/**/*.ts", "src/**/*.tsx"]
     },
     "dev:worker": {
-      "dependsOn": ["^build"],
+      "dependsOn": ["^build", "prisma:generate"],
       "cache": false,
       "persistent": true,
       "inputs": ["src/**/*.ts", "src/**/*.tsx"]
@@ -42,7 +47,7 @@
       "cache": false
     },
     "test": {
-      "dependsOn": ["^build"],
+      "dependsOn": ["^build", "prisma:generate"],
       "inputs": ["src/**/*.tsx", "src/**/*.ts", "test/**/*.ts", "test/**/*.tsx"]
     },
     "setup:db": {
