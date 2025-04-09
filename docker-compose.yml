@@ -9,7 +9,7 @@ services:
       POSTGRES_PASSWORD: speakeasy
       POSTGRES_DB: speakeasy
     ports:
-      - "5432:5432"
+      - "5496:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./scripts/init-db.sh:/docker-entrypoint-initdb.d/init-db.sh
