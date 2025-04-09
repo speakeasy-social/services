@@ -3,7 +3,7 @@ import fetch from "node-fetch";
 import jwt from "jsonwebtoken";
 import { asyncCache } from "../utils/index.js";
 
-interface BlueskySession {
+export interface BlueskySession {
   did: string;
   handle: string;
   email?: string;
