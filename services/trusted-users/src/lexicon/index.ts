@@ -1,7 +1,7 @@
-import { getTrustsDef, addTrustedDef, removeTrustedDef } from './types/trust.js';
-
-export const lexicons = [
-  getTrustsDef,
+import {
+  getTrustedDef,
   addTrustedDef,
-  removeTrustedDef
-]; 
+  removeTrustedDef,
+} from "./types/trust.js";
+
+export const lexicons = [getTrustedDef, addTrustedDef, removeTrustedDef];
