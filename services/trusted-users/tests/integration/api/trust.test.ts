@@ -8,10 +8,16 @@ import {
   ApiTestTransformer,
   runApiTests,
 } from "../../../../shared/testing/api-test-generator";
+import { generateTestToken } from "../../../../shared/testing/test-token";
 import {
-  authMiddleware,
   authenticateToken,
-} from "@speakeasy-services/service-base";
+  authorizationMiddleware,
+} from "@speakeasy-services/common";
+import {
+  mockBlueskySession,
+  cleanupBlueskySessionMocks,
+  verifyBlueskySessionMocks,
+} from "../../../../shared/testing/mock-bearer-tokens";
 
 const authorDid = "did:example:alex-author";
 const validRecipient = "did:example:valid-valery";
@@ -20,7 +26,7 @@ const invalidRecipient = "did:example:deleted-dave";
 describe("Trusted Users API Tests", () => {
   let server: Server;
   let prisma: PrismaClient;
-  const validToken = "valid-test-token";
+  const validToken = generateTestToken(authorDid);
 
   beforeAll(async () => {
     // Initialize Prisma client
@@ -33,7 +39,7 @@ describe("Trusted Users API Tests", () => {
       port: 3001,
       methods,
       lexicons,
-      middleware: [authenticateToken, authMiddleware],
+      middleware: [authenticateToken, authorizationMiddleware],
     });
 
     await server.start();
@@ -47,6 +53,14 @@ describe("Trusted Users API Tests", () => {
   beforeEach(async () => {
     // Clear test data before each test
     await prisma.trustedUser.deleteMany();
+    // Setup mock for Bluesky session validation
+    mockBlueskySession({ did: authorDid });
+  });
+
+  afterEach(() => {
+    // Cleanup and verify mocks
+    cleanupBlueskySessionMocks();
+    verifyBlueskySessionMocks();
   });
 
   // Example transformer that generates multiple test cases for different authorization scenarios

@@ -52,6 +52,7 @@
     "@types/node": "^22.13.11",
     "@types/node-cache": "^4.2.5",
     "eslint": "^8.56.0",
-    "typescript": "^5.8.2"
+    "typescript": "^5.8.2",
+    "nock": "^13.5.1"
   }
 }
