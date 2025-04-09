@@ -1,6 +1,6 @@
 import { Worker } from '@speakeasy-services/service-base';
 import { Queue, JOB_NAMES } from '@speakeasy-services/queue';
-import { apiRequest } from '@speakeasy-services/common';
+import { speakeasyApiRequest } from '@speakeasy-services/common';
 
 interface AddRecipientToSessionJob {
   authorDid: string;
@@ -22,10 +22,13 @@ queue.work<AddRecipientToSessionJob>(
   async (job) => {
     const { authorDid, recipientDid } = job.data;
 
-    await apiRequest(
-      'POST',
-      'social.spkeasy.privateSession.addUser',
-      'trusted-users',
+    await speakeasyApiRequest(
+      {
+        method: 'POST',
+        path: 'social.spkeasy.privateSession.addUser',
+        fromService: 'trusted-users',
+        toService: 'private-sessions',
+      },
       {
         authorDid,
         recipientDid,
@@ -37,10 +40,13 @@ queue.work<AddRecipientToSessionJob>(
 queue.work<RotateSessionJob>(JOB_NAMES.ROTATE_SESSION, async (job) => {
   const { authorDid } = job.data;
 
-  await apiRequest(
-    'POST',
-    'social.spkeasy.privateSession.rotateSession',
-    'trusted-users',
+  await speakeasyApiRequest(
+    {
+      method: 'POST',
+      path: 'social.spkeasy.privateSession.rotateSession',
+      fromService: 'trusted-users',
+      toService: 'private-sessions',
+    },
     {
       authorDid,
     },

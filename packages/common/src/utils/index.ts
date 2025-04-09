@@ -53,15 +53,25 @@ export async function asyncCache<T>(
   return result as T;
 }
 
-export async function apiRequest(
-  method: string,
-  path: string,
-  fromService: string,
+export async function speakeasyApiRequest(
+  options: {
+    method: string;
+    path: string;
+    fromService: string;
+    toService: string;
+  },
   body: any,
 ) {
-  const apiKey = getServiceApiKey(fromService);
-  const response = await fetch(path, {
-    method,
+  const apiKey = getServiceApiKey(options.fromService);
+  const host = {
+    'private-sessions': process.env.PRIVATE_SESSIONS_HOST,
+    'trusted-users': process.env.TRUSTED_USERS_HOST,
+    'user-keys': process.env.USER_KEYS_HOST,
+  }[options.toService];
+
+  const url = `${host}/xrpc/${options.path}`;
+  const response = await fetch(url, {
+    method: options.method,
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${apiKey}`,
