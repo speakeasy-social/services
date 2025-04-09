@@ -47,3 +47,4 @@ yarn-error.log*
 # Prisma
 prisma/*.db
 prisma/migrations/
+services/*/src/generated/
