@@ -8,6 +8,9 @@ export { createLogger } from '../logger.js';
 export const cache = new NodeCache({ stdTTL: 300 });
 const promiseCache: Record<string, Promise<any>> = {};
 
+/**
+ * Creates an XRPC error response
+ */
 export function createError(
   status: number,
   message: string,
@@ -16,7 +19,9 @@ export function createError(
   return new XRPCError(status, message, error);
 }
 
-// Common application errors
+/**
+ * Common error responses for the application
+ */
 export const Errors = {
   InvalidRequest: (message: string) =>
     createError(StatusCodes.BAD_REQUEST, message, 'InvalidRequest'),
@@ -34,6 +39,9 @@ export const Errors = {
     createError(StatusCodes.INTERNAL_SERVER, message, 'InternalError'),
 } as const;
 
+/**
+ * Caches async function results with TTL
+ */
 export async function asyncCache<T>(
   key: string,
   ttl: number,
@@ -53,6 +61,9 @@ export async function asyncCache<T>(
   return result as T;
 }
 
+/**
+ * Makes an HTTP request to another Speakeasy service
+ */
 export async function speakeasyApiRequest(
   options: {
     method: string;

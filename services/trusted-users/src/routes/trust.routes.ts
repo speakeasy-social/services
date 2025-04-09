@@ -59,6 +59,9 @@ function validateAgainstLexicon(lexicon: any, params: any) {
 
 // Define method handlers
 const methodHandlers = {
+  /**
+   * Lists all trusted users for a given DID
+   */
   'social.spkeasy.graph.getTrusted': async (
     ctx: XRPCReqContext,
   ): Promise<HandlerOutput> => {
@@ -77,6 +80,9 @@ const methodHandlers = {
     };
   },
 
+  /**
+   * Adds a new user to the trusted list
+   */
   'social.spkeasy.graph.addTrusted': async (
     ctx: XRPCReqContext,
   ): Promise<HandlerOutput> => {
@@ -84,33 +90,29 @@ const methodHandlers = {
     // Validate input against lexicon
     validateAgainstLexicon(addTrustedDef, { recipientDid });
 
-    try {
-      // Create a temporary trusted user for authorization
-      const tempTrustedUser = {
-        authorDid: ctx.params.did,
-        recipientDid,
-        createdAt: new Date(),
-        deletedAt: null,
-      };
+    // Create a temporary trusted user for authorization
+    const tempTrustedUser = {
+      authorDid: ctx.params.did,
+      recipientDid,
+      createdAt: new Date(),
+      deletedAt: null,
+    };
 
-      // Authorize the action
-      authorize(ctx, 'create', tempTrustedUser);
+    // Authorize the action
+    authorize(ctx, 'create', tempTrustedUser);
 
-      // Perform the action
-      await trustService.addTrusted(ctx.req.user.did, recipientDid);
+    // Perform the action
+    await trustService.addTrusted(ctx.req.user.did, recipientDid);
 
-      return {
-        encoding: 'application/json',
-        body: { success: true },
-      };
-    } catch (error) {
-      if (error instanceof ServiceError) {
-        throw error;
-      }
-      throw new DatabaseError('Failed to add trusted user');
-    }
+    return {
+      encoding: 'application/json',
+      body: { success: true },
+    };
   },
 
+  /**
+   * Removes a user from the trusted list
+   */
   'social.spkeasy.graph.removeTrusted': async (
     ctx: XRPCReqContext,
   ): Promise<HandlerOutput> => {
@@ -118,31 +120,24 @@ const methodHandlers = {
     // Validate input against lexicon
     validateAgainstLexicon(removeTrustedDef, { recipientDid });
 
-    try {
-      // Create a temporary trusted user for authorization
-      const tempTrustedUser = {
-        authorDid: ctx.params.did,
-        recipientDid,
-        createdAt: new Date(),
-        deletedAt: null,
-      };
+    // Create a temporary trusted user for authorization
+    const tempTrustedUser = {
+      authorDid: ctx.params.did,
+      recipientDid,
+      createdAt: new Date(),
+      deletedAt: null,
+    };
 
-      // Authorize the action
-      authorize(ctx, 'delete', tempTrustedUser);
+    // Authorize the action
+    authorize(ctx, 'delete', tempTrustedUser);
 
-      // Perform the action
-      await trustService.removeTrusted(recipientDid);
+    // Perform the action
+    await trustService.removeTrusted(ctx.req.user.did, recipientDid);
 
-      return {
-        encoding: 'application/json',
-        body: { success: true },
-      };
-    } catch (error) {
-      if (error instanceof ServiceError) {
-        throw error;
-      }
-      throw new DatabaseError('Failed to remove trusted user');
-    }
+    return {
+      encoding: 'application/json',
+      body: { success: true },
+    };
   },
 } as const;
 

@@ -37,6 +37,9 @@ queue.work<AddRecipientToSessionJob>(
   },
 );
 
+/**
+ * Request a new session for an author
+ */
 queue.work<RotateSessionJob>(JOB_NAMES.ROTATE_SESSION, async (job) => {
   const { authorDid } = job.data;
 

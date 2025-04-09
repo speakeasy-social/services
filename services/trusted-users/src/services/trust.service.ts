@@ -5,6 +5,9 @@ import { Queue, JOB_NAMES } from '@speakeasy-services/queue';
 const prisma = new PrismaClient();
 
 export class TrustService {
+  /**
+   * Gets all trusted users for an author
+   */
   async getTrusted(authorDid: string): Promise<TrustedUser[]> {
     return prisma.trustedUser.findMany({
       where: {
@@ -14,6 +17,9 @@ export class TrustService {
     });
   }
 
+  /**
+   * Adds a new trusted user and schedules session update
+   */
   async addTrusted(authorDid: string, recipientDid: string): Promise<void> {
     // Create trust relationship - we can rely on the unique constraint to prevent duplicates
     await prisma.trustedUser.create({
@@ -31,6 +37,9 @@ export class TrustService {
     });
   }
 
+  /**
+   * Removes a trusted user and schedules session rotation
+   */
   async removeTrusted(authorDid: string, recipientDid: string): Promise<void> {
     await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       // Try to update the relationship to mark it as deleted
