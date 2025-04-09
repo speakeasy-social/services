@@ -19,10 +19,12 @@
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "db:migrate": "prisma migrate deploy",
     "db:generate": "prisma generate",
-    "db:studio": "prisma studio"
+    "db:studio": "prisma studio",
+    "typecheck": "turbo run typecheck"
   },
   "devDependencies": {
     "@types/jest": "^29.5.12",
+    "@types/jsonwebtoken": "^9.0.9",
     "@types/node": "^22.13.11",
     "@types/supertest": "^6.0.2",
     "@typescript-eslint/eslint-plugin": "^7.0.1",
@@ -33,14 +35,13 @@
     "jest-environment-node": "^29.7.0",
     "jest-mock-extended": "^3.0.5",
     "jsonwebtoken": "^9.0.2",
-    "@types/jsonwebtoken": "^9.0.9",
     "nock": "^13.5.1",
     "prettier": "^3.2.5",
     "prisma": "^6.5.0",
     "supertest": "^6.3.4",
     "ts-jest": "^29.1.2",
     "turbo": "^2.4.4",
-    "typescript": "^5.3.3"
+    "typescript": "^5.8.3"
   },
   "packageManager": "pnpm@8.15.4",
   "engines": {

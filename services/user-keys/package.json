@@ -3,9 +3,13 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "scripts": {
     "prebuild": "prisma generate",
     "build": "tsc --build",
+    "typecheck": "tsc --noEmit",
     "dev": "tsx watch src/api.ts",
     "dev:prisma": "prisma generate --watch",
     "dev:api": "tsx watch src/api.ts",
@@ -20,7 +24,7 @@
     "@prisma/client": "^6.5.0",
     "@speakeasy-services/common": "workspace:*",
     "@speakeasy-services/crypto": "workspace:*",
-    "@speakeasy-services/service-base": "workspace:^",
+    "@speakeasy-services/service-base": "workspace:*",
     "dotenv": "^16.4.7",
     "pino": "^9.6.0",
     "pino-pretty": "^13.0.0",
@@ -32,8 +36,7 @@
     "@typescript-eslint/parser": "^7.0.1",
     "eslint": "^8.56.0",
     "prisma": "^6.5.0",
-    "tsup": "^8.4.0",
     "tsx": "^4.19.3",
-    "typescript": "^5.8.2"
+    "typescript": "^5.8.3"
   }
 }
