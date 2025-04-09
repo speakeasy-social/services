@@ -219,7 +219,6 @@ export const createApiTestRunner = (options: ApiTestRunnerOptions) => {
 export const runApiTests = (
   options: ApiTestRunnerOptions,
   tests: ApiTest[],
-  testTransformers: ApiTestTransformer[] = [],
   describeName: string = "API Tests",
 ) => {
   const runTest = createApiTestRunner(options);
@@ -227,12 +226,14 @@ export const runApiTests = (
   let testSuite = tests;
 
   // Apply transformers
-  testTransformers.forEach((transformer) => {
-    testSuite = testSuite.flatMap((test) => {
-      const result = transformer(test);
-      return Array.isArray(result) ? result : [result];
+  if (options.testTransformers) {
+    options.testTransformers.forEach((transformer) => {
+      testSuite = testSuite.flatMap((test) => {
+        const result = transformer(test);
+        return Array.isArray(result) ? result : [result];
+      });
     });
-  });
+  }
 
   describe(describeName, () => {
     testSuite.forEach((test) => {

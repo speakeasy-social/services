@@ -1,30 +1,20 @@
-import request from "supertest";
-import { Server } from "@speakeasy-services/service-base";
-import { methods } from "../../src/routes/trust.routes.js";
-import { lexicons } from "../../src/lexicon/index.js";
+import server from "../../src/server.js";
 import { PrismaClient } from "@prisma/client";
 import {
   ApiTest,
   ApiTestTransformer,
   runApiTests,
-} from "../../../../shared/testing/api-test-generator";
-import { generateTestToken } from "../../../../shared/testing/test-token";
-import {
-  authenticateToken,
-  authorizationMiddleware,
-} from "@speakeasy-services/common";
-import {
   mockBlueskySession,
   cleanupBlueskySessionMocks,
   verifyBlueskySessionMocks,
-} from "../../../../shared/testing/mock-bearer-tokens";
+} from "@speakeasy-services/test-utils";
+import { generateTestToken } from "@speakeasy-services/test-utils";
 
 const authorDid = "did:example:alex-author";
 const validRecipient = "did:example:valid-valery";
 const invalidRecipient = "did:example:deleted-dave";
 
 describe("Trusted Users API Tests", () => {
-  let server: Server;
   let prisma: PrismaClient;
   const validToken = generateTestToken(authorDid);
 
@@ -33,20 +23,12 @@ describe("Trusted Users API Tests", () => {
     prisma = new PrismaClient();
     await prisma.$connect();
 
-    // Initialize server
-    server = new Server({
-      name: "trusted-users",
-      port: 3001,
-      methods,
-      lexicons,
-      middleware: [authenticateToken, authorizationMiddleware],
-    });
-
     await server.start();
   });
 
   afterAll(async () => {
     await prisma.$disconnect();
+    // @ts-ignore - shutdown is private but we need it for tests
     await server.shutdown();
   });
 
@@ -229,9 +211,8 @@ describe("Trusted Users API Tests", () => {
   ];
 
   runApiTests(
-    { server, prisma },
+    { server, prisma, testTransformers: [authorizationTransformer] },
     apiTests,
-    [authorizationTransformer],
     "Trusted Users API Tests",
   );
 });
