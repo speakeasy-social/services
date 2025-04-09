@@ -1,0 +1,82 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "type": "node",
+        "request": "launch",
+        "name": "Debug Private Sessions API",
+        "skipFiles": ["<node_internals>/**"],
+        "program": "${workspaceFolder}/services/private-sessions/src/api.ts",
+        "runtimeExecutable": "/Users/chrisjensen/.nvm/versions/node/v22.14.0/bin/pnpm",
+        "runtimeArgs": ["--filter", "@speakeasy-services/private-sessions", "dev:api"],
+        "outFiles": ["${workspaceFolder}/**/*.js"],
+        "sourceMaps": true,
+        "resolveSourceMapLocations": [
+          "${workspaceFolder}/**",
+          "!**/node_modules/**"
+        ],
+        "env": {
+          "NODE_ENV": "development",
+          "PATH": "${env:PATH}"
+        },
+        "cwd": "${workspaceFolder}"
+      },
+      {
+        "type": "node",
+        "request": "launch",
+        "name": "Debug Private Sessions Worker",
+        "skipFiles": ["<node_internals>/**"],
+        "program": "${workspaceFolder}/services/private-sessions/src/worker.ts",
+        "runtimeExecutable": "pnpm",
+        "runtimeArgs": ["--filter", "@speakeasy-services/private-sessions", "dev:worker"],
+        "outFiles": ["${workspaceFolder}/**/*.js"],
+        "sourceMaps": true,
+        "resolveSourceMapLocations": [
+          "${workspaceFolder}/**",
+          "!**/node_modules/**"
+        ],
+        "env": {
+          "NODE_ENV": "development"
+        },
+        "cwd": "${workspaceFolder}"
+      },
+      {
+        "type": "node",
+        "request": "launch",
+        "name": "Debug Trusted Users API",
+        "skipFiles": ["<node_internals>/**"],
+        "program": "${workspaceFolder}/services/trusted-users/src/api.ts",
+        "runtimeExecutable": "pnpm",
+        "runtimeArgs": ["--filter", "@speakeasy-services/trusted-users", "dev:api"],
+        "outFiles": ["${workspaceFolder}/**/*.js"],
+        "sourceMaps": true,
+        "resolveSourceMapLocations": [
+          "${workspaceFolder}/**",
+          "!**/node_modules/**"
+        ],
+        "env": {
+          "NODE_ENV": "development"
+        },
+        "cwd": "${workspaceFolder}"
+      },
+      {
+        "type": "node",
+        "request": "launch",
+        "name": "Debug User Keys API",
+        "skipFiles": ["<node_internals>/**"],
+        "program": "${workspaceFolder}/services/user-keys/src/api.ts",
+        "runtimeExecutable": "pnpm",
+        "runtimeArgs": ["--filter", "@speakeasy-services/user-keys", "dev:api"],
+        "outFiles": ["${workspaceFolder}/**/*.js"],
+        "sourceMaps": true,
+        "resolveSourceMapLocations": [
+          "${workspaceFolder}/**",
+          "!**/node_modules/**"
+        ],
+        "env": {
+          "NODE_ENV": "development"
+        },
+        "cwd": "${workspaceFolder}"
+      }
+    ]
+  }
