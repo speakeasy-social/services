@@ -1,11 +1,14 @@
 import { Worker } from '@speakeasy-services/service-base';
-import { DatabaseError, ServiceError } from '@speakeasy-services/common';
 import { Queue, JOB_NAMES } from '@speakeasy-services/queue';
-import fetch from 'node-fetch';
+import { apiRequest } from '@speakeasy-services/common';
 
 interface AddRecipientToSessionJob {
   authorDid: string;
   recipientDid: string;
+}
+
+interface RotateSessionJob {
+  authorDid: string;
 }
 
 const worker = new Worker({ name: 'trusted-users-worker' });
@@ -19,29 +22,32 @@ queue.work<AddRecipientToSessionJob>(
   async (job) => {
     const { authorDid, recipientDid } = job.data;
 
-    // Make API call to add user to session
-    const response = await fetch('social.spkeasy.privateSession.addUser', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer api-key:trusted-users:${process.env.TRUSTED_USERS_API_KEY}`,
-      },
-      body: JSON.stringify({
+    await apiRequest(
+      'POST',
+      'social.spkeasy.privateSession.addUser',
+      'trusted-users',
+      {
         authorDid,
         recipientDid,
-      }),
-    });
-
-    if (!response.ok) {
-      throw new ServiceError(
-        `Failed to add recipient to session: ${response.status} ${response.statusText}`,
-        response.status,
-      );
-    }
+      },
+    );
   },
 );
 
+queue.work<RotateSessionJob>(JOB_NAMES.ROTATE_SESSION, async (job) => {
+  const { authorDid } = job.data;
+
+  await apiRequest(
+    'POST',
+    'social.spkeasy.privateSession.rotateSession',
+    'trusted-users',
+    {
+      authorDid,
+    },
+  );
+});
+
 worker.start().catch((error: Error) => {
   console.error('Failed to start worker:', error);
-  throw new DatabaseError('Failed to start worker');
+  throw error;
 });

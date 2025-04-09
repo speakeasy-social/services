@@ -4,6 +4,7 @@ import { ValidationError } from '@speakeasy-services/common';
 
 export const JOB_NAMES = {
   ADD_RECIPIENT_TO_SESSION: 'add-recipient-to-session',
+  ROTATE_SESSION: 'rotate-session',
 } as const;
 
 const queueConfigSchema = z.object({
