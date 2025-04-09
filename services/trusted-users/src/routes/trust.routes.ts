@@ -2,13 +2,23 @@
  * XRPC method definitions for trust management
  */
 
-import { TrustService } from '../services/trust.service.js';
-import { XRPCHandlerConfig, XRPCReqContext, HandlerOutput } from '@atproto/xrpc-server';
-import { Request, Response } from 'express';
-import { z } from 'zod';
-import { ServiceError, ValidationError, AuthorizationError, NotFoundError, DatabaseError, authorize } from '@speakeasy-services/common';
-import { lexicons } from '../lexicon/index.js';
-import { getTrustsDef, addTrustedDef, removeTrustedDef } from '../lexicon/types/trust.js';
+import { TrustService } from "../services/trust.service.js";
+import {
+  XRPCHandlerConfig,
+  XRPCReqContext,
+  HandlerOutput,
+} from "@atproto/xrpc-server";
+import {
+  ServiceError,
+  ValidationError,
+  DatabaseError,
+  authorize,
+} from "@speakeasy-services/common";
+import {
+  getTrustedDef,
+  addTrustedDef,
+  removeTrustedDef,
+} from "../lexicon/types/trust.js";
 
 const trustService = new TrustService();
 
@@ -33,13 +43,13 @@ function validateAgainstLexicon(lexicon: any, params: any) {
       if (value === undefined) continue;
 
       const type = (def as any).type;
-      if (type === 'string' && typeof value !== 'string') {
+      if (type === "string" && typeof value !== "string") {
         throw new ValidationError(`${field} must be a string`);
-      } else if (type === 'number' && typeof value !== 'number') {
+      } else if (type === "number" && typeof value !== "number") {
         throw new ValidationError(`${field} must be a number`);
-      } else if (type === 'boolean' && typeof value !== 'boolean') {
+      } else if (type === "boolean" && typeof value !== "boolean") {
         throw new ValidationError(`${field} must be a boolean`);
-      } else if (type === 'array' && !Array.isArray(value)) {
+      } else if (type === "array" && !Array.isArray(value)) {
         throw new ValidationError(`${field} must be an array`);
       }
     }
@@ -48,64 +58,70 @@ function validateAgainstLexicon(lexicon: any, params: any) {
 
 // Define method handlers
 const methodHandlers = {
-  'social.spkeasy.graph.getTrusts': async (ctx: XRPCReqContext): Promise<HandlerOutput> => {
+  "social.spkeasy.graph.getTrusted": async (
+    ctx: XRPCReqContext,
+  ): Promise<HandlerOutput> => {
     const { did } = ctx.params as { did: string };
     // Validate input against lexicon
-    validateAgainstLexicon(getTrustsDef, { did });
-    
+    validateAgainstLexicon(getTrustedDef, { did });
+
     try {
-      const result = await trustService.getTrustedBy(did);
+      const result = await trustService.getTrusted(did);
       return {
-        encoding: 'application/json',
-        body: result
+        encoding: "application/json",
+        body: result,
       };
     } catch (error) {
       if (error instanceof ServiceError) {
         throw error;
       }
-      throw new DatabaseError('Failed to get trusted users');
+      throw new DatabaseError("Failed to get trusted users");
     }
   },
-  'social.spkeasy.graph.addTrusted': async (ctx: XRPCReqContext): Promise<HandlerOutput> => {
+  "social.spkeasy.graph.addTrusted": async (
+    ctx: XRPCReqContext,
+  ): Promise<HandlerOutput> => {
     const { recipientDid } = ctx.params as { recipientDid: string };
     // Validate input against lexicon
     validateAgainstLexicon(addTrustedDef, { recipientDid });
-    
+
     try {
       // Only the author can add trusted users
-      authorize(ctx, 'create', { authorDid: ctx.params.did });
-      
+      authorize(ctx, "create", { authorDid: ctx.params.did });
+
       const result = await trustService.addTrusted(recipientDid);
       return {
-        encoding: 'application/json',
-        body: { success: true }
+        encoding: "application/json",
+        body: { success: true },
       };
     } catch (error) {
       if (error instanceof ServiceError) {
         throw error;
       }
-      throw new DatabaseError('Failed to add trusted user');
+      throw new DatabaseError("Failed to add trusted user");
     }
   },
-  'social.spkeasy.graph.removeTrusted': async (ctx: XRPCReqContext): Promise<HandlerOutput> => {
+  "social.spkeasy.graph.removeTrusted": async (
+    ctx: XRPCReqContext,
+  ): Promise<HandlerOutput> => {
     const { recipientDid } = ctx.params as { recipientDid: string };
     // Validate input against lexicon
     validateAgainstLexicon(removeTrustedDef, { recipientDid });
-    
+
     try {
       // Only the author can remove trusted users
-      authorize(ctx, 'delete', { authorDid: ctx.params.did });
-      
+      authorize(ctx, "delete", { authorDid: ctx.params.did });
+
       const result = await trustService.removeTrusted(recipientDid);
       return {
-        encoding: 'application/json',
-        body: { success: true }
+        encoding: "application/json",
+        body: { success: true },
       };
     } catch (error) {
       if (error instanceof ServiceError) {
         throw error;
       }
-      throw new DatabaseError('Failed to remove trusted user');
+      throw new DatabaseError("Failed to remove trusted user");
     }
   },
 } as const;
@@ -114,13 +130,13 @@ type MethodName = keyof typeof methodHandlers;
 
 // Define methods using XRPC lexicon
 export const methods: Record<MethodName, XRPCHandlerConfig> = {
-  'social.spkeasy.graph.getTrusts': {
-    handler: methodHandlers['social.spkeasy.graph.getTrusts']
+  "social.spkeasy.graph.getTrusted": {
+    handler: methodHandlers["social.spkeasy.graph.getTrusted"],
   },
-  'social.spkeasy.graph.addTrusted': {
-    handler: methodHandlers['social.spkeasy.graph.addTrusted']
+  "social.spkeasy.graph.addTrusted": {
+    handler: methodHandlers["social.spkeasy.graph.addTrusted"],
   },
-  'social.spkeasy.graph.removeTrusted': {
-    handler: methodHandlers['social.spkeasy.graph.removeTrusted']
+  "social.spkeasy.graph.removeTrusted": {
+    handler: methodHandlers["social.spkeasy.graph.removeTrusted"],
   },
 };

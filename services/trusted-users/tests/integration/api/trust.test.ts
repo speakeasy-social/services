@@ -8,6 +8,10 @@ import {
   ApiTestTransformer,
   runApiTests,
 } from "../../../../shared/testing/api-test-generator";
+import {
+  authMiddleware,
+  authenticateToken,
+} from "@speakeasy-services/service-base";
 
 const authorDid = "did:example:alex-author";
 const validRecipient = "did:example:valid-valery";
@@ -29,13 +33,7 @@ describe("Trusted Users API Tests", () => {
       port: 3001,
       methods,
       lexicons,
-      middleware: [
-        (req, res, next) => {
-          // Mock authentication middleware
-          req.user = { did: authorDid };
-          next();
-        },
-      ],
+      middleware: [authenticateToken, authMiddleware],
     });
 
     await server.start();

@@ -1,88 +1,88 @@
-import { LexiconDoc } from '@atproto/lexicon';
+import { LexiconDoc } from "@atproto/lexicon";
 
-export const getTrustsDef: LexiconDoc = {
+export const getTrustedDef: LexiconDoc = {
   lexicon: 1,
-  id: 'social.spkeasy.graph.getTrusts',
+  id: "social.spkeasy.graph.getTrusted",
   defs: {
     main: {
-      type: 'query',
-      description: 'Get all users trusted by a given DID',
+      type: "query",
+      description: "Get all users trusted by a given DID",
       parameters: {
-        type: 'params',
-        required: ['did'],
+        type: "params",
+        required: ["did"],
         properties: {
-          did: { type: 'string' }
-        }
+          did: { type: "string" },
+        },
       },
       output: {
-        encoding: 'application/json',
+        encoding: "application/json",
         schema: {
-          type: 'object',
-          required: ['trusts'],
+          type: "object",
+          required: ["trusts"],
           properties: {
             trusts: {
-              type: 'array',
-              items: { type: 'string' }
-            }
-          }
-        }
-      }
-    }
-  }
+              type: "array",
+              items: { type: "string" },
+            },
+          },
+        },
+      },
+    },
+  },
 };
 
 export const addTrustedDef: LexiconDoc = {
   lexicon: 1,
-  id: 'social.spkeasy.graph.addTrusted',
+  id: "social.spkeasy.graph.addTrusted",
   defs: {
     main: {
-      type: 'procedure',
-      description: 'Add a user to the trusted users list',
+      type: "procedure",
+      description: "Add a user to the trusted users list",
       parameters: {
-        type: 'params',
-        required: ['recipientDid'],
+        type: "params",
+        required: ["recipientDid"],
         properties: {
-          recipientDid: { type: 'string' }
-        }
+          recipientDid: { type: "string" },
+        },
       },
       output: {
-        encoding: 'application/json',
+        encoding: "application/json",
         schema: {
-          type: 'object',
-          required: ['success'],
+          type: "object",
+          required: ["success"],
           properties: {
-            success: { type: 'boolean' }
-          }
-        }
-      }
-    }
-  }
+            success: { type: "boolean" },
+          },
+        },
+      },
+    },
+  },
 };
 
 export const removeTrustedDef: LexiconDoc = {
   lexicon: 1,
-  id: 'social.spkeasy.graph.removeTrusted',
+  id: "social.spkeasy.graph.removeTrusted",
   defs: {
     main: {
-      type: 'procedure',
-      description: 'Remove a user from the trusted users list',
+      type: "procedure",
+      description: "Remove a user from the trusted users list",
       parameters: {
-        type: 'params',
-        required: ['recipientDid'],
+        type: "params",
+        required: ["recipientDid"],
         properties: {
-          recipientDid: { type: 'string' }
-        }
+          recipientDid: { type: "string" },
+        },
       },
       output: {
-        encoding: 'application/json',
+        encoding: "application/json",
         schema: {
-          type: 'object',
-          required: ['success'],
+          type: "object",
+          required: ["success"],
           properties: {
-            success: { type: 'boolean' }
-          }
-        }
-      }
-    }
-  }
-}; 
+            success: { type: "boolean" },
+          },
+        },
+      },
+    },
+  },
+};
