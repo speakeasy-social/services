@@ -109,6 +109,7 @@ export interface ApiTestTransformer {
 export interface ApiTestRunnerOptions {
   server: Server;
   prisma?: any; // Using any here since PrismaClient type varies by service
+  testTransformers?: ApiTestTransformer[];
 }
 
 const ensureXrpcPrefix = (endpoint: string): string => {
@@ -171,14 +172,16 @@ export const createApiTestRunner = (options: ApiTestRunnerOptions) => {
       });
 
       if (test.assert) {
+        const assertFn = test.assert;
         it("should satisfy additional assertions", async () => {
-          await test.assert();
+          await assertFn();
         });
       }
 
       if (test.after) {
+        const afterFn = test.after;
         after(async () => {
-          await test.after();
+          await afterFn();
         });
       }
     });
