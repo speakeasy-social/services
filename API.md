@@ -8,7 +8,7 @@ Each line represents a required XRPC endpoint with its purpose:
 
 ```
 # Trust Management (Graph)
-social.spkeasy.graph.getTrusts            - List users who trust a given DID
+social.spkeasy.graph.getTrusted           - List users trusted by the given author DID
 social.spkeasy.graph.addTrusted           - Add a new trusted user
 social.spkeasy.graph.removeTrusted        - Remove a trusted user
 

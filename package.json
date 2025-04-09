@@ -22,12 +22,20 @@
     "db:studio": "prisma studio"
   },
   "devDependencies": {
+    "@types/jest": "^29.5.12",
     "@types/node": "^22.13.11",
+    "@types/supertest": "^6.0.2",
     "@typescript-eslint/eslint-plugin": "^7.0.1",
     "@typescript-eslint/parser": "^7.0.1",
+    "dotenv": "^16.4.7",
     "eslint": "^8.56.0",
+    "jest": "^29.7.0",
+    "jest-environment-node": "^29.7.0",
+    "jest-mock-extended": "^3.0.5",
     "prettier": "^3.2.5",
     "prisma": "^6.5.0",
+    "supertest": "^6.3.4",
+    "ts-jest": "^29.1.2",
     "turbo": "^2.4.4",
     "typescript": "^5.3.3"
   },
