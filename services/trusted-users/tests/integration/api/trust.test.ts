@@ -211,7 +211,7 @@ describe("Trusted Users API Tests", () => {
   ];
 
   runApiTests(
-    { server, prisma, testTransformers: [authorizationTransformer] },
+    { server, testTransformers: [authorizationTransformer] },
     apiTests,
     "Trusted Users API Tests",
   );

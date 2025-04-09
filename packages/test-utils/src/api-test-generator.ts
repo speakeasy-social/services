@@ -25,7 +25,7 @@
  *   }
  * ];
  *
- * runApiTests({ server, prisma }, apiTests, [], "User API Tests");
+ * runApiTests({ server }, apiTests, [], "User API Tests");
  * ```
  *
  * Test Transformers:
@@ -108,7 +108,6 @@ export interface ApiTestTransformer {
 
 export interface ApiTestRunnerOptions {
   server: Server;
-  prisma?: any; // Using any here since PrismaClient type varies by service
   testTransformers?: ApiTestTransformer[];
 }
 
@@ -117,7 +116,7 @@ const ensureXrpcPrefix = (endpoint: string): string => {
 };
 
 export const createApiTestRunner = (options: ApiTestRunnerOptions) => {
-  const { server, prisma } = options;
+  const { server } = options;
 
   return async (test: ApiTest) => {
     const method = test.method || "get";
@@ -193,7 +192,6 @@ export const createApiTestRunner = (options: ApiTestRunnerOptions) => {
  *
  * @param options - Configuration options for the test runner
  * @param options.server - The Express server instance to test against
- * @param options.prisma - Optional Prisma client for database operations
  * @param tests - Array of test cases to run
  * @param testTransformers - Optional array of transformers to apply to the tests
  * @param describeName - Optional name for the test suite. Defaults to "API Tests"
@@ -216,7 +214,7 @@ export const createApiTestRunner = (options: ApiTestRunnerOptions) => {
  *   ]
  * ];
  *
- * runApiTests({ server, prisma }, tests, transformers, "User API Tests");
+ * runApiTests({ server }, tests, transformers, "User API Tests");
  * ```
  */
 export const runApiTests = (
