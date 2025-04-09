@@ -14,7 +14,7 @@ social.spkeasy.graph.removeTrusted        - Remove a trusted user
 
 # Session Management
 social.spkeasy.privateSession.revoke      - Revoke an active session
-social.spkeasy.privateSession.addUser     - Add new trusted user to existing session
+social.spkeasy.privateSession.addUser     - Add new trusted user to the current session
 
 # Post Management
 social.spkeasy.privatePosts.getPosts      - List private posts accessible to a recipient
