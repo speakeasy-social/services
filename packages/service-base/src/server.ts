@@ -7,6 +7,15 @@ import { LexiconDoc } from "@atproto/lexicon";
 import z from "zod";
 import { createLogger } from "@speakeasy-services/common";
 
+// Extend Express Request type to include logger
+declare global {
+  namespace Express {
+    interface Request {
+      logger: ReturnType<typeof createLogger>;
+    }
+  }
+}
+
 export interface ServerOptions {
   name: string;
   port: number;
@@ -61,6 +70,16 @@ export class Server {
     // Parse JSON bodies
     app.use(express.json());
 
+    // Add request logger middleware
+    app.use((req, res, next) => {
+      req.logger = this.logger.child({
+        requestId: (req.headers["x-request-id"] as string) || "unknown",
+        method: req.method,
+        path: req.path,
+      });
+      next();
+    });
+
     // Add middleware
     if (this.options.middleware) {
       for (const middleware of this.options.middleware) {
@@ -99,7 +118,7 @@ export class Server {
           },
           resetRouteRateLimits: async () => {
             // TODO: Implement rate limiting
-            this.logger.debug("Rate limits reset");
+            req.logger.debug("Rate limits reset");
             return Promise.resolve();
           },
         };
@@ -107,7 +126,7 @@ export class Server {
         // Get the method handler
         const methodHandler = this.options.methods[method];
         if (!methodHandler) {
-          this.logger.warn({ method }, "Method not found");
+          req.logger.warn({ method }, "Method not found");
           res.status(404).json({ error: "Method not found" });
           return;
         }
@@ -115,7 +134,7 @@ export class Server {
         // Call the method handler directly
         const output = await methodHandler.handler(xrpcReq);
         if (!output || !("body" in output)) {
-          this.logger.error({ method }, "Invalid handler output");
+          req.logger.error({ method }, "Invalid handler output");
           res.status(500).json({ error: "Internal server error" });
           return;
         }
@@ -123,7 +142,7 @@ export class Server {
         // Send the JSON response
         res.status(200).json(output.body);
 
-        this.logger.info({
+        req.logger.info({
           method,
           duration: Date.now() - startTime,
           status: 200,
@@ -133,7 +152,7 @@ export class Server {
 
         if (error instanceof XRPCError) {
           const status = Number(error.status);
-          this.logger.warn(
+          req.logger.warn(
             {
               method,
               duration,
@@ -151,7 +170,7 @@ export class Server {
         } else {
           const errorMessage =
             error instanceof Error ? error.message : "Unknown error occurred";
-          this.logger.error(
+          req.logger.error(
             {
               method,
               duration,
