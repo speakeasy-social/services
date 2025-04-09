@@ -1,7 +1,9 @@
-import { XRPCError } from "@atproto/xrpc";
-import { StatusCodes } from "../constants/index.js";
-import NodeCache from "node-cache";
-export { createLogger } from "../logger.js";
+import { XRPCError } from '@atproto/xrpc';
+import { StatusCodes } from '../constants/index.js';
+import NodeCache from 'node-cache';
+import { getServiceApiKey } from '../auth/bearer-tokens.js';
+import { ServiceError } from '../errors.js';
+export { createLogger } from '../logger.js';
 
 export const cache = new NodeCache({ stdTTL: 300 });
 const promiseCache: Record<string, Promise<any>> = {};
@@ -17,19 +19,19 @@ export function createError(
 // Common application errors
 export const Errors = {
   InvalidRequest: (message: string) =>
-    createError(StatusCodes.BAD_REQUEST, message, "InvalidRequest"),
+    createError(StatusCodes.BAD_REQUEST, message, 'InvalidRequest'),
 
-  Unauthorized: (message: string = "Unauthorized") =>
-    createError(StatusCodes.UNAUTHORIZED, message, "Unauthorized"),
+  Unauthorized: (message: string = 'Unauthorized') =>
+    createError(StatusCodes.UNAUTHORIZED, message, 'Unauthorized'),
 
   NotFound: (message: string) =>
-    createError(StatusCodes.NOT_FOUND, message, "NotFound"),
+    createError(StatusCodes.NOT_FOUND, message, 'NotFound'),
 
-  RateLimitExceeded: (message: string = "Too many requests") =>
-    createError(StatusCodes.TOO_MANY_REQUESTS, message, "RateLimitExceeded"),
+  RateLimitExceeded: (message: string = 'Too many requests') =>
+    createError(StatusCodes.TOO_MANY_REQUESTS, message, 'RateLimitExceeded'),
 
-  InternalServerError: (message: string = "Internal server error") =>
-    createError(StatusCodes.INTERNAL_SERVER, message, "InternalError"),
+  InternalServerError: (message: string = 'Internal server error') =>
+    createError(StatusCodes.INTERNAL_SERVER, message, 'InternalError'),
 } as const;
 
 export async function asyncCache<T>(
@@ -49,4 +51,28 @@ export async function asyncCache<T>(
     delete promiseCache[key];
   }
   return result as T;
+}
+
+export async function apiRequest(
+  method: string,
+  path: string,
+  fromService: string,
+  body: any,
+) {
+  const apiKey = getServiceApiKey(fromService);
+  const response = await fetch(path, {
+    method,
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify(body),
+  });
+
+  if (!response.ok) {
+    throw new ServiceError(
+      `Failed to add recipient to session: ${response.status} ${response.statusText}`,
+      response.status,
+    );
+  }
 }

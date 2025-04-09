@@ -1,7 +1,7 @@
-import { AuthenticationError } from "../errors.js";
-import fetch from "node-fetch";
-import jwt from "jsonwebtoken";
-import { asyncCache } from "../utils/index.js";
+import { AuthenticationError } from '../errors.js';
+import fetch from 'node-fetch';
+import jwt from 'jsonwebtoken';
+import { asyncCache } from '../utils/index.js';
 
 export interface BlueskySession {
   did: string;
@@ -20,20 +20,20 @@ export interface BlueskySession {
  * @throws AuthenticationError if the token is invalid or the session verification fails
  */
 async function verifyBlueskySession(token: string): Promise<BlueskySession> {
-  let host = "https://bsky.social";
+  let host = 'https://bsky.social';
 
   try {
     const decoded = jwt.decode(token) as jwt.JwtPayload;
 
     // Are we in development?
     if (
-      ["test", "development"].includes(process.env.NODE_ENV || "") &&
-      decoded?.aud === "did:web:localhost"
+      ['test', 'development'].includes(process.env.NODE_ENV || '') &&
+      decoded?.aud === 'did:web:localhost'
     ) {
-      host = "http://localhost:2583";
+      host = 'http://localhost:2583';
     }
   } catch (error) {
-    throw new AuthenticationError("Corrupt session token");
+    throw new AuthenticationError('Corrupt session token');
   }
 
   // Make request to Bluesky API
@@ -44,7 +44,7 @@ async function verifyBlueskySession(token: string): Promise<BlueskySession> {
   });
 
   if (!response.ok) {
-    throw new AuthenticationError("Invalid session");
+    throw new AuthenticationError('Invalid session');
   }
 
   const session = (await response.json()) as BlueskySession;
@@ -66,7 +66,7 @@ async function authenticateUser(req: any, token: string) {
 
   // Attach user info to the request object for the authorization middleware
   req.user = {
-    type: "user",
+    type: 'user',
     did: session.did,
     handle: session.handle,
   };
@@ -81,27 +81,17 @@ async function authenticateUser(req: any, token: string) {
  * @throws AuthenticationError if the API key is invalid or doesn't match the expected format
  */
 function authenticateService(req: any, token: string) {
-  // API keys are of the form api-key:service-name:key
-  const serviceKeys = {
-    "private-sessions": process.env.PRIVATE_SESSIONS_API_KEY,
-    "trusted-users": process.env.TRUSTED_USERS_API_KEY,
-    "user-keys": process.env.USER_KEYS_API_KEY,
-  };
+  const [_apiKey, serviceName] = token.split(':');
 
-  const [_apiKey, serviceName, key] = token.split(":");
+  // Get the expected full API key for the service
+  const expectedKey = getServiceApiKey(serviceName);
 
-  const expectedKey = serviceKeys[serviceName as keyof typeof serviceKeys];
-
-  if (!expectedKey) {
-    throw new AuthenticationError("Unknown service name");
-  }
-
-  if (key !== expectedKey) {
-    throw new AuthenticationError("Invalid service API key");
+  if (token !== expectedKey) {
+    throw new AuthenticationError('Invalid service API key');
   }
 
   req.user = {
-    type: "service",
+    type: 'service',
     name: serviceName,
   };
 }
@@ -121,17 +111,17 @@ export const authenticateToken = async (req: any, res: any, next: any) => {
     ? req.headers.authorization[0]
     : req.headers.authorization;
 
-  if (!authHeader?.startsWith("Bearer ")) {
-    throw new AuthenticationError("Missing authorization header");
+  if (!authHeader?.startsWith('Bearer ')) {
+    throw new AuthenticationError('Missing authorization header');
   }
 
-  const [bearer, token] = authHeader.split(" ");
+  const [bearer, token] = authHeader.split(' ');
 
-  if (bearer.toLowerCase() !== "bearer") {
-    throw new AuthenticationError("Invalid authorization header");
+  if (bearer.toLowerCase() !== 'bearer') {
+    throw new AuthenticationError('Invalid authorization header');
   }
 
-  if (token.startsWith("api-key:")) {
+  if (token.startsWith('api-key:')) {
     authenticateService(req, token);
   } else {
     await authenticateUser(req, token);
@@ -139,3 +129,26 @@ export const authenticateToken = async (req: any, res: any, next: any) => {
 
   next();
 };
+
+/**
+ * Generates a full API key for a given service.
+ *
+ * @param serviceName - The name of the service (e.g. "private-sessions", "trusted-users", "user-keys")
+ * @returns The full API key in the format "api-key:service-name:key"
+ * @throws AuthenticationError if the service name is unknown or the API key is not set
+ */
+export function getServiceApiKey(serviceName: string): string {
+  const serviceKeys = {
+    'private-sessions': process.env.PRIVATE_SESSIONS_API_KEY,
+    'trusted-users': process.env.TRUSTED_USERS_API_KEY,
+    'user-keys': process.env.USER_KEYS_API_KEY,
+  };
+
+  const key = serviceKeys[serviceName as keyof typeof serviceKeys];
+
+  if (!key) {
+    throw new AuthenticationError('Unknown service name');
+  }
+
+  return `api-key:${serviceName}:${key}`;
+}
