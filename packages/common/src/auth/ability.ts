@@ -1,104 +1,80 @@
-import { PureAbility, AbilityBuilder, InferSubjects } from "@casl/ability";
-import { XRPCReqContext, HandlerOutput } from "@atproto/xrpc-server";
-import { AuthorizationError } from "../errors.js";
-
-interface CustomXRPCReqContext extends XRPCReqContext {
-  ability?: AppAbility;
-}
+import { AuthorizationError } from '../errors.js';
+import { User, Service, ExtendedRequest } from '../express-extensions.js';
 
 // Define the actions that can be performed
 export type Action =
-  | "manage"
-  | "list"
-  | "create"
-  | "delete"
-  | "revoke"
-  | "get_public_key";
+  | 'manage'
+  | 'list'
+  | 'create'
+  | 'delete'
+  | 'revoke'
+  | 'get_public_key'
+  | 'get_private_key';
 
 // Define the subjects that can be acted upon
 export type Subject =
-  | "private_post"
-  | "private_session"
-  | "trust"
-  | "group"
-  | "keys";
+  | 'private_post'
+  | 'private_session'
+  | 'user_trust'
+  | 'group'
+  | 'key';
 
-// Define the ability type with strict tuple typing
-export type AppAbility = PureAbility<[Action, Subject]>;
+export type Ability = {
+  action: Action;
+  subject: Subject;
+  conditions?: Record<string, any>;
+};
+
+const can = (
+  action: Action,
+  subject: Subject,
+  conditions?: Record<string, any>,
+) => ({
+  action,
+  subject,
+  conditions,
+});
 
 /**
- * Creates an ability instance with permissions for a user based on their DID.
- *
- * Permission rules are defined using the `can` method with three parameters:
- * 1. action: The operation being performed (e.g. 'manage', 'list')
- * 2. subject: The type of resource being accessed (e.g. 'private_post', 'trust')
- * 3. conditions: An object that must match the properties of the subject being accessed
- *
- * When checking permissions with authorize(request, action, subject):
- * - The action must match exactly (unless it's 'manage' which is a wildcard)
- * - The subject must be an instance of the specified type (subject.constructor.name must match the string defined in can())
- * - The subject must have properties that exactly match the conditions object
- *
- * Example:
- *   Rule: can('manage', 'trust', { authorDid: did })
- *   This means the user can manage a trust object only if:
- *   - The action is 'manage'
- *   - The subject is an instance of 'trust' (subject.constructor.name === 'trust')
- *   - The subject has properties that match exactly:
- *     - subject.authorDid === did
- *
- * Note: All conditions must match exactly - partial matches will fail.
+ * Define what users are allowed to do
  */
-export function defineUserAbilities(did: string): AppAbility {
-  const { can, cannot, build } = new AbilityBuilder<AppAbility>(PureAbility);
-
+const userAbilities = [
   // User-level trust permissions
-  can("manage", "trust", { authorDid: did });
+  can('manage', 'user_trust', { authorDid: 'did' }),
 
   // Authors can manage their own sessions and posts
   // FIXME the second param needs to === subject.constructor.name
-  can("revoke", "private_session", { authorDid: did });
-  can("manage", "private_post", { authorDid: did });
+  can('revoke', 'private_session', { authorDid: 'did' }),
+  can('manage', 'private_post', { authorDid: 'did' }),
   // Recipients can read posts shared with them
-  can("list", "private_post", { recipientDid: did });
+  can('list', 'private_post', { recipientDid: 'did' }),
 
   // Users can manage their own keys
-  can("manage", "keys", { did: did });
+  can('manage', 'key', { did: 'did' }),
   // Anyone can read public keys
-  can("get_public_key", "keys");
-
-  return build();
-}
+  can('get_public_key', 'key'),
+];
 
 /**
- * Define what other services calling the API are allowed to do
+ * What services are allowed to do
  */
-export function defineServiceAbilities(serviceName: string): AppAbility {
-  const { can, cannot, build } = new AbilityBuilder<AppAbility>(PureAbility);
-
-  // Service-specific permissions
-  if (serviceName === "private-sessions") {
-    can("list", "trust");
-  } else if (serviceName === "trusted-users") {
-    can("manage", "private_session");
-  }
-
-  return build();
-}
+const serviceAbilities = [
+  can('list', 'user_trust', { name: 'private-sessions' }),
+  can('manage', 'private_session', { name: 'trusted-users' }),
+];
 
 /**
  * Middleware that sets up the ability based on whether the request is from a user or service.
  * Attaches the appropriate set of authorization abilities to the request
  */
 export async function authorizationMiddleware(req: any, res: any, next: any) {
-  // Check if this is a service request
-  const userDid = req.user?.did;
-  if (userDid) {
-    req.ability = defineUserAbilities(userDid);
-  } else if (req.service) {
-    req.ability = defineServiceAbilities(req.service.name);
+  // Check if this is a user or service authenticated request
+  if (req.user?.type === 'user') {
+    req.abilities = userAbilities;
+  } else if (req.user?.type === 'service') {
+    req.abilities = serviceAbilities;
   } else {
-    throw new AuthorizationError("Request must be authenticated");
+    throw new AuthorizationError('Request must be authenticated');
   }
 
   next();
@@ -109,12 +85,54 @@ export async function authorizationMiddleware(req: any, res: any, next: any) {
  * Throws AuthorizationError if the action is not permitted.
  */
 export function authorize(
-  ctx: CustomXRPCReqContext,
+  req: ExtendedRequest,
   action: Action,
-  subject: any,
+  subject: Subject,
+  record?: Record<string, any>,
 ): void {
-  const ability = ctx.ability as AppAbility;
-  if (!ability.can(action, subject)) {
+  if (!req.abilities) {
+    throw new AuthorizationError('Internal authorization error');
+  }
+
+  if (!req.user) {
+    throw new AuthorizationError('Not authenticated');
+  }
+
+  const isAllowed = Array.isArray(subject)
+    ? subject.every((s) =>
+        isAuthorized(req.abilities!, req.user!, action, s, record),
+      )
+    : isAuthorized(req.abilities, req.user, action, subject, record);
+
+  if (!isAllowed) {
     throw new AuthorizationError(`Not authorized to ${action} ${subject}`);
   }
+}
+
+function isAuthorized(
+  abilities: Ability[],
+  user: User | Service,
+  action: Action,
+  subject: Subject,
+  record?: Record<string, any>,
+): boolean {
+  if (!user) {
+    return false;
+  }
+
+  return abilities.some((ability) => {
+    let isAllowed = ability.subject === subject && ability.action === action;
+
+    if (isAllowed && ability.conditions) {
+      isAllowed = !!(
+        record &&
+        Object.entries(ability.conditions).every(
+          ([key, value]) =>
+            record[key] === user[value as keyof (User | Service)],
+        )
+      );
+    }
+
+    return isAllowed;
+  });
 }
