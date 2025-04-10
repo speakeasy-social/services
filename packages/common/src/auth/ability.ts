@@ -8,6 +8,7 @@ export type Action =
   | 'create'
   | 'delete'
   | 'revoke'
+  | 'update'
   | 'get_public_key'
   | 'get_private_key';
 

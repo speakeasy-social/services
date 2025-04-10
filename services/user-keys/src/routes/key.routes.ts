@@ -12,7 +12,7 @@ import {
   getPrivateKeyDef,
   rotateKeyDef,
 } from '../lexicon/types/key.js';
-import { Request, Response, RequestHandler } from 'express';
+import { RequestHandler, ExtendedRequest } from '@speakeasy-services/common';
 
 const keyService = new KeyService();
 
@@ -52,22 +52,24 @@ function validateAgainstLexicon(lexicon: any, params: any) {
 
 // Define method handlers
 const methodHandlers = {
-  // Public key operations
+  /**
+   * Get a user's public key by their DID
+   */
   'social.spkeasy.keys.getPublicKey': async (
-    req: Request,
+    req: ExtendedRequest,
   ): Promise<HandlerOutput> => {
     const { did } = req.query as { did: string };
 
     // Validate input against lexicon
-    validateAgainstLexicon(getPublicKeyDef, { did });
+    validateAgainstLexicon(getPublicKeyDef, req.query);
+
+    authorize(req, 'get_public_key', 'key', { authorDid: did });
 
     // Public key is publicly accessible
     const key = await keyService.getUserKey(did);
     if (!key) {
       throw new NotFoundError('Public key not found');
     }
-
-    authorize(req, 'get_public_key', key);
 
     return {
       encoding: 'application/json',
@@ -78,22 +80,24 @@ const methodHandlers = {
     };
   },
 
-  // Private key operations
+  /**
+   * Get the authenticated user's private key
+   */
   'social.spkeasy.keys.getPrivateKey': async (
-    req: Request,
+    req: ExtendedRequest,
   ): Promise<HandlerOutput> => {
-    const { did } = req.query as { did: string };
-
     // Validate input against lexicon
     validateAgainstLexicon(getPrivateKeyDef, {});
 
+    authorize(req, 'get_private_key', 'key', { authorDid: req.user.did });
+
     // Only the owner can access their private key
-    const key = await keyService.getUserKey(did);
+    const key = await keyService.getUserKey(req.user.did!);
     if (!key) {
       throw new NotFoundError('Private key not found');
     }
 
-    authorize(ctx.req, 'get_private_key', key);
+    authorize(req, 'get_private_key', 'key', key);
 
     return {
       encoding: 'application/json',
@@ -101,16 +105,24 @@ const methodHandlers = {
     };
   },
 
-  // Key rotation operations
+  /**
+   * Rotate a user's key pair with new public/private keys
+   */
   'social.spkeasy.keys.rotate': async (
-    req: Request,
+    req: ExtendedRequest,
   ): Promise<HandlerOutput> => {
     // Validate input against lexicon
-    validateAgainstLexicon(rotateKeyDef, {});
+    validateAgainstLexicon(rotateKeyDef, req.body);
 
-    authorize(req, 'update', currentKey);
+    const { privateKey, publicKey } = req.body;
 
-    const result = await keyService.requestRotation();
+    authorize(req, 'update', 'key', { authorDid: req.user.did });
+
+    const result = await keyService.requestRotation(
+      req.user.did!,
+      privateKey,
+      publicKey,
+    );
     return {
       encoding: 'application/json',
       body: result,

@@ -6,32 +6,36 @@ export const getPublicKeyDef: LexiconDoc = {
   defs: {
     main: {
       type: 'query',
-      description: 'Get a user\'s public key',
+      description: "Get a user's public key",
       parameters: {
         type: 'params',
         required: ['did'],
         properties: {
-          did: { 
+          did: {
             type: 'string',
-            description: 'The DID of the user whose public key to retrieve'
-          }
-        }
+            description: 'The DID of the user whose public key to retrieve',
+          },
+        },
       },
       output: {
         encoding: 'application/json',
         schema: {
           type: 'object',
-          required: ['publicKey'],
+          required: ['publicKey', 'authorDid'],
           properties: {
-            publicKey: { 
+            publicKey: {
               type: 'string',
-              description: 'The user\'s public key in base64 format'
-            }
-          }
-        }
-      }
-    }
-  }
+              description: "The user's public key in base64 format",
+            },
+            authorDid: {
+              type: 'string',
+              description: 'The DID of the key owner',
+            },
+          },
+        },
+      },
+    },
+  },
 };
 
 export const getPrivateKeyDef: LexiconDoc = {
@@ -40,26 +44,34 @@ export const getPrivateKeyDef: LexiconDoc = {
   defs: {
     main: {
       type: 'query',
-      description: 'Get a user\'s private key',
+      description: "Get a user's private key",
       parameters: {
         type: 'params',
-        properties: {}
+        properties: {},
       },
       output: {
         encoding: 'application/json',
         schema: {
           type: 'object',
-          required: ['privateKey'],
+          required: ['publicKey', 'privateKey', 'authorDid'],
           properties: {
-            privateKey: { 
+            publicKey: {
               type: 'string',
-              description: 'The user\'s private key in base64 format'
-            }
-          }
-        }
-      }
-    }
-  }
+              description: "The user's public key in base64 format",
+            },
+            privateKey: {
+              type: 'string',
+              description: "The user's private key in base64 format",
+            },
+            authorDid: {
+              type: 'string',
+              description: 'The DID of the key owner',
+            },
+          },
+        },
+      },
+    },
+  },
 };
 
 export const rotateKeyDef: LexiconDoc = {
@@ -69,9 +81,22 @@ export const rotateKeyDef: LexiconDoc = {
     main: {
       type: 'procedure',
       description: 'Request a key rotation',
-      parameters: {
-        type: 'params',
-        properties: {}
+      input: {
+        encoding: 'application/json',
+        schema: {
+          type: 'object',
+          required: ['privateKey', 'publicKey'],
+          properties: {
+            privateKey: {
+              type: 'string',
+              description: 'The new private key in base64 format',
+            },
+            publicKey: {
+              type: 'string',
+              description: 'The new public key in base64 format',
+            },
+          },
+        },
       },
       output: {
         encoding: 'application/json',
@@ -79,15 +104,15 @@ export const rotateKeyDef: LexiconDoc = {
           type: 'object',
           required: ['success'],
           properties: {
-            success: { 
+            success: {
               type: 'boolean',
-              description: 'Whether the key rotation request was successful'
-            }
-          }
-        }
-      }
-    }
-  }
+              description: 'Whether the key rotation request was successful',
+            },
+          },
+        },
+      },
+    },
+  },
 };
 
 export const keyDef: LexiconDoc = {
@@ -96,22 +121,21 @@ export const keyDef: LexiconDoc = {
   defs: {
     main: {
       type: 'object',
-      required: ['publicKey', 'privateKey', 'createdAt'],
+      required: ['publicKey', 'privateKey', 'authorDid'],
       properties: {
-        publicKey: { 
+        publicKey: {
           type: 'string',
-          description: 'The public key in base64 format'
+          description: 'The public key in base64 format',
         },
-        privateKey: { 
+        privateKey: {
           type: 'string',
-          description: 'The private key in base64 format'
+          description: 'The private key in base64 format',
         },
-        createdAt: { 
+        authorDid: {
           type: 'string',
-          format: 'datetime',
-          description: 'When the key was created'
-        }
-      }
-    }
-  }
-}; 
+          description: 'The DID of the key owner',
+        },
+      },
+    },
+  },
+};

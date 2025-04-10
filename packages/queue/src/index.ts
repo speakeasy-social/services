@@ -5,6 +5,7 @@ import { ValidationError } from '@speakeasy-services/common';
 export const JOB_NAMES = {
   ADD_RECIPIENT_TO_SESSION: 'add-recipient-to-session',
   ROTATE_SESSION: 'rotate-session',
+  UPDATE_USER_KEYS: 'update-user-keys',
 } as const;
 
 const queueConfigSchema = z.object({
@@ -13,7 +14,7 @@ const queueConfigSchema = z.object({
 });
 
 export const DEFAULT_RETRY_CONFIG = {
-  retryLimit: 10,
+  retryLimit: 12,
   retryDelay: 60, // Start with 1 minute delay
   retryBackoff: true,
 } as const;
