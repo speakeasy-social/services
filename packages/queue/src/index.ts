@@ -4,7 +4,7 @@ import { ValidationError } from '@speakeasy-services/common';
 
 export const JOB_NAMES = {
   ADD_RECIPIENT_TO_SESSION: 'add-recipient-to-session',
-  ROTATE_SESSION: 'rotate-session',
+  REVOKE_SESSION: 'revoke-session',
   UPDATE_USER_KEYS: 'update-user-keys',
 } as const;
 

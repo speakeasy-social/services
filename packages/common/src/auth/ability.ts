@@ -16,7 +16,7 @@ export type Action =
 export type Subject =
   | 'private_post'
   | 'private_session'
-  | 'user_trust'
+  | 'trusted_user'
   | 'group'
   | 'key';
 
@@ -41,7 +41,7 @@ const can = (
  */
 const userAbilities = [
   // User-level trust permissions
-  can('manage', 'user_trust', { authorDid: 'did' }),
+  can('manage', 'trusted_user', { authorDid: 'did' }),
 
   // Authors can manage their own sessions and posts
   // FIXME the second param needs to === subject.constructor.name
@@ -60,7 +60,7 @@ const userAbilities = [
  * What services are allowed to do
  */
 const serviceAbilities = [
-  can('list', 'user_trust', { name: 'private-sessions' }),
+  can('list', 'trusted_user', { name: 'private-sessions' }),
   can('manage', 'private_session', { name: 'trusted-users' }),
 ];
 

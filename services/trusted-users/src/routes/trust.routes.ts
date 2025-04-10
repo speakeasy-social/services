@@ -3,16 +3,13 @@
  */
 
 import { TrustService } from '../services/trust.service.js';
+import { HandlerOutput } from '@atproto/xrpc-server';
 import {
-  XRPCHandlerConfig,
-  XRPCReqContext,
-  HandlerOutput,
-} from '@atproto/xrpc-server';
-import {
-  ServiceError,
   ValidationError,
-  DatabaseError,
   authorize,
+  RequestHandler,
+  ExtendedRequest,
+  Subject,
 } from '@speakeasy-services/common';
 import {
   getTrustedDef,
@@ -63,15 +60,15 @@ const methodHandlers = {
    * Lists all trusted users for a given DID
    */
   'social.spkeasy.graph.getTrusted': async (
-    req: Request,
+    req: ExtendedRequest,
   ): Promise<HandlerOutput> => {
-    const { did } = ctx.params as { did: string };
+    const did = req.query.did || req.user.did;
     // Validate input against lexicon
     validateAgainstLexicon(getTrustedDef, { did });
 
     // Get the data from the service
     const trustedUsers = await trustService.getTrusted(did);
-    authorize(ctx, 'list', trustedUsers);
+    authorize(req, 'list', 'trusted_user', { authorDid: did });
 
     // Transform to view
     return {
@@ -84,25 +81,19 @@ const methodHandlers = {
    * Adds a new user to the trusted list
    */
   'social.spkeasy.graph.addTrusted': async (
-    ctx: XRPCReqContext,
+    req: ExtendedRequest,
   ): Promise<HandlerOutput> => {
-    const { recipientDid } = ctx.params as { recipientDid: string };
+    const { recipientDid } = req.body as { recipientDid: string };
     // Validate input against lexicon
-    validateAgainstLexicon(addTrustedDef, { recipientDid });
+    validateAgainstLexicon(addTrustedDef, req.body);
 
-    // Create a temporary trusted user for authorization
-    const tempTrustedUser = {
-      authorDid: ctx.params.did,
-      recipientDid,
-      createdAt: new Date(),
-      deletedAt: null,
-    };
+    const authorDid = req.user.did;
 
     // Authorize the action
-    authorize(ctx, 'create', tempTrustedUser);
+    authorize(req, 'create', 'trusted_user', { authorDid });
 
     // Perform the action
-    await trustService.addTrusted(ctx.req.user.did, recipientDid);
+    await trustService.addTrusted(authorDid!, recipientDid);
 
     return {
       encoding: 'application/json',
@@ -114,25 +105,23 @@ const methodHandlers = {
    * Removes a user from the trusted list
    */
   'social.spkeasy.graph.removeTrusted': async (
-    req: Request,
+    req: ExtendedRequest,
   ): Promise<HandlerOutput> => {
-    const { recipientDid } = ctx.params as { recipientDid: string };
     // Validate input against lexicon
-    validateAgainstLexicon(removeTrustedDef, { recipientDid });
+    validateAgainstLexicon(removeTrustedDef, req.body);
 
-    // Create a temporary trusted user for authorization
-    const tempTrustedUser = {
-      authorDid: ctx.params.did,
-      recipientDid,
-      createdAt: new Date(),
-      deletedAt: null,
-    };
+    const { recipientDid } = req.body as { recipientDid: string };
+    if (!req.user?.did) {
+      throw new ValidationError('User DID is required');
+    }
+
+    const authorDid = req.user.did;
 
     // Authorize the action
-    authorize(ctx, 'delete', tempTrustedUser);
+    authorize(req, 'delete', 'trusted_user', { authorDid });
 
     // Perform the action
-    await trustService.removeTrusted(ctx.req.user.did, recipientDid);
+    await trustService.removeTrusted(authorDid, recipientDid);
 
     return {
       encoding: 'application/json',
@@ -144,7 +133,7 @@ const methodHandlers = {
 type MethodName = keyof typeof methodHandlers;
 
 // Define methods using XRPC lexicon
-export const methods: Record<MethodName, XRPCHandlerConfig> = {
+export const methods: Record<MethodName, { handler: RequestHandler }> = {
   'social.spkeasy.graph.getTrusted': {
     handler: methodHandlers['social.spkeasy.graph.getTrusted'],
   },

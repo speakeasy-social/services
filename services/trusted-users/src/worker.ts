@@ -40,13 +40,13 @@ queue.work<AddRecipientToSessionJob>(
 /**
  * Request a new session for an author
  */
-queue.work<RotateSessionJob>(JOB_NAMES.ROTATE_SESSION, async (job) => {
+queue.work<RotateSessionJob>(JOB_NAMES.REVOKE_SESSION, async (job) => {
   const { authorDid } = job.data;
 
   await speakeasyApiRequest(
     {
       method: 'POST',
-      path: 'social.spkeasy.privateSession.rotateSession',
+      path: 'social.spkeasy.privateSession.revokeSession',
       fromService: 'trusted-users',
       toService: 'private-sessions',
     },

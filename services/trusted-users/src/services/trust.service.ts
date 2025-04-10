@@ -59,7 +59,7 @@ export class TrustService {
       }
     });
 
-    Queue.publish(JOB_NAMES.ROTATE_SESSION, {
+    Queue.publish(JOB_NAMES.REVOKE_SESSION, {
       authorDid,
     });
   }
