@@ -11,8 +11,8 @@ export const revokeSessionDef: LexiconDoc = {
         type: 'params',
         required: ['sessionId'],
         properties: {
-          sessionId: { type: 'string' }
-        }
+          sessionId: { type: 'string' },
+        },
       },
       output: {
         encoding: 'application/json',
@@ -20,12 +20,12 @@ export const revokeSessionDef: LexiconDoc = {
           type: 'object',
           required: ['success'],
           properties: {
-            success: { type: 'boolean' }
-          }
-        }
-      }
-    }
-  }
+            success: { type: 'boolean' },
+          },
+        },
+      },
+    },
+  },
 };
 
 export const addUserDef: LexiconDoc = {
@@ -40,8 +40,8 @@ export const addUserDef: LexiconDoc = {
         required: ['sessionId', 'recipientDid'],
         properties: {
           sessionId: { type: 'string' },
-          recipientDid: { type: 'string' }
-        }
+          recipientDid: { type: 'string' },
+        },
       },
       output: {
         encoding: 'application/json',
@@ -49,10 +49,38 @@ export const addUserDef: LexiconDoc = {
           type: 'object',
           required: ['success'],
           properties: {
-            success: { type: 'boolean' }
-          }
-        }
-      }
-    }
-  }
-}; 
+            success: { type: 'boolean' },
+          },
+        },
+      },
+    },
+  },
+};
+
+export const createSessionDef: LexiconDoc = {
+  lexicon: 1,
+  id: 'social.spkeasy.privateSession.create',
+  defs: {
+    main: {
+      type: 'procedure',
+      description: 'Create a new private session',
+      parameters: {
+        type: 'params',
+        required: ['name'],
+        properties: {
+          name: { type: 'string' },
+        },
+      },
+      output: {
+        encoding: 'application/json',
+        schema: {
+          type: 'object',
+          required: ['sessionId'],
+          properties: {
+            sessionId: { type: 'string' },
+          },
+        },
+      },
+    },
+  },
+};

@@ -1,30 +1,26 @@
-import { z } from "zod";
-import { SessionServiceImpl } from "../services/session.service.js";
+import { z } from 'zod';
+import { SessionService } from '../services/session.service.js';
+import { ValidationError } from '@speakeasy-services/common';
+import { LexiconDoc } from '@atproto/lexicon';
 import {
-  ServiceError,
-  ValidationError,
-  NotFoundError,
-  DatabaseError,
-  AuthorizationError,
-} from "@speakeasy-services/common";
-import { LexiconDoc } from "@atproto/lexicon";
-import {
-  createServer,
   XRPCHandlerConfig,
-  XRPCHandler,
   XRPCReqContext,
   HandlerOutput,
-} from "@atproto/xrpc-server";
-import { AppAbility, authorize } from "@speakeasy-services/common";
-import { lexicons } from "../lexicon/index.js";
-import { revokeSessionDef, addUserDef } from "../lexicon/types/session.js";
+} from '@atproto/xrpc-server';
+import { authorize } from '@speakeasy-services/common';
+import { lexicons } from '../lexicon/index.js';
+import {
+  revokeSessionDef,
+  addUserDef,
+  createSessionDef,
+} from '../lexicon/types/session.js';
 import {
   getPostsDef,
   createPostDef,
   deletePostDef,
-} from "../lexicon/types/posts.js";
+} from '../lexicon/types/posts.js';
 
-const sessionService = new SessionServiceImpl();
+const sessionService = new SessionService();
 
 // Helper function to validate against lexicon schema
 function validateAgainstLexicon(lexicon: any, params: any) {
@@ -47,13 +43,13 @@ function validateAgainstLexicon(lexicon: any, params: any) {
       if (value === undefined) continue;
 
       const type = (def as any).type;
-      if (type === "string" && typeof value !== "string") {
+      if (type === 'string' && typeof value !== 'string') {
         throw new ValidationError(`${field} must be a string`);
-      } else if (type === "number" && typeof value !== "number") {
+      } else if (type === 'number' && typeof value !== 'number') {
         throw new ValidationError(`${field} must be a number`);
-      } else if (type === "boolean" && typeof value !== "boolean") {
+      } else if (type === 'boolean' && typeof value !== 'boolean') {
         throw new ValidationError(`${field} must be a boolean`);
-      } else if (type === "array" && !Array.isArray(value)) {
+      } else if (type === 'array' && !Array.isArray(value)) {
         throw new ValidationError(`${field} must be an array`);
       }
     }
@@ -63,7 +59,27 @@ function validateAgainstLexicon(lexicon: any, params: any) {
 // Define method handlers with lexicon validation
 const methodHandlers = {
   // Session management
-  "social.spkeasy.privateSession.revoke": async (
+  'social.spkeasy.privateSession.create': async (
+    ctx: XRPCReqContext,
+  ): Promise<HandlerOutput> => {
+    const { name } = ctx.params as { name: string };
+    const { sessionKeys } = ctx.req.body;
+
+    // Validate input against lexicon
+    validateAgainstLexicon(createSessionDef, { name });
+
+    authorize(ctx, 'create', session);
+
+    const result = await sessionService.createSession({
+      authorDid: ctx.auth.credentials.did,
+      sessionKeys,
+    });
+    return {
+      encoding: 'application/json',
+      body: { sessionId: result.sessionId },
+    };
+  },
+  'social.spkeasy.privateSession.revoke': async (
     ctx: XRPCReqContext,
   ): Promise<HandlerOutput> => {
     const { sessionId } = ctx.params as { sessionId: string };
@@ -72,15 +88,15 @@ const methodHandlers = {
     validateAgainstLexicon(revokeSessionDef, { sessionId });
 
     const session = await sessionService.getSession(sessionId);
-    authorize(ctx.req, "revoke", session);
+    authorize(ctx, 'revoke', session);
 
     const result = await sessionService.revokeSession(sessionId);
     return {
-      encoding: "application/json",
+      encoding: 'application/json',
       body: { success: true },
     };
   },
-  "social.spkeasy.privateSession.addUser": async (
+  'social.spkeasy.privateSession.addUser': async (
     ctx: XRPCReqContext,
   ): Promise<HandlerOutput> => {
     const { sessionId, recipientDid } = ctx.params as {
@@ -92,24 +108,25 @@ const methodHandlers = {
     validateAgainstLexicon(addUserDef, { sessionId, recipientDid });
 
     const session = await sessionService.getSession(sessionId);
-    authorize(ctx.req, "create", session);
+    authorize(ctx, 'create', session);
 
     const result = await sessionService.addRecipientToSession(
       sessionId,
       recipientDid,
     );
     return {
-      encoding: "application/json",
+      encoding: 'application/json',
       body: { success: true },
     };
   },
 
   // Post management
-  "social.spkeasy.privatePosts.getPosts": async (
+  'social.spkeasy.privatePosts.getPosts': async (
     ctx: XRPCReqContext,
   ): Promise<HandlerOutput> => {
     const { recipient, limit, cursor } = ctx.params as {
       recipient: string;
+      authors: string;
       limit?: string;
       cursor?: string;
     };
@@ -129,31 +146,34 @@ const methodHandlers = {
     // authorize(ctx.req, 'list', result);
 
     return {
-      encoding: "application/json",
+      encoding: 'application/json',
       body: result,
     };
   },
 
-  "social.spkeasy.privatePosts.createPost": async (
+  'social.spkeasy.privatePosts.createPost': async (
     ctx: XRPCReqContext,
   ): Promise<HandlerOutput> => {
     const lexicon = createPostDef.defs.main;
-    const { sessionId, text, recipients } = ctx.params as {
+
+    const { sessionId, text } = ctx.params as {
       sessionId: string;
-      text: string;
-      recipients: string[];
+      encryptedPost: string;
     };
 
     // Validate input against lexicon
     validateAgainstLexicon(lexicon, { sessionId, text, recipients });
 
-    const session = await sessionService.getSession(sessionId);
-    authorize(ctx.req, "create", session);
+    authorize(ctx, 'create', session);
 
-    // TODO: Implement create post logic
-    throw new Error("Not implemented");
+    const session = await sessionService.createEncryptedPost(
+      sessionId,
+      authorDid,
+      encryptedPost,
+    );
   },
-  "social.spkeasy.privatePosts.deletePost": async (
+
+  'social.spkeasy.privatePosts.deletePost': async (
     ctx: XRPCReqContext,
   ): Promise<HandlerOutput> => {
     const lexicon = deletePostDef.defs.main;
@@ -162,33 +182,33 @@ const methodHandlers = {
     // Validate input against lexicon
     validateAgainstLexicon(lexicon, { uri });
 
-    const post = await sessionService.getPost(uri);
-    authorize(ctx.req, "delete", post);
-
-    // TODO: Implement delete post logic
-    throw new Error("Not implemented");
+    const post = await sessionService.deletePost(uri);
+    authorize(ctx, 'delete', post);
   },
 } as const;
 
 // Define methods using XRPC lexicon
 export const methods: Record<MethodName, XRPCHandlerConfig> = {
   // Session management methods
-  "social.spkeasy.privateSession.revoke": {
-    handler: methodHandlers["social.spkeasy.privateSession.revoke"],
+  'social.spkeasy.privateSession.create': {
+    handler: methodHandlers['social.spkeasy.privateSession.create'],
   },
-  "social.spkeasy.privateSession.addUser": {
-    handler: methodHandlers["social.spkeasy.privateSession.addUser"],
+  'social.spkeasy.privateSession.revoke': {
+    handler: methodHandlers['social.spkeasy.privateSession.revoke'],
+  },
+  'social.spkeasy.privateSession.addUser': {
+    handler: methodHandlers['social.spkeasy.privateSession.addUser'],
   },
 
   // Post management methods
-  "social.spkeasy.privatePosts.getPosts": {
-    handler: methodHandlers["social.spkeasy.privatePosts.getPosts"],
+  'social.spkeasy.privatePosts.getPosts': {
+    handler: methodHandlers['social.spkeasy.privatePosts.getPosts'],
   },
-  "social.spkeasy.privatePosts.createPost": {
-    handler: methodHandlers["social.spkeasy.privatePosts.createPost"],
+  'social.spkeasy.privatePosts.createPost': {
+    handler: methodHandlers['social.spkeasy.privatePosts.createPost'],
   },
-  "social.spkeasy.privatePosts.deletePost": {
-    handler: methodHandlers["social.spkeasy.privatePosts.deletePost"],
+  'social.spkeasy.privatePosts.deletePost': {
+    handler: methodHandlers['social.spkeasy.privatePosts.deletePost'],
   },
 };
 

@@ -1,13 +1,23 @@
-import { revokeSessionDef, addUserDef } from './types/session.js';
-import { getPostsDef, createPostDef, deletePostDef, privatePostDef } from './types/posts.js';
+import {
+  revokeSessionDef,
+  addUserDef,
+  createSessionDef,
+} from './types/session.js';
+import {
+  getPostsDef,
+  createPostDef,
+  deletePostDef,
+  privatePostDef,
+} from './types/posts.js';
 
 export const lexicons = [
   revokeSessionDef,
   addUserDef,
+  createSessionDef,
   getPostsDef,
   createPostDef,
   deletePostDef,
-  privatePostDef
+  privatePostDef,
 ];
 
-export type LexiconDefs = typeof lexicons; 
+export type LexiconDefs = typeof lexicons;

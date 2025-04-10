@@ -1,82 +1,55 @@
-import { PrismaClient } from '../generated/prisma-client/index.js';
+import {
+  PrismaClient,
+  Session,
+  SessionKey,
+  EncryptedPost,
+} from '../generated/prisma-client/index.js';
 import { encryptSessionKey } from '@speakeasy-services/crypto';
 import { NotFoundError } from '@speakeasy-services/common';
 
 const prisma = new PrismaClient();
 
-interface Session {
-  authorDid: string;
-  recipients: string[];
-  createdAt: Date;
-}
-
-export interface SessionService {
-  createSession(params: {
-    authorDid: string;
-    recipients: string[];
-  }): Promise<{ sessionId: string }>;
-  getSession(sessionId: string): Promise<Session>;
-  getPost(uri: string): Promise<{ authorDid: string }>;
-  getPostsByIds(postIds: string[]): Promise<Array<{ authorDid: string }>>;
-  getPosts(params: {
-    recipient: string;
-    limit?: number;
-    cursor?: string;
-  }): Promise<{
-    posts: Array<{
-      uri: string;
-      cid: string;
-      authorDid: string;
-      text: string;
-      createdAt: string;
-      sessionId: string;
-    }>;
-    cursor: string;
-  }>;
-  getBulk(sessionIds: string[]): Promise<
-    Array<{
-      sessionId: string;
-      authorDid: string;
-      createdAt: string;
-      expiresAt?: string;
-      revokedAt?: string;
-    }>
-  >;
-  revokeSession(sessionId: string): Promise<{ success: boolean }>;
-  addRecipientToSession(
-    sessionId: string,
-    did: string,
-  ): Promise<{ success: boolean }>;
-}
-
-interface GetPostsParams {
-  recipient: string;
-  limit?: number;
-  cursor?: string;
-}
-
-interface GetPostsResponse {
-  posts: Array<{
-    uri: string;
-    cid: string;
-    authorDid: string;
-    text: string;
-    createdAt: string;
-    sessionId: string;
-  }>;
-  cursor: string;
-}
-
-export class SessionServiceImpl implements SessionService {
+export class SessionService {
   async createSession({
     authorDid,
     recipients,
   }: {
     authorDid: string;
-    recipients: string[];
+    recipients: {
+      did: string;
+      encryptedDek: string;
+    }[];
   }): Promise<{ sessionId: string }> {
-    // Mock implementation
-    return { sessionId: 'session-1' };
+    // open transaction
+    const session = await prisma.$transaction(async (tx) => {
+      // revoke session if one already exists
+      await tx.session.updateMany({
+        where: {
+          authorDid,
+          revokedAt: null,
+        },
+        data: {
+          revokedAt: new Date(),
+        },
+      });
+
+      // Create new session
+      const session = await tx.session.create({
+        data: {
+          authorDid,
+          sessionKeys: {
+            create: recipients.map((recipient) => ({
+              recipientDid: recipient.did,
+              encryptedDek: Buffer.from(recipient.encryptedDek),
+            })),
+          },
+        },
+      });
+
+      return session;
+    });
+
+    return { sessionId: session.id };
   }
 
   async getSession(sessionId: string): Promise<Session> {
@@ -116,11 +89,7 @@ export class SessionServiceImpl implements SessionService {
     return posts;
   }
 
-  async getPosts({
-    recipient,
-    limit = 50,
-    cursor,
-  }: GetPostsParams): Promise<GetPostsResponse> {
+  async getPosts({ recipient, limit = 50, cursor }): Promise<EncryptedPost[]> {
     // If cursor is provided, return empty response to simulate end of posts
     if (cursor) {
       return {
