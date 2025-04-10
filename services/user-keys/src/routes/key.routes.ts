@@ -3,7 +3,7 @@
  */
 
 import { z } from 'zod';
-import { KeyServiceImpl } from '../services/key.service.js';
+import { KeyService } from '../services/key.service.js';
 import {
   ServiceError,
   ValidationError,
@@ -24,7 +24,7 @@ import {
   rotateKeyDef,
 } from '../lexicon/types/key.js';
 
-const keyService = new KeyServiceImpl();
+const keyService = new KeyService();
 
 // Helper function to validate against lexicon schema
 function validateAgainstLexicon(lexicon: any, params: any) {
@@ -92,16 +92,18 @@ const methodHandlers = {
   'social.spkeasy.keys.getPrivateKey': async (
     ctx: XRPCReqContext,
   ): Promise<HandlerOutput> => {
+    const { did } = ctx.params as { did: string };
+
     // Validate input against lexicon
     validateAgainstLexicon(getPrivateKeyDef, {});
 
     // Only the owner can access their private key
-    const key = await keyService.getUserKey();
+    const key = await keyService.getUserKey(did);
     if (!key) {
       throw new NotFoundError('Private key not found');
     }
 
-    authorize(ctx.req, 'read', key);
+    authorize(ctx.req, 'get_private_key', key);
 
     return {
       encoding: 'application/json',
@@ -116,7 +118,7 @@ const methodHandlers = {
     // Validate input against lexicon
     validateAgainstLexicon(rotateKeyDef, {});
 
-    authorize(ctx.req, 'create', currentKey);
+    authorize(ctx.req, 'update', currentKey);
 
     const result = await keyService.requestRotation();
     return {

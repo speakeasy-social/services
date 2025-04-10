@@ -1,6 +1,7 @@
 import { z } from 'zod';
-import logger from '../utils/logger.js';
 import { PrismaClient, UserKey } from '../generated/prisma-client/index.js';
+import { ValidationError } from '@speakeasy-services/common';
+import { Queue, JOB_NAMES } from '@speakeasy-services/queue';
 
 const keySchema = z.object({
   id: z.string(),
@@ -13,29 +14,11 @@ const keySchema = z.object({
 
 export type Key = z.infer<typeof keySchema>;
 
-export interface KeyService {
-  getPublicKey(authorDid: string): Promise<{ publicKey: string }>;
-  getPrivateKey(): Promise<{ privateKey: string }>;
-  requestRotation(): Promise<{ success: boolean }>;
-}
-
-export class KeyServiceImpl implements KeyService {
+export class KeyService {
   private prisma: PrismaClient;
 
   constructor() {
     this.prisma = new PrismaClient();
-  }
-
-  async getPublicKey(authorDid: string): Promise<{ publicKey: string }> {
-    const key = await this.getUserKey(authorDid);
-    if (!key) {
-      throw new Error('No key found for author');
-    }
-    return { publicKey: key.publicKey };
-  }
-
-  async getPrivateKey(): Promise<{ privateKey: string }> {
-    throw new Error('Not implemented');
   }
 
   async getUserKey(authorDid: string): Promise<UserKey | null> {
@@ -52,8 +35,56 @@ export class KeyServiceImpl implements KeyService {
     return key;
   }
 
-  async requestRotation(): Promise<{ success: boolean }> {
-    logger.info('Requesting key rotation');
-    throw new Error('Not implemented');
+  async requestRotation(
+    authorDid: string,
+    publicKey: string,
+    privateKey: string,
+  ): Promise<UserKey | null> {
+    return this.prisma.$transaction(
+      async (tx) => {
+        // Lock the row for update
+        const keys = await tx.$queryRaw<
+          UserKey[]
+        >`SELECT * FROM user_key WHERE author_did = ${authorDid} FOR UPDATE`;
+
+        const key = keys[0];
+
+        if (key) {
+          // if key was created in the last 5 minutes, don't rotate it
+          const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+          if (key.createdAt > fiveMinutesAgo) {
+            throw new ValidationError(
+              'Key was created too recently, try again later',
+            );
+          }
+
+          await tx.userKey.update({
+            where: { id: key.id },
+            data: { deletedAt: new Date() },
+          });
+        }
+
+        // Create new key
+        const newKey = await tx.userKey.create({
+          data: {
+            authorDid,
+            publicKey,
+            privateKey,
+          },
+        });
+
+        if (key) {
+          Queue.publish(JOB_NAMES.UPDATE_USER_KEYS, {
+            prevKeyId: key.id,
+            newKeyId: newKey.id,
+          });
+        }
+
+        return newKey;
+      },
+      {
+        isolationLevel: 'RepeatableRead',
+      },
+    );
   }
 }

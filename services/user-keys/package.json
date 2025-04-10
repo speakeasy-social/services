@@ -24,6 +24,7 @@
     "@prisma/client": "^6.5.0",
     "@speakeasy-services/common": "workspace:*",
     "@speakeasy-services/crypto": "workspace:*",
+    "@speakeasy-services/queue": "workspace:^",
     "@speakeasy-services/service-base": "workspace:*",
     "dotenv": "^16.4.7",
     "pino": "^9.6.0",
