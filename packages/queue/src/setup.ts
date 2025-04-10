@@ -12,6 +12,7 @@ async function setup() {
     const boss = Queue.getInstance();
     await boss.start();
     console.log('PgBoss setup complete!');
+    console.log('\n** Setup complete! **\n');
     console.log('Shutting down PgBoss... (may take a few seconds)');
     await boss.stop();
   } catch (error) {
@@ -20,4 +21,4 @@ async function setup() {
   }
 }
 
-setup(); 
+setup();

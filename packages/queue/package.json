@@ -18,7 +18,7 @@
   },
   "scripts": {
     "build": "tsc --build",
-    "setup:db": "tsx src/setup.ts",
+    "setup:pgboss": "tsx src/setup.ts",
     "dev": "tsc --build --watch --preserveWatchOutput",
     "clean": "rm -rf dist",
     "lint": "eslint src",
