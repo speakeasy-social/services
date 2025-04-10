@@ -5,8 +5,9 @@
   "scripts": {
     "dev:setup:env": "test -f .env || (test -f .env.example && cp .env.example .env) && for service in services/*; do test -f \"$service/.env\" || (test -f \"$service/.env.example\" && cp \"$service/.env.example\" \"$service/.env\") 2>/dev/null || true; done",
     "dev:setup:infra": "docker-compose up -d",
-    "dev:setup:db": "./scripts/create-schemas.sh && pnpm --filter @speakeasy-services/queue setup:db",
-    "dev:setup": "pnpm dev:setup:env && pnpm dev:setup:infra && pnpm dev:setup:db",
+    "dev:setup:db": "./scripts/create-schemas.sh",
+    "dev:setup:migrations": "./scripts/run-migrations.sh",
+    "dev:setup": "pnpm dev:setup:env && pnpm dev:setup:infra && pnpm dev:setup:db && pnpm dev:setup:migrations && (cd packages/queue && pnpm setup:pgboss)",
     "dev:prisma": "turbo run dev:prisma",
     "build": "turbo run build",
     "clean": "turbo run clean",
