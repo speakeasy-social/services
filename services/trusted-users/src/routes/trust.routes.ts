@@ -63,7 +63,7 @@ const methodHandlers = {
    * Lists all trusted users for a given DID
    */
   'social.spkeasy.graph.getTrusted': async (
-    ctx: XRPCReqContext,
+    req: Request,
   ): Promise<HandlerOutput> => {
     const { did } = ctx.params as { did: string };
     // Validate input against lexicon
@@ -114,7 +114,7 @@ const methodHandlers = {
    * Removes a user from the trusted list
    */
   'social.spkeasy.graph.removeTrusted': async (
-    ctx: XRPCReqContext,
+    req: Request,
   ): Promise<HandlerOutput> => {
     const { recipientDid } = ctx.params as { recipientDid: string };
     // Validate input against lexicon

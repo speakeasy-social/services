@@ -2,20 +2,9 @@
  * XRPC endpoints for key management
  */
 
-import { z } from 'zod';
 import { KeyService } from '../services/key.service.js';
-import {
-  ServiceError,
-  ValidationError,
-  AuthorizationError,
-  DatabaseError,
-  NotFoundError,
-} from '@speakeasy-services/common';
-import {
-  XRPCHandlerConfig,
-  XRPCReqContext,
-  HandlerOutput,
-} from '@atproto/xrpc-server';
+import { ValidationError, NotFoundError } from '@speakeasy-services/common';
+import { HandlerOutput } from '@atproto/xrpc-server';
 import { authorize } from '@speakeasy-services/common';
 import { lexicons } from '../lexicon/index.js';
 import {
@@ -23,6 +12,7 @@ import {
   getPrivateKeyDef,
   rotateKeyDef,
 } from '../lexicon/types/key.js';
+import { Request, Response, RequestHandler } from 'express';
 
 const keyService = new KeyService();
 
@@ -64,9 +54,9 @@ function validateAgainstLexicon(lexicon: any, params: any) {
 const methodHandlers = {
   // Public key operations
   'social.spkeasy.keys.getPublicKey': async (
-    ctx: XRPCReqContext,
+    req: Request,
   ): Promise<HandlerOutput> => {
-    const { did } = ctx.params as { did: string };
+    const { did } = req.query as { did: string };
 
     // Validate input against lexicon
     validateAgainstLexicon(getPublicKeyDef, { did });
@@ -77,7 +67,7 @@ const methodHandlers = {
       throw new NotFoundError('Public key not found');
     }
 
-    authorize(ctx.req, 'get_public_key', key);
+    authorize(req, 'get_public_key', key);
 
     return {
       encoding: 'application/json',
@@ -90,9 +80,9 @@ const methodHandlers = {
 
   // Private key operations
   'social.spkeasy.keys.getPrivateKey': async (
-    ctx: XRPCReqContext,
+    req: Request,
   ): Promise<HandlerOutput> => {
-    const { did } = ctx.params as { did: string };
+    const { did } = req.query as { did: string };
 
     // Validate input against lexicon
     validateAgainstLexicon(getPrivateKeyDef, {});
@@ -113,12 +103,12 @@ const methodHandlers = {
 
   // Key rotation operations
   'social.spkeasy.keys.rotate': async (
-    ctx: XRPCReqContext,
+    req: Request,
   ): Promise<HandlerOutput> => {
     // Validate input against lexicon
     validateAgainstLexicon(rotateKeyDef, {});
 
-    authorize(ctx.req, 'update', currentKey);
+    authorize(req, 'update', currentKey);
 
     const result = await keyService.requestRotation();
     return {
@@ -131,7 +121,7 @@ const methodHandlers = {
 type MethodName = keyof typeof methodHandlers;
 
 // Define methods using XRPC lexicon
-export const methods: Record<MethodName, XRPCHandlerConfig> = {
+export const methods: Record<MethodName, { handler: RequestHandler }> = {
   'social.spkeasy.keys.getPublicKey': {
     handler: methodHandlers['social.spkeasy.keys.getPublicKey'],
   },

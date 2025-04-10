@@ -60,7 +60,7 @@ function validateAgainstLexicon(lexicon: any, params: any) {
 const methodHandlers = {
   // Session management
   'social.spkeasy.privateSession.create': async (
-    ctx: XRPCReqContext,
+    req: Request,
   ): Promise<HandlerOutput> => {
     const { name } = ctx.params as { name: string };
     const { sessionKeys } = ctx.req.body;
@@ -80,7 +80,7 @@ const methodHandlers = {
     };
   },
   'social.spkeasy.privateSession.revoke': async (
-    ctx: XRPCReqContext,
+    req: Request,
   ): Promise<HandlerOutput> => {
     const { sessionId } = ctx.params as { sessionId: string };
 
@@ -97,7 +97,7 @@ const methodHandlers = {
     };
   },
   'social.spkeasy.privateSession.addUser': async (
-    ctx: XRPCReqContext,
+    req: Request,
   ): Promise<HandlerOutput> => {
     const { sessionId, recipientDid } = ctx.params as {
       sessionId: string;
@@ -122,7 +122,7 @@ const methodHandlers = {
 
   // Post management
   'social.spkeasy.privatePosts.getPosts': async (
-    ctx: XRPCReqContext,
+    req: Request,
   ): Promise<HandlerOutput> => {
     const { recipient, limit, cursor } = ctx.params as {
       recipient: string;
@@ -152,7 +152,7 @@ const methodHandlers = {
   },
 
   'social.spkeasy.privatePosts.createPost': async (
-    ctx: XRPCReqContext,
+    req: Request,
   ): Promise<HandlerOutput> => {
     const lexicon = createPostDef.defs.main;
 
@@ -174,7 +174,7 @@ const methodHandlers = {
   },
 
   'social.spkeasy.privatePosts.deletePost': async (
-    ctx: XRPCReqContext,
+    req: Request,
   ): Promise<HandlerOutput> => {
     const lexicon = deletePostDef.defs.main;
     const { uri } = ctx.params as { uri: string };

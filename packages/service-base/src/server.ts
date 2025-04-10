@@ -1,11 +1,9 @@
-import express from "express";
-import { Express, Request, Response } from "express";
-import { validateEnv, baseSchema } from "./config.js";
-import { createServer, XRPCHandlerConfig } from "@atproto/xrpc-server";
-import { ResponseType, XRPCError } from "@atproto/xrpc";
-import { LexiconDoc } from "@atproto/lexicon";
-import z from "zod";
-import { createLogger } from "@speakeasy-services/common";
+import express from 'express';
+import { Express, Request, Response } from 'express';
+import { validateEnv, baseSchema } from './config.js';
+import { LexiconDoc } from '@atproto/lexicon';
+import z from 'zod';
+import { createLogger } from '@speakeasy-services/common';
 
 // Extend Express Request type to include logger
 declare global {
@@ -19,7 +17,7 @@ declare global {
 export interface ServerOptions {
   name: string;
   port: number;
-  methods: Record<string, XRPCHandlerConfig>;
+  methods: Record<string, (req: Request, res: Response) => Promise<void>>;
   middleware?: any[];
   onShutdown?: () => Promise<void>;
   lexicons?: LexiconDoc[];
@@ -29,13 +27,11 @@ export class Server {
   express: Express;
   private config: ReturnType<typeof validateEnv<typeof baseSchema>>;
   private options: ServerOptions;
-  private xrpcServer: ReturnType<typeof createServer>;
   private logger: ReturnType<typeof createLogger>;
 
   constructor(options: ServerOptions) {
     this.options = options;
     this.config = validateEnv(z.object(baseSchema));
-    this.xrpcServer = createServer(options.lexicons);
     this.logger = createLogger({
       serviceName: options.name,
       level: this.config.LOG_LEVEL,
@@ -48,18 +44,29 @@ export class Server {
 
     // Enable CORS for Bluesky client
     app.use((req, res, next) => {
-      res.header("Access-Control-Allow-Origin", "http://localhost:19006");
+      const allowedOrigins = [
+        'https://spkeasy.social',
+        'https://magetic.spkeasy.social',
+        'http://localhost:19006',
+      ];
+
+      const origin = req.headers.origin || '';
+      const allowedOrigin = allowedOrigins.includes(origin)
+        ? origin
+        : allowedOrigins[0];
+      res.header('Access-Control-Allow-Origin', allowedOrigin);
+
       res.header(
-        "Access-Control-Allow-Methods",
-        "GET, POST, PUT, DELETE, OPTIONS",
+        'Access-Control-Allow-Methods',
+        'GET, POST, PUT, DELETE, OPTIONS',
       );
       res.header(
-        "Access-Control-Allow-Headers",
-        "Origin, X-Requested-With, Content-Type, Accept, Authorization",
+        'Access-Control-Allow-Headers',
+        'Origin, X-Requested-With, Content-Type, Accept, Authorization',
       );
 
       // Handle preflight requests
-      if (req.method === "OPTIONS") {
+      if (req.method === 'OPTIONS') {
         res.sendStatus(200);
         return;
       }
@@ -73,7 +80,7 @@ export class Server {
     // Add request logger middleware
     app.use((req, res, next) => {
       req.logger = this.logger.child({
-        requestId: (req.headers["x-request-id"] as string) || "unknown",
+        requestId: (req.headers['x-request-id'] as string) || 'unknown',
         method: req.method,
         path: req.path,
       });
@@ -87,55 +94,25 @@ export class Server {
       }
     }
 
-    // Register all methods with the XRPC server
-    Object.entries(this.options.methods).forEach(([name, method]) => {
-      this.xrpcServer.method(name, method);
-    });
-
     // Mount XRPC routes
-    app.all("/xrpc/:method", async (req: Request, res: Response) => {
+    app.all('/xrpc/:method', async (req: Request, res: Response) => {
       const startTime = Date.now();
       const method = req.params.method;
 
       try {
-        // Create the XRPC request context
-        const xrpcReq = {
-          req,
-          res,
-          params: {
-            method,
-            ...Object.fromEntries(
-              Object.entries(req.query).map(([key, value]) => [
-                key,
-                Array.isArray(value) ? value[0] : value,
-              ]),
-            ),
-          },
-          input: req.body,
-          auth: {
-            credentials: req.headers.authorization,
-            artifacts: {},
-          },
-          resetRouteRateLimits: async () => {
-            // TODO: Implement rate limiting
-            req.logger.debug("Rate limits reset");
-            return Promise.resolve();
-          },
-        };
-
         // Get the method handler
         const methodHandler = this.options.methods[method];
         if (!methodHandler) {
-          req.logger.warn({ method }, "Method not found");
-          res.status(404).json({ error: "Method not found" });
+          req.logger.warn({ method }, 'Method not found');
+          res.status(404).json({ error: 'Method not found' });
           return;
         }
 
         // Call the method handler directly
-        const output = await methodHandler.handler(xrpcReq);
-        if (!output || !("body" in output)) {
-          req.logger.error({ method }, "Invalid handler output");
-          res.status(500).json({ error: "Internal server error" });
+        const output = await methodHandler.handler(res, res);
+        if (!output || !('body' in output)) {
+          req.logger.error({ method }, 'Invalid handler output');
+          res.status(500).json({ error: 'Internal server error' });
           return;
         }
 
@@ -150,41 +127,22 @@ export class Server {
       } catch (error: unknown) {
         const duration = Date.now() - startTime;
 
-        if (error instanceof XRPCError) {
-          const status = Number(error.status);
-          req.logger.warn(
-            {
-              method,
-              duration,
-              status,
-              error: error.error || "InternalServerError",
-              message: error.message,
-            },
-            "Request failed with XRPC error",
-          );
+        const errorMessage =
+          error instanceof Error ? error.message : 'Unknown error occurred';
+        req.logger.error(
+          {
+            method,
+            duration,
+            error: error instanceof Error ? error : { message: errorMessage },
+            status: 500,
+          },
+          'Request failed with unexpected error',
+        );
 
-          res.status(isNaN(status) ? 400 : status).json({
-            error: error.error || "InternalServerError",
-            message: error.message,
-          });
-        } else {
-          const errorMessage =
-            error instanceof Error ? error.message : "Unknown error occurred";
-          req.logger.error(
-            {
-              method,
-              duration,
-              error: error instanceof Error ? error : { message: errorMessage },
-              status: 500,
-            },
-            "Request failed with unexpected error",
-          );
-
-          res.status(500).json({
-            error: "InternalServerError",
-            message: errorMessage,
-          });
-        }
+        res.status(500).json({
+          error: 'InternalServerError',
+          message: errorMessage,
+        });
       }
     });
 
@@ -193,29 +151,29 @@ export class Server {
 
   public async start() {
     try {
-      this.express.listen(this.options.port, "0.0.0.0", () => {
+      this.express.listen(this.options.port, '0.0.0.0', () => {
         this.logger.info(
           `🚀 ${this.options.name} service running on port ${this.options.port}`,
         );
       });
     } catch (err) {
-      this.logger.error({ error: err }, "Error starting server");
+      this.logger.error({ error: err }, 'Error starting server');
       process.exit(1);
     }
 
-    process.on("SIGTERM", () => this.shutdown());
-    process.on("SIGINT", () => this.shutdown());
+    process.on('SIGTERM', () => this.shutdown());
+    process.on('SIGINT', () => this.shutdown());
   }
 
   private async shutdown() {
-    this.logger.info("Shutting down server...");
+    this.logger.info('Shutting down server...');
     try {
       if (this.options.onShutdown) {
         await this.options.onShutdown();
       }
       process.exit(0);
     } catch (err) {
-      this.logger.error({ error: err }, "Error during shutdown");
+      this.logger.error({ error: err }, 'Error during shutdown');
       process.exit(1);
     }
   }
