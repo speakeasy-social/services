@@ -10,14 +10,14 @@ datasource db {
   url      = env("USER_KEYS_DATABASE_URL")
 }
 
-model Key {
+model UserKey {
   id         String   @id @default(uuid())
-  userId     String
+  authorDid  String
   publicKey  String
   privateKey String
   createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  deletedAt  DateTime?
 
-  @@index([userId])
+  @@index([authorDid])
   @@map("user_keys")
 }
