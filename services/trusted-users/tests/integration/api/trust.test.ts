@@ -1,5 +1,5 @@
-import server from "../../../src/server.js";
-import { PrismaClient } from "@prisma/client";
+import server from '../../../src/server.js';
+import { PrismaClient } from '../../../src/generated/prisma-client/index.js';
 import {
   ApiTest,
   ApiTestTransformer,
@@ -7,14 +7,14 @@ import {
   mockBlueskySession,
   cleanupBlueskySessionMocks,
   verifyBlueskySessionMocks,
-} from "@speakeasy-services/test-utils";
-import { generateTestToken } from "@speakeasy-services/test-utils";
+} from '@speakeasy-services/test-utils';
+import { generateTestToken } from '@speakeasy-services/test-utils';
 
-const authorDid = "did:example:alex-author";
-const validRecipient = "did:example:valid-valery";
-const invalidRecipient = "did:example:deleted-dave";
+const authorDid = 'did:example:alex-author';
+const validRecipient = 'did:example:valid-valery';
+const invalidRecipient = 'did:example:deleted-dave';
 
-describe("Trusted Users API Tests", () => {
+describe('Trusted Users API Tests', () => {
   let prisma: PrismaClient;
   const validToken = generateTestToken(authorDid);
 
@@ -56,23 +56,23 @@ describe("Trusted Users API Tests", () => {
         note: `${test.note} - without token`,
         bearer: undefined,
         expectedStatus: 401,
-        expectedBody: { error: "Unauthorized" },
+        expectedBody: { error: 'Unauthorized' },
       },
       // Test with wrong user token
       {
         ...test,
         note: `${test.note} - with wrong user token`,
-        bearer: "wrong-user-token",
+        bearer: 'wrong-user-token',
         expectedStatus: 403,
-        expectedBody: { error: "Forbidden" },
+        expectedBody: { error: 'Forbidden' },
       },
     ];
   };
 
   const apiTests: ApiTest[] = [
     {
-      note: "empty list",
-      endpoint: "social.spkeasy.graph.getTrusted",
+      note: 'empty list',
+      endpoint: 'social.spkeasy.graph.getTrusted',
       query: { did: authorDid },
       bearer: validToken,
       expectedBody: {
@@ -80,8 +80,8 @@ describe("Trusted Users API Tests", () => {
       },
     },
     {
-      note: "with trusted users",
-      endpoint: "social.spkeasy.graph.getTrusted",
+      note: 'with trusted users',
+      endpoint: 'social.spkeasy.graph.getTrusted',
       query: { did: authorDid },
       bearer: validToken,
       before: async () => {
@@ -107,9 +107,9 @@ describe("Trusted Users API Tests", () => {
       },
     },
     {
-      note: "new user",
-      method: "post",
-      endpoint: "social.spkeasy.graph.addTrusted",
+      note: 'new user',
+      method: 'post',
+      endpoint: 'social.spkeasy.graph.addTrusted',
       body: { recipientDid: validRecipient },
       bearer: validToken,
       before: async () => {
@@ -136,9 +136,9 @@ describe("Trusted Users API Tests", () => {
       },
     },
     {
-      note: "duplicate trust not allowed",
-      method: "post",
-      endpoint: "social.spkeasy.graph.addTrusted",
+      note: 'duplicate trust not allowed',
+      method: 'post',
+      endpoint: 'social.spkeasy.graph.addTrusted',
       body: { recipientDid: validRecipient },
       bearer: validToken,
       before: async () => {
@@ -151,12 +151,12 @@ describe("Trusted Users API Tests", () => {
         });
       },
       expectedStatus: 400,
-      expectedBody: { error: "User is already trusted" },
+      expectedBody: { error: 'User is already trusted' },
     },
     {
-      note: "re-trusting is ok",
-      method: "post",
-      endpoint: "social.spkeasy.graph.addTrusted",
+      note: 're-trusting is ok',
+      method: 'post',
+      endpoint: 'social.spkeasy.graph.addTrusted',
       body: { recipientDid: validRecipient },
       bearer: validToken,
       before: async () => {
@@ -173,9 +173,9 @@ describe("Trusted Users API Tests", () => {
       expectedBody: { success: true },
     },
     {
-      note: "existing user",
-      method: "post",
-      endpoint: "social.spkeasy.graph.removeTrusted",
+      note: 'existing user',
+      method: 'post',
+      endpoint: 'social.spkeasy.graph.removeTrusted',
       body: { recipientDid: validRecipient },
       bearer: validToken,
       before: async () => {
@@ -200,19 +200,19 @@ describe("Trusted Users API Tests", () => {
       },
     },
     {
-      note: "non-existent user",
-      method: "post",
-      endpoint: "social.spkeasy.graph.removeTrusted",
+      note: 'non-existent user',
+      method: 'post',
+      endpoint: 'social.spkeasy.graph.removeTrusted',
       body: { recipientDid: invalidRecipient },
       bearer: validToken,
       expectedStatus: 404,
-      expectedBody: { error: "User is not trusted" },
+      expectedBody: { error: 'User is not trusted' },
     },
   ];
 
   runApiTests(
     { server, testTransformers: [authorizationTransformer] },
     apiTests,
-    "Trusted Users API Tests",
+    'Trusted Users API Tests',
   );
 });

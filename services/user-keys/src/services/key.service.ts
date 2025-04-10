@@ -1,10 +1,10 @@
 import { z } from 'zod';
 import logger from '../utils/logger.js';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, UserKey } from '../generated/prisma-client/index.js';
 
 const keySchema = z.object({
   id: z.string(),
-  userId: z.string(),
+  authorDid: z.string(),
   publicKey: z.string(),
   privateKey: z.string(),
   createdAt: z.date(),
@@ -14,20 +14,42 @@ const keySchema = z.object({
 export type Key = z.infer<typeof keySchema>;
 
 export interface KeyService {
-  getPublicKey(userId: string): Promise<{ publicKey: string }>;
+  getPublicKey(authorDid: string): Promise<{ publicKey: string }>;
   getPrivateKey(): Promise<{ privateKey: string }>;
   requestRotation(): Promise<{ success: boolean }>;
 }
 
 export class KeyServiceImpl implements KeyService {
-  async getPublicKey(userId: string): Promise<{ publicKey: string }> {
-    logger.info({ userId }, 'Getting public key');
-    throw new Error('Not implemented');
+  private prisma: PrismaClient;
+
+  constructor() {
+    this.prisma = new PrismaClient();
+  }
+
+  async getPublicKey(authorDid: string): Promise<{ publicKey: string }> {
+    const key = await this.getUserKey(authorDid);
+    if (!key) {
+      throw new Error('No key found for author');
+    }
+    return { publicKey: key.publicKey };
   }
 
   async getPrivateKey(): Promise<{ privateKey: string }> {
-    logger.info('Getting private key');
     throw new Error('Not implemented');
+  }
+
+  async getUserKey(authorDid: string): Promise<UserKey | null> {
+    const key = await this.prisma.userKey.findFirst({
+      where: {
+        authorDid,
+        deletedAt: null,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    return key;
   }
 
   async requestRotation(): Promise<{ success: boolean }> {

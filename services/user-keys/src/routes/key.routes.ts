@@ -4,11 +4,25 @@
 
 import { z } from 'zod';
 import { KeyServiceImpl } from '../services/key.service.js';
-import { ServiceError, ValidationError, AuthorizationError, DatabaseError, NotFoundError } from '@speakeasy-services/common';
-import { XRPCHandlerConfig, XRPCReqContext, HandlerOutput } from '@atproto/xrpc-server';
+import {
+  ServiceError,
+  ValidationError,
+  AuthorizationError,
+  DatabaseError,
+  NotFoundError,
+} from '@speakeasy-services/common';
+import {
+  XRPCHandlerConfig,
+  XRPCReqContext,
+  HandlerOutput,
+} from '@atproto/xrpc-server';
 import { authorize } from '@speakeasy-services/common';
 import { lexicons } from '../lexicon/index.js';
-import { getPublicKeyDef, getPrivateKeyDef, rotateKeyDef } from '../lexicon/types/key.js';
+import {
+  getPublicKeyDef,
+  getPrivateKeyDef,
+  rotateKeyDef,
+} from '../lexicon/types/key.js';
 
 const keyService = new KeyServiceImpl();
 
@@ -49,82 +63,66 @@ function validateAgainstLexicon(lexicon: any, params: any) {
 // Define method handlers
 const methodHandlers = {
   // Public key operations
-  'social.spkeasy.keys.getPublicKey': async (ctx: XRPCReqContext): Promise<HandlerOutput> => {
+  'social.spkeasy.keys.getPublicKey': async (
+    ctx: XRPCReqContext,
+  ): Promise<HandlerOutput> => {
     const { did } = ctx.params as { did: string };
-    
-    try {
-      // Validate input against lexicon
-      validateAgainstLexicon(getPublicKeyDef, { did });
 
-      // Public key is publicly accessible
-      const result = await keyService.getPublicKey(did);
-      if (!result) {
-        throw new NotFoundError('Public key not found');
-      }
+    // Validate input against lexicon
+    validateAgainstLexicon(getPublicKeyDef, { did });
 
-      return {
-        encoding: 'application/json',
-        body: result
-      };
-    } catch (error) {
-      if (error instanceof ServiceError) {
-        throw error;
-      }
-      throw new DatabaseError('Failed to get public key');
+    // Public key is publicly accessible
+    const key = await keyService.getUserKey(did);
+    if (!key) {
+      throw new NotFoundError('Public key not found');
     }
+
+    authorize(ctx.req, 'get_public_key', key);
+
+    return {
+      encoding: 'application/json',
+      body: {
+        publicKey: key.publicKey,
+        authorDid: key.authorDid,
+      },
+    };
   },
 
   // Private key operations
-  'social.spkeasy.keys.getPrivateKey': async (ctx: XRPCReqContext): Promise<HandlerOutput> => {
-    try {
-      // Validate input against lexicon
-      validateAgainstLexicon(getPrivateKeyDef, {});
+  'social.spkeasy.keys.getPrivateKey': async (
+    ctx: XRPCReqContext,
+  ): Promise<HandlerOutput> => {
+    // Validate input against lexicon
+    validateAgainstLexicon(getPrivateKeyDef, {});
 
-      // Only the owner can access their private key
-      const key = await keyService.getPrivateKey();
-      if (!key) {
-        throw new NotFoundError('Private key not found');
-      }
-
-      authorize(ctx.req, 'read', key);
-
-      return {
-        encoding: 'application/json',
-        body: key
-      };
-    } catch (error) {
-      if (error instanceof ServiceError) {
-        throw error;
-      }
-      throw new DatabaseError('Failed to get private key');
+    // Only the owner can access their private key
+    const key = await keyService.getUserKey();
+    if (!key) {
+      throw new NotFoundError('Private key not found');
     }
+
+    authorize(ctx.req, 'read', key);
+
+    return {
+      encoding: 'application/json',
+      body: key,
+    };
   },
 
   // Key rotation operations
-  'social.spkeasy.keys.rotate': async (ctx: XRPCReqContext): Promise<HandlerOutput> => {
-    try {
-      // Validate input against lexicon
-      validateAgainstLexicon(rotateKeyDef, {});
+  'social.spkeasy.keys.rotate': async (
+    ctx: XRPCReqContext,
+  ): Promise<HandlerOutput> => {
+    // Validate input against lexicon
+    validateAgainstLexicon(rotateKeyDef, {});
 
-      // Only the owner can rotate their keys
-      const currentKey = await keyService.getPrivateKey();
-      if (!currentKey) {
-        throw new NotFoundError('Current key not found');
-      }
+    authorize(ctx.req, 'create', currentKey);
 
-      authorize(ctx.req, 'manage', currentKey);
-
-      const result = await keyService.requestRotation();
-      return {
-        encoding: 'application/json',
-        body: result
-      };
-    } catch (error) {
-      if (error instanceof ServiceError) {
-        throw error;
-      }
-      throw new DatabaseError('Failed to rotate keys');
-    }
+    const result = await keyService.requestRotation();
+    return {
+      encoding: 'application/json',
+      body: result,
+    };
   },
 } as const;
 
@@ -133,12 +131,12 @@ type MethodName = keyof typeof methodHandlers;
 // Define methods using XRPC lexicon
 export const methods: Record<MethodName, XRPCHandlerConfig> = {
   'social.spkeasy.keys.getPublicKey': {
-    handler: methodHandlers['social.spkeasy.keys.getPublicKey']
+    handler: methodHandlers['social.spkeasy.keys.getPublicKey'],
   },
   'social.spkeasy.keys.getPrivateKey': {
-    handler: methodHandlers['social.spkeasy.keys.getPrivateKey']
+    handler: methodHandlers['social.spkeasy.keys.getPrivateKey'],
   },
   'social.spkeasy.keys.rotate': {
-    handler: methodHandlers['social.spkeasy.keys.rotate']
-  }
+    handler: methodHandlers['social.spkeasy.keys.rotate'],
+  },
 };

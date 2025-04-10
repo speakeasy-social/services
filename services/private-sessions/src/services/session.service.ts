@@ -1,6 +1,6 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '../generated/prisma-client/index.js';
 import { encryptSessionKey } from '@speakeasy-services/crypto';
-import { ServiceError, NotFoundError, ValidationError, DatabaseError } from '@speakeasy-services/common';
+import { NotFoundError } from '@speakeasy-services/common';
 
 const prisma = new PrismaClient();
 
@@ -11,11 +11,18 @@ interface Session {
 }
 
 export interface SessionService {
-  createSession(params: { authorDid: string; recipients: string[] }): Promise<{ sessionId: string }>;
+  createSession(params: {
+    authorDid: string;
+    recipients: string[];
+  }): Promise<{ sessionId: string }>;
   getSession(sessionId: string): Promise<Session>;
   getPost(uri: string): Promise<{ authorDid: string }>;
   getPostsByIds(postIds: string[]): Promise<Array<{ authorDid: string }>>;
-  getPosts(params: { recipient: string; limit?: number; cursor?: string }): Promise<{
+  getPosts(params: {
+    recipient: string;
+    limit?: number;
+    cursor?: string;
+  }): Promise<{
     posts: Array<{
       uri: string;
       cid: string;
@@ -26,15 +33,20 @@ export interface SessionService {
     }>;
     cursor: string;
   }>;
-  getBulk(sessionIds: string[]): Promise<Array<{
-    sessionId: string;
-    authorDid: string;
-    createdAt: string;
-    expiresAt?: string;
-    revokedAt?: string;
-  }>>;
+  getBulk(sessionIds: string[]): Promise<
+    Array<{
+      sessionId: string;
+      authorDid: string;
+      createdAt: string;
+      expiresAt?: string;
+      revokedAt?: string;
+    }>
+  >;
   revokeSession(sessionId: string): Promise<{ success: boolean }>;
-  addRecipientToSession(sessionId: string, did: string): Promise<{ success: boolean }>;
+  addRecipientToSession(
+    sessionId: string,
+    did: string,
+  ): Promise<{ success: boolean }>;
 }
 
 interface GetPostsParams {
@@ -56,7 +68,13 @@ interface GetPostsResponse {
 }
 
 export class SessionServiceImpl implements SessionService {
-  async createSession({ authorDid, recipients }: { authorDid: string; recipients: string[] }): Promise<{ sessionId: string }> {
+  async createSession({
+    authorDid,
+    recipients,
+  }: {
+    authorDid: string;
+    recipients: string[];
+  }): Promise<{ sessionId: string }> {
     // Mock implementation
     return { sessionId: 'session-1' };
   }
@@ -66,14 +84,14 @@ export class SessionServiceImpl implements SessionService {
     return {
       authorDid: 'did:example:author',
       recipients: ['did:example:recipient'],
-      createdAt: new Date()
+      createdAt: new Date(),
     };
   }
 
   async getPost(uri: string): Promise<{ authorDid: string }> {
     const post = await prisma.encryptedPost.findUnique({
       where: { postId: uri },
-      select: { authorDid: true }
+      select: { authorDid: true },
     });
 
     if (!post) {
@@ -83,10 +101,12 @@ export class SessionServiceImpl implements SessionService {
     return post;
   }
 
-  async getPostsByIds(postIds: string[]): Promise<Array<{ authorDid: string }>> {
+  async getPostsByIds(
+    postIds: string[],
+  ): Promise<Array<{ authorDid: string }>> {
     const posts = await prisma.encryptedPost.findMany({
       where: { postId: { in: postIds } },
-      select: { authorDid: true }
+      select: { authorDid: true },
     });
 
     if (posts.length !== postIds.length) {
@@ -96,12 +116,16 @@ export class SessionServiceImpl implements SessionService {
     return posts;
   }
 
-  async getPosts({ recipient, limit = 50, cursor }: GetPostsParams): Promise<GetPostsResponse> {
+  async getPosts({
+    recipient,
+    limit = 50,
+    cursor,
+  }: GetPostsParams): Promise<GetPostsResponse> {
     // If cursor is provided, return empty response to simulate end of posts
     if (cursor) {
       return {
         posts: [],
-        cursor: ''
+        cursor: '',
       };
     }
 
@@ -117,7 +141,7 @@ export class SessionServiceImpl implements SessionService {
         authorDid: 'did:example:author',
         text: 'This is a test post from 1 minute ago',
         createdAt: oneMinuteAgo.toISOString(),
-        sessionId: 'session-1'
+        sessionId: 'session-1',
       },
       {
         uri: 'at://did:example:author/app.bsky.feed.post/2',
@@ -125,23 +149,26 @@ export class SessionServiceImpl implements SessionService {
         authorDid: 'did:example:author',
         text: 'This is a test post from 20 minutes ago',
         createdAt: twentyMinutesAgo.toISOString(),
-        sessionId: 'session-1'
-      }
+        sessionId: 'session-1',
+      },
     ];
 
     return {
       posts: mockPosts,
-      cursor: mockPosts.length > 0 ? mockPosts[mockPosts.length - 1].createdAt : ''
+      cursor:
+        mockPosts.length > 0 ? mockPosts[mockPosts.length - 1].createdAt : '',
     };
   }
 
-  async getBulk(sessionIds: string[]): Promise<Array<{
-    sessionId: string;
-    authorDid: string;
-    createdAt: string;
-    expiresAt?: string;
-    revokedAt?: string;
-  }>> {
+  async getBulk(sessionIds: string[]): Promise<
+    Array<{
+      sessionId: string;
+      authorDid: string;
+      createdAt: string;
+      expiresAt?: string;
+      revokedAt?: string;
+    }>
+  > {
     const sessions = await prisma.session.findMany({
       where: { id: { in: sessionIds } },
       select: {
@@ -149,20 +176,20 @@ export class SessionServiceImpl implements SessionService {
         authorDid: true,
         createdAt: true,
         expiresAt: true,
-        revokedAt: true
-      }
+        revokedAt: true,
+      },
     });
 
     if (sessions.length !== sessionIds.length) {
       throw new NotFoundError('One or more sessions not found');
     }
 
-    return sessions.map(session => ({
+    return sessions.map((session) => ({
       sessionId: session.id,
       authorDid: session.authorDid,
       createdAt: session.createdAt.toISOString(),
       expiresAt: session.expiresAt?.toISOString(),
-      revokedAt: session.revokedAt?.toISOString()
+      revokedAt: session.revokedAt?.toISOString(),
     }));
   }
 
@@ -170,7 +197,7 @@ export class SessionServiceImpl implements SessionService {
     const session = await prisma.session.update({
       where: { id: sessionId },
       data: { revokedAt: new Date() },
-      select: { id: true }
+      select: { id: true },
     });
 
     if (!session) {
@@ -180,10 +207,13 @@ export class SessionServiceImpl implements SessionService {
     return { success: true };
   }
 
-  async addRecipientToSession(sessionId: string, did: string): Promise<{ success: boolean }> {
+  async addRecipientToSession(
+    sessionId: string,
+    did: string,
+  ): Promise<{ success: boolean }> {
     const session = await prisma.session.findUnique({
       where: { id: sessionId },
-      select: { id: true }
+      select: { id: true },
     });
 
     if (!session) {
@@ -194,8 +224,8 @@ export class SessionServiceImpl implements SessionService {
       data: {
         sessionId,
         recipientDid: did,
-        encryptedDek: Buffer.from('') // TODO: Generate and encrypt DEK
-      }
+        encryptedDek: Buffer.from(''), // TODO: Generate and encrypt DEK
+      },
     });
 
     return { success: true };
@@ -203,7 +233,10 @@ export class SessionServiceImpl implements SessionService {
 }
 
 // Export the function for use in job handlers
-export async function addRecipientToSession(sessionId: string, recipientDid: string): Promise<void> {
+export async function addRecipientToSession(
+  sessionId: string,
+  recipientDid: string,
+): Promise<void> {
   const service = new SessionServiceImpl();
   await service.addRecipientToSession(sessionId, recipientDid);
 }

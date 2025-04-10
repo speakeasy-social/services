@@ -1,4 +1,4 @@
-import { TrustedUser } from '@prisma/client';
+import { TrustedUser } from '../generated/prisma-client/index.js';
 import { createView, createListView } from './view.js';
 
 /**
