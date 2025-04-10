@@ -16,6 +16,8 @@ pnpm dev
 pnpm dev:private-sessions
 ```
 
+If you've borked your database `pnpm dev:setup` will wipe and reinitialise it
+
 ## Project Structure
 
 ```
@@ -127,12 +129,15 @@ The services are built as a collection of microservices that share a common deve
 ## Development Environment Setup
 
 ## Prerequisites
+
 - Node.js (v18 or later)
 - Docker and Docker Compose
 - pnpm
 
 ## Initial Setup
+
 1. Install dependencies:
+
    ```bash
    pnpm install
    ```
@@ -150,19 +155,25 @@ The services are built as a collection of microservices that share a common deve
 ## Common Issues
 
 ### Database Migrations
+
 If you see errors about database migrations:
+
 - Check that your `.env` file has the correct database URLs
 - Each service has its own database URL (e.g. `PRIVATE_SESSIONS_DB_URL`, `TRUSTED_USERS_DB_URL`)
 - The main `DATABASE_URL` is used for migrations
 
 ### TypeScript Build Errors
+
 If you see TypeScript errors:
+
 - Make sure all dependencies are installed
 - Check that the common package is built
 - Run `pnpm build` in the common package if needed
 
 ### Service Dependencies
+
 Services depend on each other in this order:
+
 1. `user-keys` - Provides key management
 2. `trusted-users` - Manages trust relationships
 3. `private-sessions` - Handles private sessions
@@ -171,12 +182,15 @@ Services depend on each other in this order:
 If a service fails to start, check its dependencies are running first.
 
 ## Development Workflow
+
 1. Make changes to the code
 2. Run `pnpm build` to rebuild affected packages
 3. Restart services as needed with `pnpm dev`
 
 ## Testing
+
 Run tests with:
+
 ```bash
 pnpm test
 ```
