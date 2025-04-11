@@ -12,5 +12,8 @@
   "devDependencies": {
     "eslint": "^8.56.0",
     "typescript": "^5.8.3"
+  },
+  "dependencies": {
+    "crystals-kyber-js": "2.3.1"
   }
 }
