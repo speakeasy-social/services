@@ -72,7 +72,7 @@ export async function speakeasyApiRequest(
     toService: string;
   },
   body: any,
-) {
+): Promise<any> {
   const apiKey = getServiceApiKey(options.fromService);
   const host = {
     'private-sessions': process.env.PRIVATE_SESSIONS_HOST,
@@ -96,4 +96,6 @@ export async function speakeasyApiRequest(
       response.status,
     );
   }
+
+  return response.json();
 }
