@@ -1,9 +1,10 @@
 import express from 'express';
-import { Express, Request, Response } from 'express';
+import { Express, Request, Response, NextFunction } from 'express';
 import { validateEnv, baseSchema } from './config.js';
 import { LexiconDoc } from '@atproto/lexicon';
 import z from 'zod';
 import { createLogger } from '@speakeasy-services/common';
+import { errorHandler } from '@speakeasy-services/common';
 
 // Extend Express Request type to include logger
 declare global {
@@ -98,35 +99,45 @@ export class Server {
     }
 
     // Mount XRPC routes
-    app.all('/xrpc/:method', async (req: Request, res: Response) => {
-      const startTime = Date.now();
-      const method = req.params.method;
+    app.all(
+      '/xrpc/:method',
+      async (req: Request, res: Response, next: NextFunction) => {
+        const startTime = Date.now();
+        const method = req.params.method;
 
-      // Get the method handler
-      const methodHandler = this.options.methods[method];
-      if (!methodHandler) {
-        req.logger.warn({ method }, 'Method not found');
-        res.status(404).json({ error: 'Method not found' });
-        return;
-      }
+        try {
+          // Get the method handler
+          const methodHandler = this.options.methods[method];
+          if (!methodHandler) {
+            req.logger.warn({ method }, 'Method not found');
+            res.status(404).json({ error: 'Method not found' });
+            return;
+          }
 
-      // Call the method handler directly
-      const output = await methodHandler.handler(req, res);
-      if (!output || !('body' in output)) {
-        req.logger.error({ method }, 'Invalid handler output');
-        res.status(500).json({ error: 'Internal server error' });
-        return;
-      }
+          // Call the method handler directly
+          const output = await methodHandler.handler(req, res);
+          if (!output || !('body' in output)) {
+            req.logger.error({ method }, 'Invalid handler output');
+            res.status(500).json({ error: 'Internal server error' });
+            return;
+          }
 
-      // Send the JSON response
-      res.status(200).json(output.body);
+          // Send the JSON response
+          res.status(200).json(output.body);
 
-      req.logger.info({
-        method,
-        duration: Date.now() - startTime,
-        status: 200,
-      });
-    });
+          req.logger.info({
+            method,
+            duration: Date.now() - startTime,
+            status: 200,
+          });
+        } catch (error) {
+          next(error);
+        }
+      },
+    );
+
+    // Add error handling middleware
+    app.use(errorHandler);
 
     return app;
   }
