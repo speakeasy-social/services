@@ -3,7 +3,7 @@ import { User, Service, ExtendedRequest } from '../express-extensions.js';
 
 // Define the actions that can be performed
 export type Action =
-  | 'manage'
+  | '*'
   | 'list'
   | 'create'
   | 'delete'
@@ -42,17 +42,17 @@ const can = (
  */
 const userAbilities = [
   // User-level trust permissions
-  can('manage', 'trusted_user', { authorDid: 'did' }),
+  can('*', 'trusted_user', { authorDid: 'did' }),
 
   // Authors can manage their own sessions and posts
   // FIXME the second param needs to === subject.constructor.name
   can('revoke', 'private_session', { authorDid: 'did' }),
-  can('manage', 'private_post', { authorDid: 'did' }),
+  can('*', 'private_post', { authorDid: 'did' }),
   // Recipients can read posts shared with them
   can('list', 'private_post', { recipientDid: 'did' }),
 
   // Users can manage their own keys
-  can('manage', 'key', { did: 'did' }),
+  can('*', 'key', { did: 'did' }),
   // Anyone can read public keys
   can('get_public_key', 'key'),
 ];
@@ -63,7 +63,6 @@ const userAbilities = [
 const serviceAbilities = [
   can('get_public_key', 'key', { name: '=private-sessions}' }),
   can('list', 'trusted_user', { name: '=private-sessions' }),
-  can('manage', 'private_session', { name: '=trusted-users' }),
 ];
 
 /**
@@ -108,6 +107,7 @@ export function authorize(
     : isAuthorized(req.abilities, req.user, action, subject, record);
 
   if (!isAllowed) {
+    if (process.env.DEBUG_AUTH) console.log({ user: req.user, record: record });
     throw new AuthorizationError(`Not authorized to ${action} ${subject}`);
   }
 }
@@ -124,12 +124,21 @@ function isAuthorized(
   }
 
   return abilities.some((ability) => {
-    let isAllowed = ability.subject === subject && ability.action === action;
+    let isAllowed =
+      ability.subject === subject &&
+      (ability.action === '*' || ability.action === action);
+
+    if (process.env.DEBUG_AUTH)
+      console.log(
+        `#### ${action} ===  ${ability.action}, ${subject} === ${ability.subject} isAlllowed: ${isAllowed} ####`,
+      );
 
     if (isAllowed && ability.conditions) {
       isAllowed = !!(
         record &&
         Object.entries(ability.conditions).every(([key, value]) => {
+          if (process.env.DEBUG_AUTH) console.log({ key, value, record });
+
           // If the condition is prefixed with =, check if user[key] has that exact value
           // Otherwise, check if user[key] matches record[value]
           let expectedValue = value.startsWith('=')
