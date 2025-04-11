@@ -136,7 +136,6 @@ const methodHandlers = {
 
 type MethodName = keyof typeof methodHandlers;
 
-// Define methods using XRPC lexicon
 export const methods: Record<MethodName, { handler: RequestHandler }> = {
   'social.spkeasy.keys.getPublicKey': {
     handler: methodHandlers['social.spkeasy.keys.getPublicKey'],
