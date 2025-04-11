@@ -17,7 +17,10 @@ declare global {
 export interface ServerOptions {
   name: string;
   port: number;
-  methods: Record<string, (req: Request, res: Response) => Promise<void>>;
+  methods: Record<
+    string,
+    { handler: (req: Request, res: Response) => Promise<{ body: object }> }
+  >;
   middleware?: any[];
   onShutdown?: () => Promise<void>;
   lexicons?: LexiconDoc[];
@@ -109,7 +112,7 @@ export class Server {
         }
 
         // Call the method handler directly
-        const output = await methodHandler.handler(res, res);
+        const output = await methodHandler.handler(req, res);
         if (!output || !('body' in output)) {
           req.logger.error({ method }, 'Invalid handler output');
           res.status(500).json({ error: 'Internal server error' });
