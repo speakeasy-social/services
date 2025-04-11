@@ -62,13 +62,14 @@ const methodHandlers = {
   'social.spkeasy.graph.getTrusted': async (
     req: ExtendedRequest,
   ): Promise<HandlerOutput> => {
-    const did = req.query.did || req.user.did;
     // Validate input against lexicon
-    validateAgainstLexicon(getTrustedDef, { did });
+    validateAgainstLexicon(getTrustedDef, req.query);
+
+    const { authorDid } = req.query;
 
     // Get the data from the service
-    const trustedUsers = await trustService.getTrusted(did);
-    authorize(req, 'list', 'trusted_user', { authorDid: did });
+    const trustedUsers = await trustService.getTrusted(authorDid);
+    authorize(req, 'list', 'trusted_user', trustedUsers);
 
     // Transform to view
     return {
