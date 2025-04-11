@@ -61,6 +61,7 @@ const userAbilities = [
  * What services are allowed to do
  */
 const serviceAbilities = [
+  can('get_public_key', 'key', { name: '=private-sessions}' }),
   can('list', 'trusted_user', { name: '=private-sessions' }),
   can('manage', 'private_session', { name: '=trusted-users' }),
 ];

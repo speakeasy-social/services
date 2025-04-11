@@ -101,7 +101,11 @@ const methodHandlers = {
 
     return {
       encoding: 'application/json',
-      body: key,
+      body: {
+        // FIXME use view pattern
+        publicKey: key.privateKey,
+        authorDid: key.authorDid,
+      },
     };
   },
 
