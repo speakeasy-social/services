@@ -12,3 +12,6 @@ CREATE INDEX "idx_trusted_users_by_author" ON "trusted_users"("authorDid", "dele
 
 -- CreateIndex
 CREATE INDEX "idx_trusted_users_by_recipient" ON "trusted_users"("recipientDid", "deletedAt", "createdAt" DESC);
+
+-- CreateIndex
+CREATE UNIQUE INDEX "idx_trusted_users_unique_active" ON "trusted_users"("authorDid", "recipientDid") WHERE "deletedAt" IS NULL;
