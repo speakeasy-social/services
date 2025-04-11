@@ -75,7 +75,7 @@ const methodHandlers = {
 
     const result = await sessionService.createSession({
       authorDid: req.user.did!,
-      sessionKeys,
+      recipients: sessionKeys,
     });
     return {
       encoding: 'application/json',
@@ -83,40 +83,34 @@ const methodHandlers = {
     };
   },
   'social.spkeasy.privateSession.revoke': async (
-    req: Request,
+    req: ExtendedRequest,
   ): Promise<HandlerOutput> => {
-    const { sessionId } = req.body as { sessionId: string };
-
     // Validate input against lexicon
     validateAgainstLexicon(revokeSessionDef, req.body);
 
-    const session = await sessionService.getSession(sessionId);
-    authorize(req, 'revoke', 'private_session', { authorDid: req.user.did });
+    const { authorDid } = req.body;
 
-    const result = await sessionService.revokeSession(sessionId);
+    authorize(req, 'revoke', 'private_session', { ...req.user!, authorDid });
+
+    await sessionService.revokeSession(authorDid);
     return {
       encoding: 'application/json',
       body: { success: true },
     };
   },
   'social.spkeasy.privateSession.addUser': async (
-    req: Request,
+    req: ExtendedRequest,
   ): Promise<HandlerOutput> => {
-    const { sessionId, recipientDid } = ctx.params as {
-      sessionId: string;
-      recipientDid: string;
-    };
-
     // Validate input against lexicon
-    validateAgainstLexicon(addUserDef, { sessionId, recipientDid });
+    validateAgainstLexicon(addUserDef, req.body);
 
-    const session = await sessionService.getSession(sessionId);
-    authorize(req, 'create', 'private_session');
+    const { authorDid, recipientDid } = req.body;
 
-    const result = await sessionService.addRecipientToSession(
-      sessionId,
-      recipientDid,
-    );
+    authorize(req, 'add_recipient', 'private_session', {
+      authorDid,
+    });
+
+    await sessionService.addRecipientToSession(authorDid, recipientDid);
     return {
       encoding: 'application/json',
       body: { success: true },
@@ -191,7 +185,7 @@ const methodHandlers = {
 } as const;
 
 // Define methods using XRPC lexicon
-export const methods: Record<MethodName, XRPCHandlerConfig> = {
+export const methods: Record<MethodName, { handler: RequestHandler }> = {
   // Session management methods
   'social.spkeasy.privateSession.create': {
     handler: methodHandlers['social.spkeasy.privateSession.create'],

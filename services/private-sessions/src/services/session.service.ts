@@ -6,6 +6,8 @@ import {
 } from '../generated/prisma-client/index.js';
 import { encryptSessionKey } from '@speakeasy-services/crypto';
 import { NotFoundError } from '@speakeasy-services/common';
+import { Queue } from 'packages/queue/dist/index.js';
+import { JOB_NAMES } from 'packages/queue/dist/index.js';
 
 const prisma = new PrismaClient();
 
@@ -16,30 +18,40 @@ export class SessionService {
   }: {
     authorDid: string;
     recipients: {
-      did: string;
+      recipientDid: string;
       encryptedDek: string;
     }[];
   }): Promise<{ sessionId: string }> {
     // open transaction
     const session = await prisma.$transaction(async (tx) => {
-      // revoke session if one already exists
-      await tx.session.updateMany({
-        where: {
-          authorDid,
-          revokedAt: null,
-        },
-        data: {
-          revokedAt: new Date(),
-        },
-      });
+      const previousSessions = await tx.$queryRaw<
+        Session[]
+      >`SELECT * FROM sessions WHERE author_did = ${authorDid} AND revoked_at IS NULL FOR UPDATE`;
+
+      const previousSession = previousSessions[0];
+
+      if (previousSession) {
+        // revoke session if one already exists
+        await tx.session.updateMany({
+          where: {
+            authorDid,
+            revokedAt: null,
+          },
+          data: {
+            revokedAt: new Date(),
+          },
+        });
+      }
 
       // Create new session
       const session = await tx.session.create({
         data: {
           authorDid,
+          previousSessionId: previousSession?.id,
+
           sessionKeys: {
             create: recipients.map((recipient) => ({
-              recipientDid: recipient.did,
+              recipientDid: recipient.recipientDid,
               encryptedDek: Buffer.from(recipient.encryptedDek),
             })),
           },
@@ -162,38 +174,34 @@ export class SessionService {
     }));
   }
 
-  async revokeSession(sessionId: string): Promise<{ success: boolean }> {
-    const session = await prisma.session.update({
-      where: { id: sessionId },
+  async revokeSession(authorDid: string): Promise<{ success: boolean }> {
+    await prisma.session.update({
+      where: { authorDid, revokedAt: null },
       data: { revokedAt: new Date() },
       select: { id: true },
     });
-
-    if (!session) {
-      throw new NotFoundError('Session not found');
-    }
 
     return { success: true };
   }
 
   async addRecipientToSession(
-    sessionId: string,
-    did: string,
+    authorDid: string,
+    recipientDid: string,
   ): Promise<{ success: boolean }> {
     const session = await prisma.session.findUnique({
-      where: { id: sessionId },
+      where: { authorDid, revokedAt: null },
       select: { id: true },
     });
 
-    if (!session) {
-      throw new NotFoundError('Session not found');
-    }
+    Queue.publish(JOB_NAMES.REVOKE_SESSION, {
+      authorDid,
+    });
 
     await prisma.sessionKey.create({
       data: {
-        sessionId,
-        recipientDid: did,
-        encryptedDek: Buffer.from(''), // TODO: Generate and encrypt DEK
+        sessionId: session.id,
+        recipientDid,
+        encryptedDek: Buffer.from(''),
       },
     });
 
