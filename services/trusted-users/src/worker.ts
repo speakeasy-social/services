@@ -14,48 +14,6 @@ interface RotateSessionJob {
 const worker = new Worker({ name: 'trusted-users-worker' });
 const queue = Queue.getInstance();
 
-/**
- * When a new recipient is added, ask the private-sessions service to add them to the session.
- */
-queue.work<AddRecipientToSessionJob>(
-  JOB_NAMES.ADD_RECIPIENT_TO_SESSION,
-  async (job) => {
-    const { authorDid, recipientDid } = job.data;
-
-    await speakeasyApiRequest(
-      {
-        method: 'POST',
-        path: 'social.spkeasy.privateSession.addUser',
-        fromService: 'trusted-users',
-        toService: 'private-sessions',
-      },
-      {
-        authorDid,
-        recipientDid,
-      },
-    );
-  },
-);
-
-/**
- * Request a new session for an author
- */
-queue.work<RotateSessionJob>(JOB_NAMES.REVOKE_SESSION, async (job) => {
-  const { authorDid } = job.data;
-
-  await speakeasyApiRequest(
-    {
-      method: 'POST',
-      path: 'social.spkeasy.privateSession.revokeSession',
-      fromService: 'trusted-users',
-      toService: 'private-sessions',
-    },
-    {
-      authorDid,
-    },
-  );
-});
-
 worker.start().catch((error: Error) => {
   console.error('Failed to start worker:', error);
   throw error;
