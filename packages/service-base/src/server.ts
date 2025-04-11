@@ -102,51 +102,30 @@ export class Server {
       const startTime = Date.now();
       const method = req.params.method;
 
-      try {
-        // Get the method handler
-        const methodHandler = this.options.methods[method];
-        if (!methodHandler) {
-          req.logger.warn({ method }, 'Method not found');
-          res.status(404).json({ error: 'Method not found' });
-          return;
-        }
-
-        // Call the method handler directly
-        const output = await methodHandler.handler(req, res);
-        if (!output || !('body' in output)) {
-          req.logger.error({ method }, 'Invalid handler output');
-          res.status(500).json({ error: 'Internal server error' });
-          return;
-        }
-
-        // Send the JSON response
-        res.status(200).json(output.body);
-
-        req.logger.info({
-          method,
-          duration: Date.now() - startTime,
-          status: 200,
-        });
-      } catch (error: unknown) {
-        const duration = Date.now() - startTime;
-
-        const errorMessage =
-          error instanceof Error ? error.message : 'Unknown error occurred';
-        req.logger.error(
-          {
-            method,
-            duration,
-            error: error instanceof Error ? error : { message: errorMessage },
-            status: 500,
-          },
-          'Request failed with unexpected error',
-        );
-
-        res.status(500).json({
-          error: 'InternalServerError',
-          message: errorMessage,
-        });
+      // Get the method handler
+      const methodHandler = this.options.methods[method];
+      if (!methodHandler) {
+        req.logger.warn({ method }, 'Method not found');
+        res.status(404).json({ error: 'Method not found' });
+        return;
       }
+
+      // Call the method handler directly
+      const output = await methodHandler.handler(req, res);
+      if (!output || !('body' in output)) {
+        req.logger.error({ method }, 'Invalid handler output');
+        res.status(500).json({ error: 'Internal server error' });
+        return;
+      }
+
+      // Send the JSON response
+      res.status(200).json(output.body);
+
+      req.logger.info({
+        method,
+        duration: Date.now() - startTime,
+        status: 200,
+      });
     });
 
     return app;
