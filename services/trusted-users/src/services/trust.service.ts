@@ -1,4 +1,8 @@
-import { PrismaClient, Prisma, TrustedUser } from '@prisma/client/edge';
+import {
+  PrismaClient,
+  Prisma,
+  TrustedUser,
+} from '../generated/prisma-client/index.js';
 import { NotFoundError } from '@speakeasy-services/common';
 import { Queue, JOB_NAMES } from '@speakeasy-services/queue';
 
