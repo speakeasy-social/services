@@ -1,5 +1,20 @@
 import { LexiconDoc } from '@atproto/lexicon';
 
+export const trustedUserDef: LexiconDoc = {
+  lexicon: 1,
+  id: 'social.spkeasy.graph.trustedUser',
+  defs: {
+    main: {
+      type: 'object',
+      required: ['recipientDid', 'createdAt'],
+      properties: {
+        recipientDid: { type: 'string' },
+        createdAt: { type: 'string', format: 'datetime' },
+      },
+    },
+  },
+};
+
 export const getTrustedDef: LexiconDoc = {
   lexicon: 1,
   id: 'social.spkeasy.graph.getTrusted',
@@ -9,20 +24,23 @@ export const getTrustedDef: LexiconDoc = {
       description: 'Get all users trusted by a given DID',
       parameters: {
         type: 'params',
-        required: ['recipientDid'],
+        required: ['authorDid'],
         properties: {
-          recipientDid: { type: 'string' },
+          authorDid: { type: 'string' },
         },
       },
       output: {
         encoding: 'application/json',
         schema: {
           type: 'object',
-          required: ['trusts'],
+          required: ['trusted'],
           properties: {
-            trusts: {
+            trusted: {
               type: 'array',
-              items: { type: 'string' },
+              items: {
+                type: 'ref',
+                ref: '#trustedUser',
+              },
             },
           },
         },
