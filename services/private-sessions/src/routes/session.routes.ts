@@ -7,7 +7,11 @@ import {
   XRPCReqContext,
   HandlerOutput,
 } from '@atproto/xrpc-server';
-import { authorize } from '@speakeasy-services/common';
+import {
+  authorize,
+  RequestHandler,
+  ExtendedRequest,
+} from '@speakeasy-services/common';
 import { lexicons } from '../lexicon/index.js';
 import {
   revokeSessionDef,
@@ -60,18 +64,17 @@ function validateAgainstLexicon(lexicon: any, params: any) {
 const methodHandlers = {
   // Session management
   'social.spkeasy.privateSession.create': async (
-    req: Request,
+    req: ExtendedRequest,
   ): Promise<HandlerOutput> => {
-    const { name } = ctx.params as { name: string };
-    const { sessionKeys } = ctx.req.body;
-
     // Validate input against lexicon
-    validateAgainstLexicon(createSessionDef, { name });
+    validateAgainstLexicon(createSessionDef, req.body);
 
-    authorize(ctx, 'create', session);
+    const { sessionKeys } = req.body;
+
+    authorize(req, 'create', 'private_session', { authorDid: req.user.did });
 
     const result = await sessionService.createSession({
-      authorDid: ctx.auth.credentials.did,
+      authorDid: req.user.did!,
       sessionKeys,
     });
     return {
@@ -82,13 +85,13 @@ const methodHandlers = {
   'social.spkeasy.privateSession.revoke': async (
     req: Request,
   ): Promise<HandlerOutput> => {
-    const { sessionId } = ctx.params as { sessionId: string };
+    const { sessionId } = req.body as { sessionId: string };
 
     // Validate input against lexicon
-    validateAgainstLexicon(revokeSessionDef, { sessionId });
+    validateAgainstLexicon(revokeSessionDef, req.body);
 
     const session = await sessionService.getSession(sessionId);
-    authorize(ctx, 'revoke', session);
+    authorize(req, 'revoke', 'private_session', { authorDid: req.user.did });
 
     const result = await sessionService.revokeSession(sessionId);
     return {
@@ -108,7 +111,7 @@ const methodHandlers = {
     validateAgainstLexicon(addUserDef, { sessionId, recipientDid });
 
     const session = await sessionService.getSession(sessionId);
-    authorize(ctx, 'create', session);
+    authorize(req, 'create', 'private_session');
 
     const result = await sessionService.addRecipientToSession(
       sessionId,

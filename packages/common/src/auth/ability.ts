@@ -9,6 +9,7 @@ export type Action =
   | 'delete'
   | 'revoke'
   | 'update'
+  | 'add_recipient'
   | 'get_public_key'
   | 'get_private_key';
 
@@ -60,8 +61,8 @@ const userAbilities = [
  * What services are allowed to do
  */
 const serviceAbilities = [
-  can('list', 'trusted_user', { name: 'private-sessions' }),
-  can('manage', 'private_session', { name: 'trusted-users' }),
+  can('list', 'trusted_user', { name: '=private-sessions' }),
+  can('manage', 'private_session', { name: '=trusted-users' }),
 ];
 
 /**
@@ -127,10 +128,15 @@ function isAuthorized(
     if (isAllowed && ability.conditions) {
       isAllowed = !!(
         record &&
-        Object.entries(ability.conditions).every(
-          ([key, value]) =>
-            record[key] === user[value as keyof (User | Service)],
-        )
+        Object.entries(ability.conditions).every(([key, value]) => {
+          // If the condition is prefixed with =, check if user[key] has that exact value
+          // Otherwise, check if user[key] matches record[value]
+          let expectedValue = value.startsWith('=')
+            ? value.slice(1)
+            : record[value];
+
+          return user[key as keyof (User | Service)] === expectedValue;
+        })
       );
     }
 
