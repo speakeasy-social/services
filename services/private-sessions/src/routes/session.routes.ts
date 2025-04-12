@@ -90,6 +90,7 @@ const methodHandlers = {
       body: { sessionId: result.sessionId },
     };
   },
+
   /**
    * Revokes an existing private session
    * @param req - The request containing the author DID to revoke
@@ -126,7 +127,7 @@ const methodHandlers = {
 
     return {
       encoding: 'application/json',
-      body: { sessionKey: toSessionKeyView(sessionKey) },
+      body: { encryptedSessionKey: toSessionKeyView(sessionKey) },
     };
   },
 
@@ -224,9 +225,6 @@ const methodHandlers = {
   'social.spkeasy.privatePosts.deletePost': async (
     req: Request,
   ): Promise<HandlerOutput> => {
-    const lexicon = deletePostDef.defs.main;
-    const { uri } = ctx.params as { uri: string };
-
     // Validate input against lexicon
     validateAgainstLexicon(lexicon, { uri });
 
