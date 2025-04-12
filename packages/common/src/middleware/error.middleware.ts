@@ -67,6 +67,28 @@ export const errorHandler: ErrorRequestHandler = (
     });
   }
 
+  if (error.name === 'NotFoundError') {
+    logger.warn(
+      {
+        error: {
+          name: error.name,
+          message: error.message,
+          errors: (error as any).errors,
+        },
+        path,
+        method,
+      },
+      'Not Found error occurred',
+    );
+
+    return res.status(400).send({
+      error: 'NotFoundError',
+      message: error.message,
+      errors: (error as any).errors,
+      code: 'NotFound',
+    });
+  }
+
   if (error.name === 'PrismaClientKnownRequestError') {
     const prismaError = error as Prisma.PrismaClientKnownRequestError;
     logger.error({
