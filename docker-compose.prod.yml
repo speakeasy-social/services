@@ -1,0 +1,101 @@
+version: '3.8'
+
+services:
+  private-sessions:
+    image: speakeasy-services-image:latest
+    container_name: speakeasy-private-sessions
+    ports:
+      - '3002:3002'
+    environment:
+      - SERVICE_NAME=private-sessions
+      - NODE_ENV=production
+      - PORT=3002
+      - POSTGRES_HOST=${POSTGRES_HOST}
+      - POSTGRES_PORT=${POSTGRES_PORT}
+      - POSTGRES_USER_FILE=/run/secrets/postgres_user
+      - POSTGRES_PASSWORD_FILE=/run/secrets/postgres_password
+      - POSTGRES_DB_FILE=/run/secrets/postgres_db
+    secrets:
+      - source: private_sessions_postgres_user
+        target: postgres_user
+      - source: private_sessions_postgres_password
+        target: postgres_password
+      - source: private_sessions_postgres_db
+        target: postgres_db
+    restart: unless-stopped
+    networks:
+      - speakeasy-services
+
+  trusted-users:
+    image: speakeasy-services-image:latest
+    container_name: speakeasy-trusted-users
+    ports:
+      - '3001:3001'
+    environment:
+      - SERVICE_NAME=trusted-users
+      - NODE_ENV=production
+      - PORT=3001
+      - POSTGRES_HOST=${POSTGRES_HOST}
+      - POSTGRES_PORT=${POSTGRES_PORT}
+      - POSTGRES_USER_FILE=/run/secrets/postgres_user
+      - POSTGRES_PASSWORD_FILE=/run/secrets/postgres_password
+      - POSTGRES_DB_FILE=/run/secrets/postgres_db
+    secrets:
+      - source: trusted_users_postgres_user
+        target: postgres_user
+      - source: trusted_users_postgres_password
+        target: postgres_password
+      - source: trusted_users_postgres_db
+        target: postgres_db
+    restart: unless-stopped
+    networks:
+      - speakeasy-services
+
+  user-keys:
+    image: speakeasy-services-image:latest
+    container_name: speakeasy-user-keys
+    ports:
+      - '3004:3004'
+    environment:
+      - SERVICE_NAME=user-keys
+      - NODE_ENV=production
+      - PORT=3004
+      - POSTGRES_HOST=${POSTGRES_HOST}
+      - POSTGRES_PORT=${POSTGRES_PORT}
+      - POSTGRES_USER_FILE=/run/secrets/postgres_user
+      - POSTGRES_PASSWORD_FILE=/run/secrets/postgres_password
+      - POSTGRES_DB_FILE=/run/secrets/postgres_db
+    secrets:
+      - source: user_keys_postgres_user
+        target: postgres_user
+      - source: user_keys_postgres_password
+        target: postgres_password
+      - source: user_keys_postgres_db
+        target: postgres_db
+    restart: unless-stopped
+    networks:
+      - speakeasy-services
+
+secrets:
+  private_sessions_postgres_user:
+    external: true
+  private_sessions_postgres_password:
+    external: true
+  private_sessions_postgres_db:
+    external: true
+  trusted_users_postgres_user:
+    external: true
+  trusted_users_postgres_password:
+    external: true
+  trusted_users_postgres_db:
+    external: true
+  user_keys_postgres_user:
+    external: true
+  user_keys_postgres_password:
+    external: true
+  user_keys_postgres_db:
+    external: true
+
+networks:
+  speakeasy-services:
+    name: speakeasy-services
