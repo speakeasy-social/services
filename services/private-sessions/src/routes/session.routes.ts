@@ -22,6 +22,11 @@ import {
   createPostsDef,
   deletePostDef,
 } from '../lexicon/types/posts.js';
+import { toEncryptedPostsListView } from '../views/private-posts.views.js';
+import {
+  toSessionKeyView,
+  toSessionKeyListView,
+} from '../views/private-sessions.views.js';
 
 const sessionService = new SessionService();
 
@@ -61,7 +66,11 @@ function validateAgainstLexicon(lexicon: any, params: any) {
 
 // Define method handlers with lexicon validation
 const methodHandlers = {
-  // Session management
+  /**
+   * Creates a new private session with the specified session keys
+   * @param req - The request containing session keys and user information
+   * @returns Promise containing the created session ID
+   */
   'social.spkeasy.privateSession.create': async (
     req: ExtendedRequest,
   ): Promise<HandlerOutput> => {
@@ -81,6 +90,11 @@ const methodHandlers = {
       body: { sessionId: result.sessionId },
     };
   },
+  /**
+   * Revokes an existing private session
+   * @param req - The request containing the author DID to revoke
+   * @returns Promise indicating success of the revocation
+   */
   'social.spkeasy.privateSession.revoke': async (
     req: ExtendedRequest,
   ): Promise<HandlerOutput> => {
@@ -97,6 +111,30 @@ const methodHandlers = {
       body: { success: true },
     };
   },
+
+  /**
+   * Retrieves the current private session key for the authenticated user
+   * @param req - The request containing the authenticated user's DID
+   * @returns Promise containing the current private session
+   */
+  'social.spkeasy.privateSession.getSession': async (
+    req: ExtendedRequest,
+  ): Promise<HandlerOutput> => {
+    const sessionKey = await sessionService.getSession(req.user.did!);
+
+    authorize(req, 'revoke', 'private_session', sessionKey);
+
+    return {
+      encoding: 'application/json',
+      body: { sessionKey: toSessionKeyView(sessionKey) },
+    };
+  },
+
+  /**
+   * Adds a new recipient to an existing private session
+   * @param req - The request containing author and recipient DIDs
+   * @returns Promise indicating success of adding the recipient
+   */
   'social.spkeasy.privateSession.addUser': async (
     req: ExtendedRequest,
   ): Promise<HandlerOutput> => {
@@ -116,37 +154,52 @@ const methodHandlers = {
     };
   },
 
-  // Post management
+  /**
+   * Retrieves encrypted posts for specified recipients
+   * @param req - The request containing recipient DIDs and pagination parameters
+   * @returns Promise containing encrypted posts and session keys
+   */
   'social.spkeasy.privatePosts.getPosts': async (
     req: Request,
   ): Promise<HandlerOutput> => {
-    const { recipient, limit, cursor } = ctx.params as {
-      recipient: string;
+    // Validate input against lexicon
+    validateAgainstLexicon(getPostsDef, req.query);
+
+    const { authors, replyTo, limit, cursor } = req.query as {
       authors: string;
       limit?: string;
       cursor?: string;
+      replyTo?: string;
     };
 
     // Convert limit to number if provided
     const limitNum = limit ? parseInt(limit, 10) : undefined;
 
-    // Validate input against lexicon
-    validateAgainstLexicon(getPostsDef, { recipient, limit: limitNum, cursor });
-
-    const result = await sessionService.getPosts({
-      recipient,
+    const result = await sessionService.getPosts(req.user.did, {
+      authorDids: authors.split(','),
+      replyTo,
       limit: limitNum,
       cursor,
     });
 
-    // authorize(ctx.req, 'list', result);
+    authorize(req, 'list', 'private_post', result.encryptedPosts);
+    authorize(req, 'list', 'private_sessions', result.encryptedSessionKeys);
 
     return {
       encoding: 'application/json',
-      body: result,
+      body: {
+        cursor: result.cursor,
+        encryptedPosts: toEncryptedPostsListView(result.encryptedPosts),
+        encryptedSessionKeys: toSessionKeyListView(result.encryptedSessionKeys),
+      },
     };
   },
 
+  /**
+   * Creates new encrypted posts in a private session
+   * @param req - The request containing the encrypted posts data
+   * @returns Promise indicating success of post creation
+   */
   'social.spkeasy.privatePosts.createPosts': async (
     req: Request,
   ): Promise<HandlerOutput> => {
@@ -163,6 +216,11 @@ const methodHandlers = {
     };
   },
 
+  /**
+   * Deletes a specific encrypted post
+   * @param req - The request containing the post URI to delete
+   * @returns Promise indicating success of post deletion
+   */
   'social.spkeasy.privatePosts.deletePost': async (
     req: Request,
   ): Promise<HandlerOutput> => {

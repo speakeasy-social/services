@@ -41,13 +41,13 @@ CREATE TABLE "encrypted_posts" (
 CREATE INDEX "idx_sessions_current" ON "sessions"("authorDid", "createdAt" DESC);
 
 -- CreateIndex
-CREATE INDEX "idx_posts_by_author" ON "encrypted_posts"("authorDid", "createdAt" DESC);
+CREATE INDEX "idx_posts_by_author_created" ON "encrypted_posts"("authorDid", "createdAt" DESC);
 
 -- CreateIndex
-CREATE INDEX "idx_posts_by_reply_root" ON "encrypted_posts"("replyRoot");
+CREATE INDEX "idx_posts_by_session_created_author" ON "encrypted_posts"("sessionId", "createdAt" DESC, "authorDid");
 
 -- CreateIndex
-CREATE INDEX "idx_posts_by_reply_parent" ON "encrypted_posts"("replyRoot");
+CREATE INDEX "idx_posts_by_reply_root" ON "encrypted_posts"("replyRoot", "sessionId");
 
 -- CreateIndex
 CREATE INDEX "idx_session_keys_by_recipient" ON "session_keys"("recipientDid", "sessionId");

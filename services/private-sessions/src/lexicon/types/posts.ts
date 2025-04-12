@@ -6,30 +6,47 @@ export const getPostsDef: LexiconDoc = {
   defs: {
     main: {
       type: 'query',
-      description: 'Get private posts for a recipient',
+      description: 'Get private posts for specified authors',
       parameters: {
         type: 'params',
-        required: ['recipient'],
+        required: ['authors'],
         properties: {
-          recipient: { type: 'string' },
-          limit: { type: 'integer', minimum: 1, maximum: 100, default: 50 },
-          cursor: { type: 'string' },
+          authors: {
+            type: 'string',
+            description: 'Comma-separated list of author DIDs',
+          },
+          replyTo: {
+            type: 'string',
+            description: 'Optional URI of the post being replied to',
+          },
+          limit: {
+            type: 'string',
+            description: 'Optional limit for pagination',
+          },
+          cursor: {
+            type: 'string',
+            description: 'Optional cursor for pagination',
+          },
         },
       },
       output: {
         encoding: 'application/json',
         schema: {
           type: 'object',
-          required: ['posts'],
+          required: ['encryptedPosts', 'encryptedSessionKeys'],
           properties: {
-            posts: {
+            cursor: { type: 'string' },
+            encryptedPosts: {
               type: 'array',
               items: {
                 type: 'ref',
                 ref: '#privatePost',
               },
             },
-            cursor: { type: 'string' },
+            encryptedSessionKeys: {
+              type: 'array',
+              items: { type: 'string' },
+            },
           },
         },
       },
@@ -130,6 +147,13 @@ export const privatePostDef: LexiconDoc = {
         authorDid: { type: 'string' },
         text: { type: 'string' },
         createdAt: { type: 'string', format: 'datetime' },
+        reply: {
+          type: 'object',
+          properties: {
+            root: { type: 'string' },
+            parent: { type: 'string' },
+          },
+        },
       },
     },
   },

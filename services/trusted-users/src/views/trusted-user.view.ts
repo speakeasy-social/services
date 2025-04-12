@@ -1,5 +1,5 @@
 import { TrustedUser } from '../generated/prisma-client/index.js';
-import { createView, createListView } from './view.js';
+import { createView, createListView } from '@speakeasy-services/common';
 
 /**
  * Create a view that picks recipientDid and createdAt, converting createdAt to ISO string
