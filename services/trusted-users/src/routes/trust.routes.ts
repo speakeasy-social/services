@@ -65,10 +65,10 @@ const methodHandlers = {
     // Validate input against lexicon
     validateAgainstLexicon(getTrustedDef, req.query);
 
-    const { authorDid } = req.query;
+    const { authorDid, recipientDid } = req.query;
 
     // Get the data from the service
-    const trustedUsers = await trustService.getTrusted(authorDid);
+    const trustedUsers = await trustService.getTrusted(authorDid, recipientDid);
     authorize(req, 'list', 'trusted_user', trustedUsers);
 
     // Transform to view

@@ -12,10 +12,14 @@ export class TrustService {
   /**
    * Gets all trusted users for an author
    */
-  async getTrusted(authorDid: string): Promise<TrustedUser[]> {
+  async getTrusted(
+    authorDid: string,
+    recipientDid: string,
+  ): Promise<TrustedUser[]> {
     return prisma.trustedUser.findMany({
       where: {
         authorDid,
+        recipientDid,
         deletedAt: null,
       },
     });

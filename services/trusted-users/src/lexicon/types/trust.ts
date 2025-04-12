@@ -27,6 +27,7 @@ export const getTrustedDef: LexiconDoc = {
         required: ['authorDid'],
         properties: {
           authorDid: { type: 'string' },
+          recipientDid: { type: 'string' },
         },
       },
       output: {
