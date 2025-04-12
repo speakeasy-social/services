@@ -11,6 +11,7 @@ import {
   getPublicKeyDef,
   getPrivateKeyDef,
   rotateKeyDef,
+  getPublicKeysDef,
 } from '../lexicon/types/key.js';
 import { RequestHandler, ExtendedRequest } from '@speakeasy-services/common';
 
@@ -58,12 +59,10 @@ const methodHandlers = {
   'social.spkeasy.keys.getPublicKey': async (
     req: ExtendedRequest,
   ): Promise<HandlerOutput> => {
-    const { did } = req.query as { did: string };
-
     // Validate input against lexicon
     validateAgainstLexicon(getPublicKeyDef, req.query);
 
-    authorize(req, 'get_public_key', 'key', { authorDid: did });
+    const { did } = req.query as { did: string };
 
     // Public key is publicly accessible
     const key = await keyService.getUserKey(did);
@@ -76,6 +75,31 @@ const methodHandlers = {
       body: {
         publicKey: key.publicKey,
         authorDid: key.authorDid,
+      },
+    };
+  },
+
+  /**
+   * Get a user's public key by their DID
+   */
+  'social.spkeasy.keys.getPublicKeys': async (
+    req: ExtendedRequest,
+  ): Promise<HandlerOutput> => {
+    // Validate input against lexicon
+    validateAgainstLexicon(getPublicKeysDef, req.query);
+
+    const dids = req.query.dids.split(',');
+
+    // Public key is publicly accessible
+    const keys = await keyService.getUserKeys(dids);
+
+    return {
+      encoding: 'application/json',
+      body: {
+        publicKeys: keys.map((key) => ({
+          publicKey: key.publicKey,
+          authorDid: key.authorDid,
+        })),
       },
     };
   },
@@ -139,6 +163,9 @@ type MethodName = keyof typeof methodHandlers;
 export const methods: Record<MethodName, { handler: RequestHandler }> = {
   'social.spkeasy.keys.getPublicKey': {
     handler: methodHandlers['social.spkeasy.keys.getPublicKey'],
+  },
+  'social.spkeasy.keys.getPublicKeys': {
+    handler: methodHandlers['social.spkeasy.keys.getPublicKeys'],
   },
   'social.spkeasy.keys.getPrivateKey': {
     handler: methodHandlers['social.spkeasy.keys.getPrivateKey'],

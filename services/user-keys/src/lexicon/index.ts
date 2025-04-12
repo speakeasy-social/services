@@ -1,10 +1,17 @@
-import { getPublicKeyDef, getPrivateKeyDef, rotateKeyDef, keyDef } from './types/key.js';
+import {
+  getPublicKeyDef,
+  getPrivateKeyDef,
+  rotateKeyDef,
+  keyDef,
+  getPublicKeysDef,
+} from './types/key.js';
 
 export const lexicons = [
   getPublicKeyDef,
   getPrivateKeyDef,
   rotateKeyDef,
-  keyDef
+  keyDef,
+  getPublicKeysDef,
 ];
 
-export type LexiconDefs = typeof lexicons; 
+export type LexiconDefs = typeof lexicons;

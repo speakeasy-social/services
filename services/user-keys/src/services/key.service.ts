@@ -14,6 +14,15 @@ const keySchema = z.object({
 
 export type Key = z.infer<typeof keySchema>;
 
+type PublicKeyResponse = {
+  publicKey: string;
+  authorDid: string;
+};
+
+/**
+ * Service for managing user keys in the system.
+ * Handles operations such as retrieving user keys and rotating them.
+ */
 export class KeyService {
   private prisma: PrismaClient;
 
@@ -21,7 +30,12 @@ export class KeyService {
     this.prisma = new PrismaClient();
   }
 
-  async getUserKey(authorDid: string): Promise<UserKey | null> {
+  /**
+   * Retrieves the most recent active key for a given author.
+   * @param authorDid - The DID (Decentralized Identifier) of the author
+   * @returns A Promise that resolves to the UserKey object if found, or null if no active key exists
+   */
+  async getUserKey(authorDid: string): Promise<PublicKeyResponse | null> {
     const key = await this.prisma.userKey.findFirst({
       where: {
         authorDid,
@@ -30,11 +44,53 @@ export class KeyService {
       orderBy: {
         createdAt: 'desc',
       },
+      select: {
+        publicKey: true,
+        authorDid: true,
+      },
     });
 
     return key;
   }
 
+  /**
+   * Retrieves the most recent active key for any of the given authors.
+   * @param authorDids - Array of DIDs (Decentralized Identifiers) to search for
+   * @returns A Promise that resolves to the most recent UserKey object if found, or null if no active key exists for any of the provided DIDs
+   */
+  async getUserKeys(authorDids: string[]): Promise<PublicKeyResponse[]> {
+    const keys = await this.prisma.userKey.findMany({
+      where: {
+        authorDid: { in: authorDids },
+        deletedAt: null,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+      select: {
+        publicKey: true,
+        authorDid: true,
+      },
+    });
+
+    return keys;
+  }
+
+  /**
+   * Requests a key rotation for a given author.
+   * This operation:
+   * 1. Locks the existing key row for update
+   * 2. Checks if the current key was created within the last 5 minutes
+   * 3. If an existing key exists and is older than 5 minutes, marks it as deleted
+   * 4. Creates a new key with the provided public and private keys
+   * 5. Publishes a job to update user keys if a previous key existed
+   *
+   * @param authorDid - The DID (Decentralized Identifier) of the author
+   * @param publicKey - The new public key to be associated with the author
+   * @param privateKey - The new private key to be associated with the author
+   * @returns A Promise that resolves to the newly created UserKey object
+   * @throws ValidationError if the current key was created within the last 5 minutes
+   */
   async requestRotation(
     authorDid: string,
     publicKey: string,
