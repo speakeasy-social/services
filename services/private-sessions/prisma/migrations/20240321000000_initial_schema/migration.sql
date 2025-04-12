@@ -26,12 +26,15 @@ CREATE TABLE "staff_keys" (
 
 -- CreateTable
 CREATE TABLE "encrypted_posts" (
-	"postId" UUID NOT NULL,
+	"cid" TEXT NOT NULL,
 	"sessionId" UUID NOT NULL,
 	"authorDid" TEXT NOT NULL,
+	"langs" TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[],
+	"replyRoot" TEXT NOT NULL,
+	"replyRef" TEXT NOT NULL,
 	"encryptedContent" BYTEA NOT NULL,
 	"createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-	CONSTRAINT "encrypted_posts_pkey" PRIMARY KEY ("postId")
+	CONSTRAINT "encrypted_posts_pkey" PRIMARY KEY ("cid")
 );
 
 -- CreateIndex
@@ -41,13 +44,13 @@ CREATE INDEX "idx_sessions_current" ON "sessions"("authorDid", "createdAt" DESC)
 CREATE INDEX "idx_posts_by_author" ON "encrypted_posts"("authorDid", "createdAt" DESC);
 
 -- CreateIndex
-CREATE INDEX "idx_posts_by_session" ON "encrypted_posts"("sessionId", "createdAt" DESC);
+CREATE INDEX "idx_posts_by_reply_root" ON "encrypted_posts"("replyRoot");
+
+-- CreateIndex
+CREATE INDEX "idx_posts_by_reply_parent" ON "encrypted_posts"("replyRoot");
 
 -- CreateIndex
 CREATE INDEX "idx_session_keys_by_recipient" ON "session_keys"("recipientDid", "sessionId");
-
--- CreateIndex
-CREATE INDEX "idx_posts_by_time" ON "encrypted_posts"("createdAt" DESC, "sessionId");
 
 -- CreateIndex
 CREATE INDEX "idx_session_keys_with_session" ON "session_keys"("sessionId", "recipientDid") INCLUDE ("encryptedDek");

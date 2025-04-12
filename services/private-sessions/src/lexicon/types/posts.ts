@@ -13,8 +13,8 @@ export const getPostsDef: LexiconDoc = {
         properties: {
           recipient: { type: 'string' },
           limit: { type: 'integer', minimum: 1, maximum: 100, default: 50 },
-          cursor: { type: 'string' }
-        }
+          cursor: { type: 'string' },
+        },
       },
       output: {
         encoding: 'application/json',
@@ -26,35 +26,55 @@ export const getPostsDef: LexiconDoc = {
               type: 'array',
               items: {
                 type: 'ref',
-                ref: '#privatePost'
-              }
+                ref: '#privatePost',
+              },
             },
-            cursor: { type: 'string' }
-          }
-        }
-      }
-    }
-  }
+            cursor: { type: 'string' },
+          },
+        },
+      },
+    },
+  },
 };
 
-export const createPostDef: LexiconDoc = {
+export const createPostsDef: LexiconDoc = {
   lexicon: 1,
-  id: 'social.spkeasy.privatePosts.createPost',
+  id: 'social.spkeasy.privatePosts.createPosts',
   defs: {
     main: {
       type: 'procedure',
       description: 'Create a new private post',
       parameters: {
         type: 'params',
-        required: ['sessionId', 'text', 'recipients'],
+        required: ['encryptedPosts', 'sessionId'],
         properties: {
-          sessionId: { type: 'string' },
-          text: { type: 'string' },
-          recipients: {
+          encryptedPosts: {
             type: 'array',
-            items: { type: 'string' }
-          }
-        }
+            items: {
+              type: 'object',
+              required: ['cid', 'langs', 'encryptedContent'],
+              properties: {
+                cid: { type: 'string' },
+                reply: {
+                  type: 'object',
+                  properties: {
+                    root: { type: 'string' },
+                    parent: { type: 'string' },
+                  },
+                },
+                langs: {
+                  type: 'array',
+                  items: { type: 'string' },
+                },
+                encryptedContent: { type: 'string' },
+              },
+            },
+          },
+          sessionId: {
+            type: 'array',
+            items: { type: 'string' },
+          },
+        },
       },
       output: {
         encoding: 'application/json',
@@ -62,12 +82,12 @@ export const createPostDef: LexiconDoc = {
           type: 'object',
           required: ['uri'],
           properties: {
-            uri: { type: 'string' }
-          }
-        }
-      }
-    }
-  }
+            uri: { type: 'string' },
+          },
+        },
+      },
+    },
+  },
 };
 
 export const deletePostDef: LexiconDoc = {
@@ -81,8 +101,8 @@ export const deletePostDef: LexiconDoc = {
         type: 'params',
         required: ['uri'],
         properties: {
-          uri: { type: 'string' }
-        }
+          uri: { type: 'string' },
+        },
       },
       output: {
         encoding: 'application/json',
@@ -90,12 +110,12 @@ export const deletePostDef: LexiconDoc = {
           type: 'object',
           required: ['success'],
           properties: {
-            success: { type: 'boolean' }
-          }
-        }
-      }
-    }
-  }
+            success: { type: 'boolean' },
+          },
+        },
+      },
+    },
+  },
 };
 
 export const privatePostDef: LexiconDoc = {
@@ -109,8 +129,8 @@ export const privatePostDef: LexiconDoc = {
         uri: { type: 'string' },
         authorDid: { type: 'string' },
         text: { type: 'string' },
-        createdAt: { type: 'string', format: 'datetime' }
-      }
-    }
-  }
-}; 
+        createdAt: { type: 'string', format: 'datetime' },
+      },
+    },
+  },
+};

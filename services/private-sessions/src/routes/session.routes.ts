@@ -12,7 +12,6 @@ import {
   RequestHandler,
   ExtendedRequest,
 } from '@speakeasy-services/common';
-import { lexicons } from '../lexicon/index.js';
 import {
   revokeSessionDef,
   addUserDef,
@@ -20,7 +19,7 @@ import {
 } from '../lexicon/types/session.js';
 import {
   getPostsDef,
-  createPostDef,
+  createPostsDef,
   deletePostDef,
 } from '../lexicon/types/posts.js';
 
@@ -148,26 +147,20 @@ const methodHandlers = {
     };
   },
 
-  'social.spkeasy.privatePosts.createPost': async (
+  'social.spkeasy.privatePosts.createPosts': async (
     req: Request,
   ): Promise<HandlerOutput> => {
-    const lexicon = createPostDef.defs.main;
-
-    const { sessionId, text } = ctx.params as {
-      sessionId: string;
-      encryptedPost: string;
-    };
-
     // Validate input against lexicon
-    validateAgainstLexicon(lexicon, { sessionId, text, recipients });
+    validateAgainstLexicon(createPostsDef, req.body);
 
-    authorize(ctx, 'create', session);
+    authorize(req, 'create', 'post', { authorDid: req.user.did });
 
-    const session = await sessionService.createEncryptedPost(
-      sessionId,
-      authorDid,
-      encryptedPost,
-    );
+    await sessionService.createEncryptedPosts(req.user.did, req.body);
+
+    return {
+      encoding: 'application/json',
+      body: { success: true },
+    };
   },
 
   'social.spkeasy.privatePosts.deletePost': async (
@@ -201,8 +194,8 @@ export const methods: Record<MethodName, { handler: RequestHandler }> = {
   'social.spkeasy.privatePosts.getPosts': {
     handler: methodHandlers['social.spkeasy.privatePosts.getPosts'],
   },
-  'social.spkeasy.privatePosts.createPost': {
-    handler: methodHandlers['social.spkeasy.privatePosts.createPost'],
+  'social.spkeasy.privatePosts.createPosts': {
+    handler: methodHandlers['social.spkeasy.privatePosts.createPosts'],
   },
   'social.spkeasy.privatePosts.deletePost': {
     handler: methodHandlers['social.spkeasy.privatePosts.deletePost'],

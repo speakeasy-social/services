@@ -54,9 +54,12 @@ model StaffKey {
 }
 
 model EncryptedPost {
-  postId        String   @id @default(uuid()) @db.Uuid
+  cid           String   @id
   sessionId     String   @db.Uuid
   authorDid     String
+  langs         String[]
+  replyRoot     String
+  replyRef      String
   encryptedContent Bytes
   createdAt     DateTime @default(now())
 
@@ -64,7 +67,7 @@ model EncryptedPost {
   session       Session  @relation(fields: [sessionId], references: [id])
 
   @@index([authorDid, createdAt(sort: Desc)], name: "idx_posts_by_author")
-  @@index([sessionId, createdAt(sort: Desc)], name: "idx_posts_by_session")
-  @@index([createdAt(sort: Desc), sessionId], name: "idx_posts_by_time")
+  @@index([replyRoot], name: "idx_posts_by_reply_root")
+  @@index([replyRoot], name: "idx_posts_by_reply_parent")
   @@map("encrypted_posts")
 }

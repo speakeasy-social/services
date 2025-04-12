@@ -86,6 +86,40 @@ export class SessionService {
     return post;
   }
 
+  /**
+   * Bulk create encrypted posts
+   * @param authorDid - The author DID
+   * @param body - The body of the request
+   */
+  async createEncryptedPosts(
+    authorDid: string,
+    body: {
+      encryptedPosts: {
+        cid: string;
+        encryptedPost: string;
+        reply?: {
+          root: string;
+          parent: string;
+        };
+        langs: string[];
+        encryptedContent: string;
+      }[];
+      sessionId: string[];
+    },
+  ): Promise<void> {
+    await prisma.encryptedPost.createMany({
+      data: body.encryptedPosts.map((post) => ({
+        authorDid,
+        cid: post.cid,
+        sessionId: body.sessionId,
+        encryptedContent: Buffer.from(post.encryptedContent),
+        langs: post.langs,
+        replyRoot: post.reply?.root,
+        replyRef: post.reply?.parent,
+      })),
+    });
+  }
+
   async getPostsByIds(
     postIds: string[],
   ): Promise<Array<{ authorDid: string }>> {
@@ -207,13 +241,4 @@ export class SessionService {
 
     return { success: true };
   }
-}
-
-// Export the function for use in job handlers
-export async function addRecipientToSession(
-  sessionId: string,
-  recipientDid: string,
-): Promise<void> {
-  const service = new SessionServiceImpl();
-  await service.addRecipientToSession(sessionId, recipientDid);
 }
