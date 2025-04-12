@@ -9,6 +9,7 @@ import {
 import { Errors } from '../utils/index.js';
 import { createLogger } from '../logger.js';
 import { Request, Response, NextFunction, ErrorRequestHandler } from 'express';
+import { Prisma } from '@prisma/client';
 
 const logger = createLogger({ serviceName: 'common' });
 
@@ -66,6 +67,30 @@ export const errorHandler: ErrorRequestHandler = (
     });
   }
 
+  if (error.name === 'PrismaClientKnownRequestError') {
+    const prismaError = error as Prisma.PrismaClientKnownRequestError;
+    logger.error({
+      error: {
+        name: prismaError.name,
+        message: prismaError.message,
+        stack: prismaError.stack,
+        meta: prismaError.meta,
+        code: prismaError.code,
+      },
+    });
+    if (prismaError.code === 'P2002') {
+      return res.status(400).send({
+        error: 'InvalidRequest',
+        message: `That ${prismaError.meta?.modelName} already exists`,
+        code: 'AlreadyExists',
+      });
+    } else {
+      return res.status(400).send({
+        error: 'InternalServerError',
+        message: 'Internal server error',
+      });
+    }
+  }
   // Handle unknown errors
   logger.error(
     {
@@ -79,6 +104,8 @@ export const errorHandler: ErrorRequestHandler = (
     },
     'Unhandled error occurred',
   );
+  console.log('error', error.name);
+  console.log(Object.keys(error));
 
   return res.status(500).send({
     error: 'InternalServerError',
