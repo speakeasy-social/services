@@ -66,7 +66,7 @@ export const getPublicKeysDef: LexiconDoc = {
               type: 'array',
               items: {
                 type: 'object',
-                required: ['publicKey', 'authorDid'],
+                required: ['publicKey', 'recipientDid'],
                 properties: {
                   publicKey: {
                     type: 'string',

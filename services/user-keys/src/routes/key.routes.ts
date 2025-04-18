@@ -65,7 +65,7 @@ const methodHandlers = {
     const { did } = req.query as { did: string };
 
     // Public key is publicly accessible
-    const key = await keyService.getUserKey(did);
+    const key = await keyService.getPublicKey(did);
     if (!key) {
       throw new NotFoundError('Public key not found');
     }
@@ -74,7 +74,7 @@ const methodHandlers = {
       encoding: 'application/json',
       body: {
         publicKey: key.publicKey,
-        authorDid: key.authorDid,
+        recipientDid: key.authorDid,
       },
     };
   },
@@ -91,14 +91,14 @@ const methodHandlers = {
     const dids = req.query.dids.split(',');
 
     // Public key is publicly accessible
-    const keys = await keyService.getUserKeys(dids);
+    const keys = await keyService.getPublicKeys(dids);
 
     return {
       encoding: 'application/json',
       body: {
         publicKeys: keys.map((key) => ({
           publicKey: key.publicKey,
-          authorDid: key.authorDid,
+          recipientDid: key.authorDid,
         })),
       },
     };
@@ -116,7 +116,7 @@ const methodHandlers = {
     authorize(req, 'get_private_key', 'key', { authorDid: req.user.did });
 
     // Only the owner can access their private key
-    const key = await keyService.getUserKey(req.user.did!);
+    const key = await keyService.getPrivateKey(req.user.did!);
     if (!key) {
       throw new NotFoundError('Private key not found');
     }

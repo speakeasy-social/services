@@ -19,6 +19,11 @@ type PublicKeyResponse = {
   authorDid: string;
 };
 
+type PrivateKeyResponse = {
+  privateKey: string;
+  authorDid: string;
+};
+
 /**
  * Service for managing user keys in the system.
  * Handles operations such as retrieving user keys and rotating them.
@@ -35,7 +40,7 @@ export class KeyService {
    * @param authorDid - The DID (Decentralized Identifier) of the author
    * @returns A Promise that resolves to the UserKey object if found, or null if no active key exists
    */
-  async getUserKey(authorDid: string): Promise<PublicKeyResponse | null> {
+  async getPublicKey(authorDid: string): Promise<PublicKeyResponse | null> {
     const key = await this.prisma.userKey.findFirst({
       where: {
         authorDid,
@@ -58,7 +63,7 @@ export class KeyService {
    * @param authorDids - Array of DIDs (Decentralized Identifiers) to search for
    * @returns A Promise that resolves to the most recent UserKey object if found, or null if no active key exists for any of the provided DIDs
    */
-  async getUserKeys(authorDids: string[]): Promise<PublicKeyResponse[]> {
+  async getPublicKeys(authorDids: string[]): Promise<PublicKeyResponse[]> {
     const keys = await this.prisma.userKey.findMany({
       where: {
         authorDid: { in: authorDids },
@@ -74,6 +79,29 @@ export class KeyService {
     });
 
     return keys;
+  }
+
+  /**
+   * Retrieves the most recent active key for a given author.
+   * @param authorDid - The DID (Decentralized Identifier) of the author
+   * @returns A Promise that resolves to the UserKey object if found, or null if no active key exists
+   */
+  async getPrivateKey(authorDid: string): Promise<PrivateKeyResponse | null> {
+    const key = await this.prisma.userKey.findFirst({
+      where: {
+        authorDid,
+        deletedAt: null,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+      select: {
+        privateKey: true,
+        authorDid: true,
+      },
+    });
+
+    return key;
   }
 
   /**
