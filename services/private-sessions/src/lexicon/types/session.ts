@@ -66,9 +66,26 @@ export const createSessionDef: LexiconDoc = {
       description: 'Create a new private session',
       parameters: {
         type: 'params',
-        required: ['name'],
+        required: ['sessionKeys'],
         properties: {
-          name: { type: 'string' },
+          sessionKeys: {
+            type: 'array',
+            items: {
+              type: 'object',
+              required: ['publicKey', 'recipientDid'],
+              properties: {
+                recipientDid: {
+                  type: 'string',
+                  description: 'A recipient for the session',
+                },
+                encryptedDek: {
+                  type: 'string',
+                  description:
+                    'The session key encrypted with the recipients public key',
+                },
+              },
+            },
+          },
         },
       },
       output: {
