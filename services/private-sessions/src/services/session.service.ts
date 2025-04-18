@@ -23,6 +23,9 @@ interface GetPostsArgs {
   options: GetPostsOptions;
 }
 
+// 7 days
+const DEFAULT_SESSION_EXPIRATION_HOURS = 24 * 7;
+
 export class SessionService {
   /**
    * Creates a new session for an author with specified recipients
@@ -33,18 +36,20 @@ export class SessionService {
   async createSession({
     authorDid,
     recipients,
+    expirationHours = DEFAULT_SESSION_EXPIRATION_HOURS,
   }: {
     authorDid: string;
     recipients: {
       recipientDid: string;
       encryptedDek: string;
     }[];
+    expirationHours?: number;
   }): Promise<{ sessionId: string }> {
     // open transaction
     const session = await prisma.$transaction(async (tx) => {
       const previousSessions = await tx.$queryRaw<
         Session[]
-      >`SELECT * FROM sessions WHERE author_did = ${authorDid} AND revoked_at IS NULL AND expires_at > NOW() FOR UPDATE`;
+      >`SELECT * FROM sessions WHERE author_did = ${authorDid} AND revoked_at IS NULL FOR UPDATE`;
 
       const previousSession = previousSessions[0];
 
@@ -66,6 +71,7 @@ export class SessionService {
         data: {
           authorDid,
           previousSessionId: previousSession?.id,
+          expiresAt: new Date(Date.now() + expirationHours * 60 * 60 * 1000),
 
           sessionKeys: {
             create: recipients.map((recipient) => ({

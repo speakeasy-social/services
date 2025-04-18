@@ -68,6 +68,7 @@ export const createSessionDef: LexiconDoc = {
         type: 'params',
         required: ['sessionKeys'],
         properties: {
+          expirationHours: { type: 'integer' },
           sessionKeys: {
             type: 'array',
             items: {

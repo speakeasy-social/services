@@ -77,13 +77,14 @@ const methodHandlers = {
     // Validate input against lexicon
     validateAgainstLexicon(createSessionDef, req.body);
 
-    const { sessionKeys } = req.body;
+    const { sessionKeys, expirationHours } = req.body;
 
     authorize(req, 'create', 'private_session', { authorDid: req.user.did });
 
     const result = await sessionService.createSession({
       authorDid: req.user.did!,
       recipients: sessionKeys,
+      expirationHours,
     });
     return {
       encoding: 'application/json',
