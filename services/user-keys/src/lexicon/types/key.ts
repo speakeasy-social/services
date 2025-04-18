@@ -162,28 +162,3 @@ export const rotateKeyDef: LexiconDoc = {
     },
   },
 };
-
-export const keyDef: LexiconDoc = {
-  lexicon: 1,
-  id: 'social.spkeasy.keys.key',
-  defs: {
-    main: {
-      type: 'object',
-      required: ['publicKey', 'privateKey', 'authorDid'],
-      properties: {
-        publicKey: {
-          type: 'string',
-          description: 'The public key in base64 format',
-        },
-        privateKey: {
-          type: 'string',
-          description: 'The private key in base64 format',
-        },
-        authorDid: {
-          type: 'string',
-          description: 'The DID of the key owner',
-        },
-      },
-    },
-  },
-};
