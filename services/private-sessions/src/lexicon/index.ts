@@ -5,7 +5,7 @@ import {
 } from './types/session.js';
 import {
   getPostsDef,
-  createPostDef,
+  createPostsDef,
   deletePostDef,
   privatePostDef,
 } from './types/posts.js';
@@ -15,7 +15,7 @@ export const lexicons = [
   addUserDef,
   createSessionDef,
   getPostsDef,
-  createPostDef,
+  createPostsDef,
   deletePostDef,
   privatePostDef,
 ];

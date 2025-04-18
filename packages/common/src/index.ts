@@ -7,3 +7,4 @@ export * from './auth/bearer-tokens.js';
 export * from './errors.js';
 export * from './middleware/error.middleware.js';
 export * from './express-extensions.js';
+export * from './utils/encoding.js';

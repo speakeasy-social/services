@@ -1,11 +1,12 @@
 import {
+  Prisma,
   PrismaClient,
   Session,
   SessionKey,
   EncryptedPost,
 } from '../generated/prisma-client/index.js';
 import { encryptSessionKey } from '@speakeasy-services/crypto';
-import { NotFoundError } from '@speakeasy-services/common';
+import { NotFoundError, decodeUrlSafeBase64 } from '@speakeasy-services/common';
 import { Queue } from 'packages/queue/dist/index.js';
 import { JOB_NAMES } from 'packages/queue/dist/index.js';
 
@@ -14,7 +15,7 @@ const prisma = new PrismaClient();
 interface GetPostsOptions {
   limit?: number;
   cursor?: string;
-  authorDid?: string;
+  authorDids?: string[];
   replyPostCid?: string;
 }
 
@@ -122,8 +123,8 @@ export class SessionService {
    * @throws NotFoundError if the post is not found
    */
   async getPost(uri: string): Promise<{ authorDid: string }> {
-    const post = await prisma.encryptedPost.findUnique({
-      where: { postId: uri },
+    const post = await prisma.encryptedPost.findMany({
+      // where: { postId: uri },
       select: { authorDid: true },
     });
 
@@ -131,7 +132,7 @@ export class SessionService {
       throw new NotFoundError('Post not found');
     }
 
-    return post;
+    return post[0];
   }
 
   /**
@@ -153,7 +154,7 @@ export class SessionService {
         langs: string[];
         encryptedContent: string;
       }[];
-      sessionId: string[];
+      sessionId: string;
     },
   ): Promise<void> {
     await prisma.encryptedPost.createMany({
@@ -161,33 +162,14 @@ export class SessionService {
         authorDid,
         cid: post.cid,
         sessionId: body.sessionId,
-        encryptedContent: Buffer.from(post.encryptedContent),
+        encryptedContent: Buffer.from(
+          decodeUrlSafeBase64(post.encryptedContent),
+        ),
         langs: post.langs,
-        replyRoot: post.reply?.root,
-        replyRef: post.reply?.parent,
+        replyRoot: post.reply?.root ?? null,
+        replyRef: post.reply?.parent ?? null,
       })),
     });
-  }
-
-  /**
-   * Retrieves multiple posts by their IDs
-   * @param postIds - Array of post IDs to retrieve
-   * @returns Promise containing array of posts with their author DIDs
-   * @throws NotFoundError if any post is not found
-   */
-  async getPostsByIds(
-    postIds: string[],
-  ): Promise<Array<{ authorDid: string }>> {
-    const posts = await prisma.encryptedPost.findMany({
-      where: { postId: { in: postIds } },
-      select: { authorDid: true },
-    });
-
-    if (posts.length !== postIds.length) {
-      throw new NotFoundError('One or more posts not found');
-    }
-
-    return posts;
   }
 
   /**
@@ -196,14 +178,16 @@ export class SessionService {
    * @param options - Query options including limit, cursor, and filters
    * @returns Promise containing encrypted posts, session keys, and pagination cursor
    */
-  async getPosts({
-    recipientDid,
-    options: { limit = 50, cursor, authorDids, replyPostCid },
-  }: GetPostsArgs): Promise<{
+  async getPosts(
+    recipientDid: string,
+    options: GetPostsOptions,
+  ): Promise<{
     encryptedPosts: EncryptedPost[];
     encryptedSessionKeys: SessionKey[];
     cursor: string | undefined;
   }> {
+    const DEFAULT_LIMIT = 50;
+
     // Fetch posts from database
     const where: Prisma.EncryptedPostWhereInput = {
       session: {
@@ -215,17 +199,19 @@ export class SessionService {
       },
     };
 
-    if (authorDids) {
-      where.authorDid = { in: authorDids };
+    if (options.authorDids) {
+      where.authorDid = { in: options.authorDids };
     }
 
-    if (replyPostCid) {
-      where.replyRef = replyPostCid;
-      where.replyRoot = replyPostCid;
+    if (options.replyPostCid) {
+      where.replyRef = options.replyPostCid;
+      where.replyRoot = options.replyPostCid;
     }
 
-    if (cursor) {
-      const decodedCursor = Buffer.from(cursor, 'base64').toString('utf-8');
+    if (options.cursor) {
+      const decodedCursor = Buffer.from(options.cursor, 'base64').toString(
+        'utf-8',
+      );
       const [createdAt, cid] = decodedCursor.split('#');
       where.OR = [
         { createdAt: { lt: new Date(createdAt) } },
@@ -237,7 +223,7 @@ export class SessionService {
 
     const posts = await prisma.encryptedPost.findMany({
       where,
-      take: limit,
+      take: options.limit ?? DEFAULT_LIMIT,
       orderBy: {
         createdAt: 'desc',
         // Order by cid when time is the same for predictable
@@ -256,7 +242,7 @@ export class SessionService {
 
     let newCursor;
 
-    if (posts.length > limit) {
+    if (posts.length > (options.limit ?? DEFAULT_LIMIT)) {
       const lastPost = posts[posts.length - 1];
       // Cursor is base64 encoded string of createdAt and cid
       newCursor = Buffer.from(
@@ -277,10 +263,9 @@ export class SessionService {
    * @returns Promise containing success status
    */
   async revokeSession(authorDid: string): Promise<{ success: boolean }> {
-    await prisma.session.update({
+    await prisma.session.updateMany({
       where: { authorDid, revokedAt: null },
       data: { revokedAt: new Date() },
-      select: { id: true },
     });
 
     return { success: true };
@@ -296,10 +281,14 @@ export class SessionService {
     authorDid: string,
     recipientDid: string,
   ): Promise<{ success: boolean }> {
-    const session = await prisma.session.findUnique({
+    const session = await prisma.session.findFirst({
       where: { authorDid, revokedAt: null },
       select: { id: true },
     });
+
+    if (!session) {
+      throw new NotFoundError('Session not found');
+    }
 
     Queue.publish(JOB_NAMES.REVOKE_SESSION, {
       authorDid,

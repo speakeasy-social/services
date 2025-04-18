@@ -1,11 +1,15 @@
 import { EncryptedPost } from '../generated/prisma-client/index.js';
-import { createView, createListView } from '@speakeasy-services/common';
+import {
+  createView,
+  createListView,
+  encodeUrlSafeBase64,
+} from '@speakeasy-services/common';
 
 export type EncryptedPostView = {
   uri: string;
   cid: string;
   authorDid: string;
-  encryptedContent: Uint8Array;
+  encryptedContent: string;
   createdAt: string;
   sessionId: string;
   reply: {
@@ -13,7 +17,6 @@ export type EncryptedPostView = {
     parent: string | null;
   };
   langs: string[];
-  sessionId: string;
 };
 
 /**
@@ -24,7 +27,7 @@ export function toEncryptedPostView(post: EncryptedPost): EncryptedPostView {
     uri: `at://${post.authorDid}/app.bsky.feed.post/${post.cid}`,
     cid: post.cid,
     authorDid: post.authorDid,
-    encryptedContent: post.encryptedContent,
+    encryptedContent: encodeUrlSafeBase64(post.encryptedContent),
     createdAt: post.createdAt.toISOString(),
     sessionId: post.sessionId,
     reply: {
@@ -32,7 +35,6 @@ export function toEncryptedPostView(post: EncryptedPost): EncryptedPostView {
       parent: post.replyRef,
     },
     langs: post.langs,
-    sessionId: post.sessionId,
   };
 }
 

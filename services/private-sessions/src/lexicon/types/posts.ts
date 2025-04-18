@@ -68,23 +68,8 @@ export const createPostsDef: LexiconDoc = {
           encryptedPosts: {
             type: 'array',
             items: {
-              type: 'object',
-              required: ['cid', 'langs', 'encryptedContent'],
-              properties: {
-                cid: { type: 'string' },
-                reply: {
-                  type: 'object',
-                  properties: {
-                    root: { type: 'string' },
-                    parent: { type: 'string' },
-                  },
-                },
-                langs: {
-                  type: 'array',
-                  items: { type: 'string' },
-                },
-                encryptedContent: { type: 'string' },
-              },
+              type: 'ref',
+              ref: '#encryptedPost',
             },
           },
           sessionId: {
@@ -102,6 +87,29 @@ export const createPostsDef: LexiconDoc = {
             uri: { type: 'string' },
           },
         },
+      },
+    },
+    encryptedPost: {
+      type: 'object',
+      required: ['cid', 'langs', 'encryptedContent'],
+      properties: {
+        cid: { type: 'string' },
+        reply: {
+          type: 'ref',
+          ref: '#reply',
+        },
+        langs: {
+          type: 'array',
+          items: { type: 'string' },
+        },
+        encryptedContent: { type: 'string' },
+      },
+    },
+    reply: {
+      type: 'object',
+      properties: {
+        root: { type: 'string' },
+        parent: { type: 'string' },
       },
     },
   },

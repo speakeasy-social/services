@@ -162,13 +162,13 @@ const methodHandlers = {
    * @returns Promise containing encrypted posts and session keys
    */
   'social.spkeasy.privatePosts.getPosts': async (
-    req: Request,
+    req: ExtendedRequest,
   ): Promise<HandlerOutput> => {
     // Validate input against lexicon
     validateAgainstLexicon(getPostsDef, req.query);
 
     const { authors, replyTo, limit, cursor } = req.query as {
-      authors: string;
+      authors?: string;
       limit?: string;
       cursor?: string;
       replyTo?: string;
@@ -177,15 +177,15 @@ const methodHandlers = {
     // Convert limit to number if provided
     const limitNum = limit ? parseInt(limit, 10) : undefined;
 
-    const result = await sessionService.getPosts(req.user.did, {
-      authorDids: authors.split(','),
-      replyTo,
+    const result = await sessionService.getPosts(req.user.did!, {
+      authorDids: authors?.split(','),
+      replyPostCid: replyTo,
       limit: limitNum,
       cursor,
     });
 
     authorize(req, 'list', 'private_post', result.encryptedPosts);
-    authorize(req, 'list', 'private_sessions', result.encryptedSessionKeys);
+    authorize(req, 'list', 'private_session', result.encryptedSessionKeys);
 
     return {
       encoding: 'application/json',
@@ -203,14 +203,14 @@ const methodHandlers = {
    * @returns Promise indicating success of post creation
    */
   'social.spkeasy.privatePosts.createPosts': async (
-    req: Request,
+    req: ExtendedRequest,
   ): Promise<HandlerOutput> => {
     // Validate input against lexicon
     validateAgainstLexicon(createPostsDef, req.body);
 
-    authorize(req, 'create', 'post', { authorDid: req.user.did });
+    authorize(req, 'create', 'private_post', { authorDid: req.user.did });
 
-    await sessionService.createEncryptedPosts(req.user.did, req.body);
+    await sessionService.createEncryptedPosts(req.user.did!, req.body);
 
     return {
       encoding: 'application/json',
@@ -224,13 +224,15 @@ const methodHandlers = {
    * @returns Promise indicating success of post deletion
    */
   'social.spkeasy.privatePosts.deletePost': async (
-    req: Request,
+    req: ExtendedRequest,
   ): Promise<HandlerOutput> => {
     // Validate input against lexicon
-    validateAgainstLexicon(lexicon, { uri });
+    // validateAgainstLexicon(lexicon, { uri });
 
-    const post = await sessionService.deletePost(uri);
-    authorize(ctx, 'delete', post);
+    // authorize(ctx, 'delete', post);
+
+    // const post = await sessionService.deletePost(uri);
+    throw new Error('Not implemented');
   },
 } as const;
 
@@ -245,6 +247,9 @@ export const methods: Record<MethodName, { handler: RequestHandler }> = {
   },
   'social.spkeasy.privateSession.addUser': {
     handler: methodHandlers['social.spkeasy.privateSession.addUser'],
+  },
+  'social.spkeasy.privateSession.getSession': {
+    handler: methodHandlers['social.spkeasy.privateSession.getSession'],
   },
 
   // Post management methods
