@@ -6,7 +6,7 @@ import {
   EncryptedPost,
 } from '../generated/prisma-client/index.js';
 import { encryptSessionKey } from '@speakeasy-services/crypto';
-import { NotFoundError, decodeUrlSafeBase64 } from '@speakeasy-services/common';
+import { NotFoundError, safeAtob } from '@speakeasy-services/common';
 import { Queue } from 'packages/queue/dist/index.js';
 import { JOB_NAMES } from 'packages/queue/dist/index.js';
 
@@ -162,9 +162,7 @@ export class SessionService {
         authorDid,
         cid: post.cid,
         sessionId: body.sessionId,
-        encryptedContent: Buffer.from(
-          decodeUrlSafeBase64(post.encryptedContent),
-        ),
+        encryptedContent: safeAtob(post.encryptedContent),
         langs: post.langs,
         replyRoot: post.reply?.root ?? null,
         replyRef: post.reply?.parent ?? null,

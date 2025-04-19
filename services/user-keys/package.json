@@ -26,6 +26,7 @@
     "@speakeasy-services/crypto": "workspace:*",
     "@speakeasy-services/queue": "workspace:^",
     "@speakeasy-services/service-base": "workspace:*",
+    "crystals-kyber-js": "2.3.1",
     "dotenv": "^16.4.7",
     "pino": "^9.6.0",
     "pino-pretty": "^13.0.0",

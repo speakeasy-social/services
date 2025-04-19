@@ -9,5 +9,5 @@ CREATE TABLE "user_keys" (
 	CONSTRAINT "user_keys_pkey" PRIMARY KEY ("id")
 );
 
--- CreateIndex
-CREATE INDEX "user_keys_userId_idx" ON "user_keys"("authorDid");
+-- CreateUniqueIndex
+CREATE UNIQUE INDEX "user_keys_author_did_key" ON "user_keys"("authorDid") WHERE "deletedAt" IS NULL;

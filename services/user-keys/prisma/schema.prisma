@@ -18,6 +18,6 @@ model UserKey {
   createdAt  DateTime @default(now())
   deletedAt  DateTime?
 
-  @@index([authorDid])
+  @@unique([authorDid], name: "user_keys_author_did_key", where: "deleted_at IS NULL")
   @@map("user_keys")
 }

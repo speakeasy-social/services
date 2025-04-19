@@ -50,7 +50,7 @@ queue.work<AddRecipientToSessionJob>(
     );
 
     if (sessionsWithKeys.length === 0) {
-      logger.log('error', `No sessions found for author ${authorDid}`);
+      logger.error(`No sessions found for author ${authorDid}`);
       return;
     }
 
@@ -114,7 +114,8 @@ queue.work<AddRecipientToSessionJob>(
 );
 
 /**
- * Request a new session for an author
+ * Mark any active sessions as revoked
+ * New session will be created next time they send a message
  */
 queue.work<RotateSessionJob>(JOB_NAMES.REVOKE_SESSION, async (job) => {
   const { authorDid } = job.data;

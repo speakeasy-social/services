@@ -1,7 +1,8 @@
 import { z } from 'zod';
 import { PrismaClient, UserKey } from '../generated/prisma-client/index.js';
-import { ValidationError } from '@speakeasy-services/common';
+import { safeBtoa, ValidationError } from '@speakeasy-services/common';
 import { Queue, JOB_NAMES } from '@speakeasy-services/queue';
+import { MlKem768 } from 'crystals-kyber-js';
 
 const keySchema = z.object({
   id: z.string(),
@@ -55,6 +56,10 @@ export class KeyService {
       },
     });
 
+    if (!key) {
+      await this.createKeyPair(authorDid);
+    }
+
     return key;
   }
 
@@ -79,6 +84,28 @@ export class KeyService {
     });
 
     return keys;
+  }
+
+  /**
+   * Generates ML-KEM-768 key pair
+   * @returns A new key pair for the user
+   */
+  async createKeyPair(authorDid: string): Promise<PublicKeyResponse> {
+    const mlkem = new MlKem768();
+    const [publicKey, privateKey] = await mlkem.generateKeyPair();
+
+    await this.prisma.userKey.create({
+      data: {
+        authorDid,
+        publicKey: safeBtoa(publicKey),
+        privateKey: safeBtoa(privateKey),
+      },
+    });
+
+    return {
+      publicKey: safeBtoa(publicKey),
+      authorDid,
+    } as PublicKeyResponse;
   }
 
   /**
@@ -129,7 +156,7 @@ export class KeyService {
         // Lock the row for update
         const keys = await tx.$queryRaw<
           UserKey[]
-        >`SELECT * FROM user_key WHERE author_did = ${authorDid} FOR UPDATE`;
+        >`SELECT * FROM user_key WHERE author_did = ${authorDid} AND deleted_at IS NULL FOR UPDATE`;
 
         const key = keys[0];
 

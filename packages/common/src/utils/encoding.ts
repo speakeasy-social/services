@@ -1,31 +1,31 @@
 /**
- * Encodes a Uint8Array to a URL-safe base64 string
- * @param data The data to encode
- * @returns URL-safe base64 string
+ * Converts a Uint8Array to SafeText (URL-safe Base64)
+ *
+ * Used to turn keys and encrypted content into strings that are safe
+ * for transport and storage
+ *
+ * @param {Uint8Array} buf - The input byte array.
+ * @returns {string} The SafeText (URL-safe Base64) representation of the input.
  */
-export function encodeUrlSafeBase64(data: Uint8Array): string {
-  return btoa(String.fromCharCode(...data))
+export const safeBtoa = (buf: Uint8Array): string =>
+  btoa(String.fromCharCode(...buf))
+    // Replace / & + with _ & -
     .replace(/\//g, '_')
     .replace(/\+/g, '-')
+    // Remove trailing '=' padding
     .replace(/[=]+$/, '');
-}
 
 /**
- * Decodes a URL-safe base64 string to a Uint8Array
- * @param encoded The URL-safe base64 string to decode
- * @returns Uint8Array containing the decoded data
+ * Converts SafeText (URL-safe Base64) to a Uint8Array.
+ * @param {string} str - The SafeText input string.
+ * @returns {Uint8Array} The decoded byte array.
  */
-export function decodeUrlSafeBase64(encoded: string): Uint8Array {
-  // Add back padding
-  const padded = encoded.padEnd(
-    encoded.length + ((4 - (encoded.length % 4)) % 4),
-    '=',
-  );
-
-  // Convert URL-safe characters back to standard base64
-  const standardBase64 = padded.replace(/_/g, '/').replace(/-/g, '+');
-
-  // Decode and convert to Uint8Array
-  const binary = atob(standardBase64);
-  return new Uint8Array(binary.length).map((_, i) => binary.charCodeAt(i));
-}
+export const safeAtob = (str: string): Uint8Array => {
+  const base64 = str
+    // Replace _ & - with / & +
+    .replace(/_/g, '/')
+    .replace(/-/g, '+')
+    // Add '=' padding if necessary
+    .padEnd(str.length + ((4 - (str.length % 4)) % 4), '=');
+  return Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
+};
