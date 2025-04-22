@@ -22,7 +22,6 @@ model Session {
   previousSession   Session?  @relation("SessionHistory", fields: [previousSessionId], references: [id])
   nextSession      Session?  @relation("SessionHistory")
   sessionKeys       SessionKey[]
-  staffKey         StaffKey?
   posts            EncryptedPost[]
 
   @@index([authorDid, createdAt(sort: Desc)], name: "idx_sessions_current")
@@ -44,16 +43,6 @@ model SessionKey {
   @@map("session_keys")
 }
 
-model StaffKey {
-  sessionId String @id @db.Uuid
-  dek      Bytes
-
-  // Relationships
-  session   Session @relation(fields: [sessionId], references: [id])
-
-  @@map("staff_keys")
-}
-
 model EncryptedPost {
   cid           String   @id
   sessionId     String   @db.Uuid
@@ -72,4 +61,16 @@ model EncryptedPost {
   @@index([replyRoot, sessionId], name: "idx_posts_by_reply_root")
   @@index([replyRef, sessionId], name: "idx_posts_by_reply_parent")
   @@map("encrypted_posts")
+}
+
+model UserFeature {
+  id           String    @id @default(uuid()) @db.Uuid
+  userDid      String
+  key          String
+  value        String
+  createdAt    DateTime  @default(now()) 
+  updatedAt    DateTime
+
+  @@index([userDid, key], name: "idx_user_did_key_index")
+  @@map("user_features")
 }

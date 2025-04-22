@@ -19,6 +19,7 @@ export type Subject =
   | 'private_session'
   | 'trusted_user'
   | 'group'
+  | 'feature'
   | 'key';
 
 export type Ability = {
@@ -50,6 +51,7 @@ const userAbilities = [
   can('*', 'private_post', { authorDid: 'did' }),
   // Recipients can read posts shared with them
   can('list', 'private_post', { recipientDid: 'did' }),
+  can('list', 'feature', { userDid: 'did' }),
 
   // Users can manage their own keys
   can('*', 'key', { did: 'did' }),

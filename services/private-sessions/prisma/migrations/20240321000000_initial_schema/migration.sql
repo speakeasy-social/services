@@ -1,3 +1,6 @@
+-- CreateExtension
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
 -- CreateTable
 CREATE TABLE "sessions" (
 	"id" UUID NOT NULL,
@@ -18,13 +21,6 @@ CREATE TABLE "session_keys" (
 );
 
 -- CreateTable
-CREATE TABLE "staff_keys" (
-	"sessionId" UUID NOT NULL,
-	"dek" BYTEA NOT NULL,
-	CONSTRAINT "staff_keys_pkey" PRIMARY KEY ("sessionId")
-);
-
--- CreateTable
 CREATE TABLE "encrypted_posts" (
 	"cid" TEXT NOT NULL,
 	"sessionId" UUID NOT NULL,
@@ -35,6 +31,17 @@ CREATE TABLE "encrypted_posts" (
 	"encryptedContent" BYTEA NOT NULL,
 	"createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	CONSTRAINT "encrypted_posts_pkey" PRIMARY KEY ("cid")
+);
+
+-- CreateTable
+CREATE TABLE "user_features" (
+	"id" UUID NOT NULL DEFAULT uuid_generate_v4(),
+	"userDid" TEXT NOT NULL,
+	"key" TEXT NOT NULL,
+	"value" TEXT NOT NULL,
+	"createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	"updatedAt" TIMESTAMP(3),
+	CONSTRAINT "user_features_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateIndex
@@ -68,12 +75,6 @@ ALTER TABLE
 	"session_keys"
 ADD
 	CONSTRAINT "session_keys_sessionId_fkey" FOREIGN KEY ("sessionId") REFERENCES "sessions"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE
-	"staff_keys"
-ADD
-	CONSTRAINT "staff_keys_sessionId_fkey" FOREIGN KEY ("sessionId") REFERENCES "sessions"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE
