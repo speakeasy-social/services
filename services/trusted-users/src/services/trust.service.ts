@@ -69,6 +69,7 @@ export class TrustService {
 
     Queue.publish(JOB_NAMES.REVOKE_SESSION, {
       authorDid,
+      recipientDid,
     });
   }
 }

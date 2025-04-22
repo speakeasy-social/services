@@ -15,6 +15,7 @@ interface AddRecipientToSessionJob {
 
 interface RotateSessionJob {
   authorDid: string;
+  recipientDid?: string;
 }
 
 const worker = new Worker({ name: 'trusted-users-worker' });
@@ -118,12 +119,24 @@ queue.work<AddRecipientToSessionJob>(
  * New session will be created next time they send a message
  */
 queue.work<RotateSessionJob>(JOB_NAMES.REVOKE_SESSION, async (job) => {
-  const { authorDid } = job.data;
+  const { authorDid, recipientDid } = job.data;
 
   await prisma.session.updateMany({
     where: { authorDid, revokedAt: null, expiresAt: { gt: new Date() } },
     data: { revokedAt: new Date() },
   });
+
+  // If a recipient was revoked, delete their sessions keys
+  if (recipientDid) {
+    await prisma.sessionKey.deleteMany({
+      where: {
+        session: {
+          authorDid,
+        },
+        recipientDid,
+      },
+    });
+  }
 });
 
 worker.start().catch((error: Error) => {
