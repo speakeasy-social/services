@@ -11,6 +11,11 @@ declare global {
   namespace Express {
     interface Request {
       logger: ReturnType<typeof createLogger>;
+      user?: {
+        type: string;
+        did?: string;
+        name?: string;
+      };
     }
   }
 }
@@ -104,12 +109,29 @@ export class Server {
       async (req: Request, res: Response, next: NextFunction) => {
         const startTime = Date.now();
         const method = req.params.method;
+        const ip = req.ip;
+        const userAgent = req.headers['user-agent'];
+        const user = req.user
+          ? req.user.type === 'user'
+            ? req.user.did
+            : req.user.name
+          : undefined;
 
         try {
           // Get the method handler
           const methodHandler = this.options.methods[method];
           if (!methodHandler) {
-            req.logger.warn({ method }, 'Method not found');
+            req.logger.warn(
+              {
+                method,
+                duration: Date.now() - startTime,
+                status: 404,
+                ip,
+                userAgent,
+                user,
+              },
+              'Method not found',
+            );
             res.status(404).json({ error: 'Method not found' });
             return;
           }
@@ -117,7 +139,17 @@ export class Server {
           // Call the method handler directly
           const output = await methodHandler.handler(req, res);
           if (!output || !('body' in output)) {
-            req.logger.error({ method }, 'Invalid handler output');
+            req.logger.error(
+              {
+                method,
+                duration: Date.now() - startTime,
+                status: 500,
+                ip,
+                userAgent,
+                user,
+              },
+              'Invalid handler output',
+            );
             res.status(500).json({ error: 'Internal server error' });
             return;
           }
@@ -129,6 +161,9 @@ export class Server {
             method,
             duration: Date.now() - startTime,
             status: 200,
+            ip,
+            userAgent,
+            user,
           });
         } catch (error) {
           next(error);
