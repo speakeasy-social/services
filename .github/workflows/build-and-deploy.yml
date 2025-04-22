@@ -77,14 +77,7 @@ jobs:
           source: ${{ github.workspace }}/speakeasy-services.tar.gz
           target: /home/speakeasy
 
-  deploy-private-sessions:
-    runs-on: ubuntu-latest
-    needs: push-to-production
-    environment: production
-    if: github.ref == 'refs/heads/main' && (contains(github.event.head_commit.modified, 'packages/') || contains(github.event.head_commit.modified, 'services/private-sessions/'))
-
-    steps:
-      - name: Deploy Private Sessions Service
+      - name: Load Docker Image
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.SSH_HOST }}
@@ -92,23 +85,42 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           passphrase: ${{ secrets.SSH_PASSPHRASE }}
           script: |
-            SERVICE="private-sessions"
             TAR_GZ="/home/speakeasy/speakeasy-services.tar.gz"
-            TAR="/home/speakeasy/speakeasy-services-${SERVICE}.tar"
+            TAR="/home/speakeasy/speakeasy-services.tar"
 
             gunzip -c ${TAR_GZ} > ${TAR}
             docker load < ${TAR}
-
-            # Create or update Docker secrets
-            echo "${{ secrets.POSTGRES_PASSWORD }}" | docker secret create postgres_password - 2>/dev/null || docker secret update postgres_password - <<< "${{ secrets.POSTGRES_PASSWORD }}"
-            echo "${{ secrets.POSTGRES_USER }}" | docker secret create postgres_user - 2>/dev/null || docker secret update postgres_user - <<< "${{ secrets.POSTGRES_USER }}"
-            echo "${{ secrets.POSTGRES_DB }}" | docker secret create postgres_db - 2>/dev/null || docker secret update postgres_db - <<< "${{ secrets.POSTGRES_DB }}"
-
-            # Deploy with secrets
-            docker-compose -f /home/speakeasy/docker-compose.prod.yml up -d private-sessions
-
-            # Clean up
             rm -f ${TAR}
+
+  deploy-private-sessions:
+    runs-on: ubuntu-latest
+    needs: push-to-production
+    environment: production
+    if: github.ref == 'refs/heads/main' && (contains(github.event.head_commit.modified, 'packages/') || contains(github.event.head_commit.modified, 'services/private-sessions/'))
+
+    steps:
+      - name: Run Database Migrations
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          passphrase: ${{ secrets.SSH_PASSPHRASE }}
+          script: |
+            docker run --rm \
+              -e PRIVATE_SESSIONS_DATABASE_URL="${{ secrets.PRIVATE_SESSIONS_DATABASE_MIGRATION_URL }}" \
+              speakeasy-services-image:${{ needs.build.outputs.version }} \
+              pnpm --filter @speakeasy-services/private-sessions prisma:migrate
+
+      - name: Deploy Service
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          passphrase: ${{ secrets.SSH_PASSPHRASE }}
+          script: |
+            docker-compose -f /home/speakeasy/docker-compose.prod.yml up -d private-sessions
 
   deploy-trusted-users:
     runs-on: ubuntu-latest
@@ -117,7 +129,7 @@ jobs:
     if: github.ref == 'refs/heads/main' && (contains(github.event.head_commit.modified, 'packages/') || contains(github.event.head_commit.modified, 'services/trusted-users/'))
 
     steps:
-      - name: Deploy Trusted Users Service
+      - name: Run Database Migrations
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.SSH_HOST }}
@@ -125,23 +137,20 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           passphrase: ${{ secrets.SSH_PASSPHRASE }}
           script: |
-            SERVICE="trusted-users"
-            TAR_GZ="/home/speakeasy/speakeasy-services.tar.gz"
-            TAR="/home/speakeasy/speakeasy-services-${SERVICE}.tar"
+            docker run --rm \
+              -e TRUSTED_USERS_DATABASE_URL="${{ secrets.TRUSTED_USERS_DATABASE_MIGRATION_URL }}" \
+              speakeasy-services-image:${{ needs.build.outputs.version }} \
+              pnpm --filter @speakeasy-services/trusted-users prisma:migrate
 
-            gunzip -c ${TAR_GZ} > ${TAR}
-            docker load < ${TAR}
-
-            # Create or update Docker secrets
-            echo "${{ secrets.POSTGRES_PASSWORD }}" | docker secret create postgres_password - 2>/dev/null || docker secret update postgres_password - <<< "${{ secrets.POSTGRES_PASSWORD }}"
-            echo "${{ secrets.POSTGRES_USER }}" | docker secret create postgres_user - 2>/dev/null || docker secret update postgres_user - <<< "${{ secrets.POSTGRES_USER }}"
-            echo "${{ secrets.POSTGRES_DB }}" | docker secret create postgres_db - 2>/dev/null || docker secret update postgres_db - <<< "${{ secrets.POSTGRES_DB }}"
-
-            # Deploy with secrets
+      - name: Deploy Service
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          passphrase: ${{ secrets.SSH_PASSPHRASE }}
+          script: |
             docker-compose -f /home/speakeasy/docker-compose.prod.yml up -d trusted-users
-
-            # Clean up
-            rm -f ${TAR}
 
   deploy-user-keys:
     runs-on: ubuntu-latest
@@ -150,7 +159,7 @@ jobs:
     if: github.ref == 'refs/heads/main' && (contains(github.event.head_commit.modified, 'packages/') || contains(github.event.head_commit.modified, 'services/user-keys/'))
 
     steps:
-      - name: Deploy User Keys Service
+      - name: Load Docker Image
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.SSH_HOST }}
@@ -164,14 +173,27 @@ jobs:
 
             gunzip -c ${TAR_GZ} > ${TAR}
             docker load < ${TAR}
-
-            # Create or update Docker secrets
-            echo "${{ secrets.POSTGRES_PASSWORD }}" | docker secret create postgres_password - 2>/dev/null || docker secret update postgres_password - <<< "${{ secrets.POSTGRES_PASSWORD }}"
-            echo "${{ secrets.POSTGRES_USER }}" | docker secret create postgres_user - 2>/dev/null || docker secret update postgres_user - <<< "${{ secrets.POSTGRES_USER }}"
-            echo "${{ secrets.POSTGRES_DB }}" | docker secret create postgres_db - 2>/dev/null || docker secret update postgres_db - <<< "${{ secrets.POSTGRES_DB }}"
-
-            # Deploy with secrets
-            docker-compose -f /home/speakeasy/docker-compose.prod.yml up -d user-keys
-
-            # Clean up
             rm -f ${TAR}
+
+      - name: Run Database Migrations
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          passphrase: ${{ secrets.SSH_PASSPHRASE }}
+          script: |
+            docker run --rm \
+              -e USER_KEYS_DATABASE_URL="${{ secrets.USER_KEYS_DATABASE_MIGRATION_URL }}" \
+              speakeasy-services-image:${{ needs.build.outputs.version }} \
+              pnpm --filter @speakeasy-services/user-keys prisma:migrate
+
+      - name: Deploy Service
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          passphrase: ${{ secrets.SSH_PASSPHRASE }}
+          script: |
+            docker-compose -f /home/speakeasy/docker-compose.prod.yml up -d user-keys
