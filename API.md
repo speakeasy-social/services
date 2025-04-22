@@ -15,13 +15,19 @@ social.spkeasy.graph.removeTrusted        - Remove a trusted user
 # Session Management
 social.spkeasy.privateSession.revoke      - Revoke an active session
 social.spkeasy.privateSession.addUser     - Add new trusted user to the current session
+social.spkeasy.privateSession.getSession  - Get the currecnt active session
 
 # Post Management
 social.spkeasy.privatePosts.getPosts      - List private posts accessible to a recipient
 social.spkeasy.privatePosts.createPost    - Create a new private post
 social.spkeasy.privatePosts.deletePost    - Delete a private post
 
-# Key Management
+# User management
+social.spkeasy.actor.getFeatures          - Get features enabled for an actor
+social.spkeasy.actor.getProfile           - Returns encrypted private profile
+social.spkeasy.actor.putProfile           - Update encrypted private profile
+
+# Key Management - Swiss service
 social.spkeasy.keys.getPublicKey          - Get user's public key for encryption
 social.spkeasy.keys.getPrivateKey         - Get user's private key (owner only)
 social.spkeasy.keys.rotate                - Request key rotation
