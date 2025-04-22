@@ -1,7 +1,10 @@
 import { Server } from '@speakeasy-services/service-base';
 import config from './config.js';
-import { methods } from './routes/session.routes.js';
-import { authorizationMiddleware, authenticateToken } from '@speakeasy-services/common';
+import { methods } from './routes/index.js';
+import {
+  authorizationMiddleware,
+  authenticateToken,
+} from '@speakeasy-services/common';
 import { lexicons } from './lexicon/index.js';
 
 const server = new Server({
@@ -9,7 +12,7 @@ const server = new Server({
   port: config.PORT,
   methods,
   middleware: [authenticateToken, authorizationMiddleware],
-  lexicons
+  lexicons,
 });
 
 server.start();

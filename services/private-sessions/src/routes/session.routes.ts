@@ -17,16 +17,7 @@ import {
   addUserDef,
   createSessionDef,
 } from '../lexicon/types/session.js';
-import {
-  getPostsDef,
-  createPostsDef,
-  deletePostDef,
-} from '../lexicon/types/posts.js';
-import { toEncryptedPostsListView } from '../views/private-posts.views.js';
-import {
-  toSessionKeyView,
-  toSessionKeyListView,
-} from '../views/private-sessions.views.js';
+import { toSessionKeyView } from '../views/private-sessions.views.js';
 
 const sessionService = new SessionService();
 
@@ -155,85 +146,6 @@ const methodHandlers = {
       body: { success: true },
     };
   },
-
-  /**
-   * Retrieves encrypted posts for specified recipients
-   * @param req - The request containing recipient DIDs and pagination parameters
-   * @returns Promise containing encrypted posts and session keys
-   */
-  'social.spkeasy.privatePosts.getPosts': async (
-    req: ExtendedRequest,
-  ): Promise<HandlerOutput> => {
-    // Validate input against lexicon
-    validateAgainstLexicon(getPostsDef, req.query);
-
-    const { authors, replyTo, limit, cursor } = req.query as {
-      authors?: string;
-      limit?: string;
-      cursor?: string;
-      replyTo?: string;
-    };
-
-    // Convert limit to number if provided
-    const limitNum = limit ? parseInt(limit, 10) : undefined;
-
-    const result = await sessionService.getPosts(req.user.did!, {
-      authorDids: authors?.split(','),
-      replyPostCid: replyTo,
-      limit: limitNum,
-      cursor,
-    });
-
-    authorize(req, 'list', 'private_post', result.encryptedPosts);
-    authorize(req, 'list', 'private_session', result.encryptedSessionKeys);
-
-    return {
-      encoding: 'application/json',
-      body: {
-        cursor: result.cursor,
-        encryptedPosts: toEncryptedPostsListView(result.encryptedPosts),
-        encryptedSessionKeys: toSessionKeyListView(result.encryptedSessionKeys),
-      },
-    };
-  },
-
-  /**
-   * Creates new encrypted posts in a private session
-   * @param req - The request containing the encrypted posts data
-   * @returns Promise indicating success of post creation
-   */
-  'social.spkeasy.privatePosts.createPosts': async (
-    req: ExtendedRequest,
-  ): Promise<HandlerOutput> => {
-    // Validate input against lexicon
-    validateAgainstLexicon(createPostsDef, req.body);
-
-    authorize(req, 'create', 'private_post', { authorDid: req.user.did });
-
-    await sessionService.createEncryptedPosts(req.user.did!, req.body);
-
-    return {
-      encoding: 'application/json',
-      body: { success: true },
-    };
-  },
-
-  /**
-   * Deletes a specific encrypted post
-   * @param req - The request containing the post URI to delete
-   * @returns Promise indicating success of post deletion
-   */
-  'social.spkeasy.privatePosts.deletePost': async (
-    req: ExtendedRequest,
-  ): Promise<HandlerOutput> => {
-    // Validate input against lexicon
-    // validateAgainstLexicon(lexicon, { uri });
-
-    // authorize(ctx, 'delete', post);
-
-    // const post = await sessionService.deletePost(uri);
-    throw new Error('Not implemented');
-  },
 } as const;
 
 // Define methods using XRPC lexicon
@@ -250,17 +162,6 @@ export const methods: Record<MethodName, { handler: RequestHandler }> = {
   },
   'social.spkeasy.privateSession.getSession': {
     handler: methodHandlers['social.spkeasy.privateSession.getSession'],
-  },
-
-  // Post management methods
-  'social.spkeasy.privatePosts.getPosts': {
-    handler: methodHandlers['social.spkeasy.privatePosts.getPosts'],
-  },
-  'social.spkeasy.privatePosts.createPosts': {
-    handler: methodHandlers['social.spkeasy.privatePosts.createPosts'],
-  },
-  'social.spkeasy.privatePosts.deletePost': {
-    handler: methodHandlers['social.spkeasy.privatePosts.deletePost'],
   },
 };
 
