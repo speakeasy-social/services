@@ -175,7 +175,7 @@ export class SessionService {
     newKeyId: string;
     prevPrivateKey: string;
     newPublicKey: string;
-  }): Promise<{ success: boolean }> {
+  }): Promise<void> {
     const BATCH_SIZE = 100;
     let hasMore = true;
 
