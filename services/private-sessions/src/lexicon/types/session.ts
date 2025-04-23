@@ -57,6 +57,28 @@ export const addUserDef: LexiconDoc = {
   },
 };
 
+export const sessionKeyDef: LexiconDoc = {
+  lexicon: 1,
+  id: 'social.spkeasy.privateSession.sessionKey',
+  defs: {
+    main: {
+      type: 'object',
+      required: ['recipientDid', 'encryptedDek'],
+      properties: {
+        recipientDid: {
+          type: 'string',
+          description: 'A recipient for the session',
+        },
+        encryptedDek: {
+          type: 'string',
+          description:
+            'The session key encrypted with the recipients public key',
+        },
+      },
+    },
+  },
+};
+
 export const createSessionDef: LexiconDoc = {
   lexicon: 1,
   id: 'social.spkeasy.privateSession.create',
@@ -64,26 +86,18 @@ export const createSessionDef: LexiconDoc = {
     main: {
       type: 'procedure',
       description: 'Create a new private session',
-      parameters: {
-        type: 'params',
-        required: ['sessionKeys'],
-        properties: {
-          expirationHours: { type: 'integer' },
-          sessionKeys: {
-            type: 'array',
-            items: {
-              type: 'object',
-              required: ['publicKey', 'recipientDid'],
-              properties: {
-                recipientDid: {
-                  type: 'string',
-                  description: 'A recipient for the session',
-                },
-                encryptedDek: {
-                  type: 'string',
-                  description:
-                    'The session key encrypted with the recipients public key',
-                },
+      input: {
+        encoding: 'application/json',
+        schema: {
+          type: 'object',
+          required: ['sessionKeys'],
+          properties: {
+            expirationHours: { type: 'integer' },
+            sessionKeys: {
+              type: 'array',
+              items: {
+                type: 'ref',
+                ref: 'social.spkeasy.privateSession.sessionKey#main',
               },
             },
           },

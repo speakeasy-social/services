@@ -1,66 +1,31 @@
 import { FeatureService } from '../services/feature.service.js';
-import { ValidationError } from '@speakeasy-services/common';
-import { HandlerOutput } from '@atproto/xrpc-server';
 import {
   authorize,
   RequestHandler,
+  RequestHandlerReturn,
   ExtendedRequest,
+  validateAgainstLexicon,
 } from '@speakeasy-services/common';
 import { toFeaturesListView } from '../views/feature.views.js';
 import { getFeaturesDef } from '../lexicon/types/features.js';
 
 const featureService = new FeatureService();
 
-// Helper function to validate against lexicon schema
-function validateAgainstLexicon(lexicon: any, params: any) {
-  const schema = lexicon.defs.main.parameters;
-  if (!schema) return;
-
-  // Check required fields
-  if (schema.required) {
-    for (const field of schema.required) {
-      if (params[field] === undefined) {
-        throw new ValidationError(`${field} is required`);
-      }
-    }
-  }
-
-  // Check field types
-  if (schema.properties) {
-    for (const [field, def] of Object.entries(schema.properties)) {
-      const value = params[field];
-      if (value === undefined) continue;
-
-      const type = (def as any).type;
-      if (type === 'string' && typeof value !== 'string') {
-        throw new ValidationError(`${field} must be a string`);
-      } else if (type === 'number' && typeof value !== 'number') {
-        throw new ValidationError(`${field} must be a number`);
-      } else if (type === 'boolean' && typeof value !== 'boolean') {
-        throw new ValidationError(`${field} must be a boolean`);
-      } else if (type === 'array' && !Array.isArray(value)) {
-        throw new ValidationError(`${field} must be an array`);
-      }
-    }
-  }
-}
-
 // Define method handlers with lexicon validation
 const methodHandlers = {
   'social.spkeasy.actor.getFeatures': async (
     req: ExtendedRequest,
-  ): Promise<HandlerOutput> => {
+  ): RequestHandlerReturn => {
     // Validate input against lexicon
     validateAgainstLexicon(getFeaturesDef, req.query);
 
     const { did } = req.query;
 
-    const features = await featureService.getFeatures(did);
+    const features = await featureService.getFeatures(did as string);
 
     authorize(req, 'list', 'feature', features);
 
     return {
-      encoding: 'application/json',
       body: { features: toFeaturesListView(features) },
     };
   },

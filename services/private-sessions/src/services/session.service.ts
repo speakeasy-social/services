@@ -31,6 +31,7 @@ export class SessionService {
     recipients: {
       recipientDid: string;
       encryptedDek: string;
+      userKeyPairId: string;
     }[];
     expirationHours?: number;
   }): Promise<{ sessionId: string }> {
@@ -59,11 +60,11 @@ export class SessionService {
       const session = await tx.session.create({
         data: {
           authorDid,
-          previousSessionId: previousSession?.id,
           expiresAt: new Date(Date.now() + expirationHours * 60 * 60 * 1000),
 
           sessionKeys: {
             create: recipients.map((recipient) => ({
+              userKeyPairId: recipient.userKeyPairId,
               recipientDid: recipient.recipientDid,
               encryptedDek: Buffer.from(recipient.encryptedDek),
             })),
@@ -137,15 +138,14 @@ export class SessionService {
       throw new NotFoundError('Session not found');
     }
 
-    Queue.publish(JOB_NAMES.REVOKE_SESSION, {
-      authorDid,
-    });
+    throw new Error('Not implemented');
 
     await prisma.sessionKey.create({
       data: {
-        sessionId: session.id,
+        sessionId: session!.id,
         recipientDid,
         encryptedDek: Buffer.from(''),
+        userKeyPairId: '',
       },
     });
 

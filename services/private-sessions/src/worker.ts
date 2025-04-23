@@ -1,12 +1,11 @@
 import { Worker } from '@speakeasy-services/service-base';
-import { Queue, JOB_NAMES } from '@speakeasy-services/queue';
+import { JOB_NAMES } from '@speakeasy-services/queue';
 import { speakeasyApiRequest } from '@speakeasy-services/common';
 import { PrismaClient } from './generated/prisma-client/index.js';
 import {
   encryptSessionKey,
   decryptSessionKey,
 } from '@speakeasy-services/crypto';
-import logger from './utils/logger.js';
 
 interface AddRecipientToSessionJob {
   authorDid: string;
@@ -19,7 +18,6 @@ interface RotateSessionJob {
 }
 
 const worker = new Worker({ name: 'trusted-users-worker' });
-const queue = Queue.getInstance();
 const prisma = new PrismaClient();
 
 // Add a new recipient to 30 days prior
@@ -28,7 +26,7 @@ const WINDOW_FOR_NEW_TRUSTED_USER = 30 * 24 * 60 * 60 * 1000;
 /**
  * When a new recipient is added, add them to prior sessions.
  */
-queue.work<AddRecipientToSessionJob>(
+worker.queue.work<AddRecipientToSessionJob>(
   JOB_NAMES.ADD_RECIPIENT_TO_SESSION,
   async (job) => {
     const { authorDid, recipientDid } = job.data;
@@ -51,12 +49,12 @@ queue.work<AddRecipientToSessionJob>(
     );
 
     if (sessionsWithKeys.length === 0) {
-      logger.error(`No sessions found for author ${authorDid}`);
+      worker.logger.error(`No sessions found for author ${authorDid}`);
       return;
     }
 
     if (sessions.length > sessionsWithKeys.length) {
-      logger.error(
+      worker.logger.error(
         `Some sessions for ${authorDid} do not have author session keys (${sessions.length} sessions, ${sessionsWithKeys.length})`,
       );
     }
@@ -104,6 +102,7 @@ queue.work<AddRecipientToSessionJob>(
           sessionId: session.id,
           recipientDid,
           encryptedDek: Buffer.from(encryptedDek),
+          userKeyPairId: recipientPublicKeyBody.id,
         };
       }),
     );
@@ -118,7 +117,7 @@ queue.work<AddRecipientToSessionJob>(
  * Mark any active sessions as revoked
  * New session will be created next time they send a message
  */
-queue.work<RotateSessionJob>(JOB_NAMES.REVOKE_SESSION, async (job) => {
+worker.queue.work<RotateSessionJob>(JOB_NAMES.REVOKE_SESSION, async (job) => {
   const { authorDid, recipientDid } = job.data;
 
   await prisma.session.updateMany({

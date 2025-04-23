@@ -3,53 +3,22 @@
  */
 
 import { KeyService } from '../services/key.service.js';
-import { ValidationError, NotFoundError } from '@speakeasy-services/common';
-import { HandlerOutput } from '@atproto/xrpc-server';
-import { authorize } from '@speakeasy-services/common';
-import { lexicons } from '../lexicon/index.js';
+import {
+  authorize,
+  RequestHandler,
+  RequestHandlerReturn,
+  ExtendedRequest,
+  NotFoundError,
+  validateAgainstLexicon,
+} from '@speakeasy-services/common';
 import {
   getPublicKeyDef,
   getPrivateKeyDef,
   rotateKeyDef,
   getPublicKeysDef,
 } from '../lexicon/types/key.js';
-import { RequestHandler, ExtendedRequest } from '@speakeasy-services/common';
 
 const keyService = new KeyService();
-
-// Helper function to validate against lexicon schema
-function validateAgainstLexicon(lexicon: any, params: any) {
-  const schema = lexicon.defs.main.parameters;
-  if (!schema) return;
-
-  // Check required fields
-  if (schema.required) {
-    for (const field of schema.required) {
-      if (params[field] === undefined) {
-        throw new ValidationError(`${field} is required`);
-      }
-    }
-  }
-
-  // Check field types
-  if (schema.properties) {
-    for (const [field, def] of Object.entries(schema.properties)) {
-      const value = params[field];
-      if (value === undefined) continue;
-
-      const type = (def as any).type;
-      if (type === 'string' && typeof value !== 'string') {
-        throw new ValidationError(`${field} must be a string`);
-      } else if (type === 'number' && typeof value !== 'number') {
-        throw new ValidationError(`${field} must be a number`);
-      } else if (type === 'boolean' && typeof value !== 'boolean') {
-        throw new ValidationError(`${field} must be a boolean`);
-      } else if (type === 'array' && !Array.isArray(value)) {
-        throw new ValidationError(`${field} must be an array`);
-      }
-    }
-  }
-}
 
 // Define method handlers
 const methodHandlers = {
@@ -58,7 +27,7 @@ const methodHandlers = {
    */
   'social.spkeasy.keys.getPublicKey': async (
     req: ExtendedRequest,
-  ): Promise<HandlerOutput> => {
+  ): RequestHandlerReturn => {
     // Validate input against lexicon
     validateAgainstLexicon(getPublicKeyDef, req.query);
 
@@ -71,7 +40,6 @@ const methodHandlers = {
     }
 
     return {
-      encoding: 'application/json',
       body: {
         publicKey: key.publicKey,
         recipientDid: key.authorDid,
@@ -84,17 +52,16 @@ const methodHandlers = {
    */
   'social.spkeasy.keys.getPublicKeys': async (
     req: ExtendedRequest,
-  ): Promise<HandlerOutput> => {
+  ): RequestHandlerReturn => {
     // Validate input against lexicon
     validateAgainstLexicon(getPublicKeysDef, req.query);
 
-    const dids = req.query.dids.split(',');
+    const dids = (req.query.dids as string).split(',');
 
     // Public key is publicly accessible
     const keys = await keyService.getPublicKeys(dids);
 
     return {
-      encoding: 'application/json',
       body: {
         publicKeys: keys.map((key) => ({
           publicKey: key.publicKey,
@@ -109,14 +76,14 @@ const methodHandlers = {
    */
   'social.spkeasy.keys.getPrivateKey': async (
     req: ExtendedRequest,
-  ): Promise<HandlerOutput> => {
+  ): RequestHandlerReturn => {
     // Validate input against lexicon
     validateAgainstLexicon(getPrivateKeyDef, {});
 
-    authorize(req, 'get_private_key', 'key', { authorDid: req.user.did });
+    authorize(req, 'get_private_key', 'key', { authorDid: req.user?.did });
 
     // Only the owner can access their private key
-    const key = await keyService.getPrivateKey(req.user.did!);
+    const key = await keyService.getPrivateKey(req.user?.did!);
     if (!key) {
       throw new NotFoundError('Private key not found');
     }
@@ -124,7 +91,6 @@ const methodHandlers = {
     authorize(req, 'get_private_key', 'key', key);
 
     return {
-      encoding: 'application/json',
       body: {
         // FIXME use view pattern
         publicKey: key.privateKey,
@@ -138,22 +104,21 @@ const methodHandlers = {
    */
   'social.spkeasy.keys.rotate': async (
     req: ExtendedRequest,
-  ): Promise<HandlerOutput> => {
+  ): RequestHandlerReturn => {
     // Validate input against lexicon
     validateAgainstLexicon(rotateKeyDef, req.body);
 
     const { privateKey, publicKey } = req.body;
 
-    authorize(req, 'update', 'key', { authorDid: req.user.did });
+    authorize(req, 'update', 'key', { authorDid: req.user?.did });
 
     const result = await keyService.requestRotation(
-      req.user.did!,
+      req.user?.did!,
       privateKey,
       publicKey,
     );
     return {
-      encoding: 'application/json',
-      body: result,
+      body: result!,
     };
   },
 } as const;

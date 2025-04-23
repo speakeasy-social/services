@@ -40,7 +40,7 @@ export const getPostsDef: LexiconDoc = {
               type: 'array',
               items: {
                 type: 'ref',
-                ref: '#privatePost',
+                ref: '#encryptedPost',
               },
             },
             encryptedSessionKeys: {
@@ -61,20 +61,23 @@ export const createPostsDef: LexiconDoc = {
     main: {
       type: 'procedure',
       description: 'Create a new private post',
-      parameters: {
-        type: 'params',
-        required: ['encryptedPosts', 'sessionId'],
-        properties: {
-          encryptedPosts: {
-            type: 'array',
-            items: {
-              type: 'ref',
-              ref: '#encryptedPost',
+      input: {
+        encoding: 'application/json',
+        schema: {
+          type: 'object',
+          required: ['encryptedPosts', 'sessionId'],
+          properties: {
+            encryptedPosts: {
+              type: 'array',
+              items: {
+                type: 'ref',
+                ref: '#encryptedPost',
+              },
             },
-          },
-          sessionId: {
-            type: 'array',
-            items: { type: 'string' },
+            sessionId: {
+              type: 'array',
+              items: { type: 'string' },
+            },
           },
         },
       },
@@ -136,30 +139,6 @@ export const deletePostDef: LexiconDoc = {
           required: ['success'],
           properties: {
             success: { type: 'boolean' },
-          },
-        },
-      },
-    },
-  },
-};
-
-export const privatePostDef: LexiconDoc = {
-  lexicon: 1,
-  id: 'social.spkeasy.privatePosts.privatePost',
-  defs: {
-    main: {
-      type: 'object',
-      required: ['uri', 'authorDid', 'text', 'createdAt'],
-      properties: {
-        uri: { type: 'string' },
-        authorDid: { type: 'string' },
-        text: { type: 'string' },
-        createdAt: { type: 'string', format: 'datetime' },
-        reply: {
-          type: 'object',
-          properties: {
-            root: { type: 'string' },
-            parent: { type: 'string' },
           },
         },
       },

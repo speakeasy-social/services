@@ -3,8 +3,12 @@ import { Express, Request, Response, NextFunction } from 'express';
 import { validateEnv, baseSchema } from './config.js';
 import { LexiconDoc } from '@atproto/lexicon';
 import z from 'zod';
-import { createLogger } from '@speakeasy-services/common';
-import { errorHandler } from '@speakeasy-services/common';
+import {
+  createLogger,
+  errorHandler,
+  ExtendedRequest,
+  RequestHandler,
+} from '@speakeasy-services/common';
 
 // Extend Express Request type to include logger
 declare global {
@@ -25,7 +29,9 @@ export interface ServerOptions {
   port: number;
   methods: Record<
     string,
-    { handler: (req: Request, res: Response) => Promise<{ body: object }> }
+    {
+      handler: RequestHandler;
+    }
   >;
   middleware?: any[];
   onShutdown?: () => Promise<void>;
@@ -137,7 +143,10 @@ export class Server {
           }
 
           // Call the method handler directly
-          const output = await methodHandler.handler(req, res);
+          const output = await methodHandler.handler(
+            req as ExtendedRequest,
+            res,
+          );
           if (!output || !('body' in output)) {
             req.logger.error(
               {

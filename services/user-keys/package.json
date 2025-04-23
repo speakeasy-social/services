@@ -20,6 +20,7 @@
     "prisma:migrate": "prisma migrate deploy"
   },
   "dependencies": {
+    "@atproto/lexicon": "^0.4.9",
     "@atproto/xrpc-server": "^0.7.13",
     "@prisma/client": "^6.5.0",
     "@speakeasy-services/common": "workspace:*",
@@ -28,8 +29,6 @@
     "@speakeasy-services/service-base": "workspace:*",
     "crystals-kyber-js": "2.3.1",
     "dotenv": "^16.4.7",
-    "pino": "^9.6.0",
-    "pino-pretty": "^13.0.0",
     "zod": "^3.24.2"
   },
   "devDependencies": {

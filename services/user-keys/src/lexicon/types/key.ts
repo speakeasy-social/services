@@ -65,21 +65,25 @@ export const getPublicKeysDef: LexiconDoc = {
             publicKeys: {
               type: 'array',
               items: {
-                type: 'object',
-                required: ['publicKey', 'recipientDid'],
-                properties: {
-                  publicKey: {
-                    type: 'string',
-                    description: "The user's public key in base64 format",
-                  },
-                  authorDid: {
-                    type: 'string',
-                    description: 'The DID of the key owner',
-                  },
-                },
+                type: 'ref',
+                ref: 'publicKey',
               },
             },
           },
+        },
+      },
+    },
+    publicKey: {
+      type: 'object',
+      required: ['publicKey', 'recipientDid'],
+      properties: {
+        publicKey: {
+          type: 'string',
+          description: "The user's public key in base64 format",
+        },
+        authorDid: {
+          type: 'string',
+          description: 'The DID of the key owner',
         },
       },
     },

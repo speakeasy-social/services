@@ -68,6 +68,9 @@ importers:
 
   packages/common:
     dependencies:
+      '@atproto/lexicon':
+        specifier: ^0.4.9
+        version: 0.4.9
       '@atproto/xrpc':
         specifier: ^0.6.11
         version: 0.6.11
@@ -289,9 +292,6 @@ importers:
       '@atproto/lexicon':
         specifier: ^0.4.9
         version: 0.4.9
-      '@atproto/xrpc':
-        specifier: ^0.6.11
-        version: 0.6.11
       '@atproto/xrpc-server':
         specifier: ^0.7.13
         version: 0.7.13
@@ -313,9 +313,6 @@ importers:
       dotenv:
         specifier: ^16.4.7
         version: 16.4.7
-      express:
-        specifier: ^4.21.2
-        version: 4.21.2
       node-cache:
         specifier: ^5.1.2
         version: 5.1.2
@@ -332,15 +329,9 @@ importers:
         specifier: ^3.24.2
         version: 3.24.2
     devDependencies:
-      '@types/express':
-        specifier: ^4.17.21
-        version: 4.17.21
       '@types/node':
         specifier: ^22.13.11
         version: 22.13.11
-      '@types/node-cache':
-        specifier: ^4.2.5
-        version: 4.2.5
       '@typescript-eslint/eslint-plugin':
         specifier: ^7.0.1
         version: 7.18.0(@typescript-eslint/parser@7.18.0)(eslint@8.57.1)(typescript@5.8.3)
@@ -389,21 +380,6 @@ importers:
       dotenv:
         specifier: ^16.4.7
         version: 16.4.7
-      express:
-        specifier: ^4.21.2
-        version: 4.21.2
-      node-cache:
-        specifier: ^5.1.2
-        version: 5.1.2
-      node-fetch:
-        specifier: ^3.3.2
-        version: 3.3.2
-      pino:
-        specifier: ^9.6.0
-        version: 9.6.0
-      pino-pretty:
-        specifier: ^13.0.0
-        version: 13.0.0
       zod:
         specifier: ^3.24.2
         version: 3.24.2
@@ -411,18 +387,12 @@ importers:
       '@speakeasy-services/test-utils':
         specifier: workspace:*
         version: link:../../packages/test-utils
-      '@types/express':
-        specifier: ^4.17.21
-        version: 4.17.21
       '@types/jest':
         specifier: ^29.5.12
         version: 29.5.14
       '@types/node':
         specifier: ^22.13.11
         version: 22.13.11
-      '@types/node-cache':
-        specifier: ^4.2.5
-        version: 4.2.5
       '@typescript-eslint/eslint-plugin':
         specifier: ^7.0.1
         version: 7.18.0(@typescript-eslint/parser@7.18.0)(eslint@8.57.1)(typescript@5.8.3)
@@ -459,6 +429,9 @@ importers:
 
   services/user-keys:
     dependencies:
+      '@atproto/lexicon':
+        specifier: ^0.4.9
+        version: 0.4.9
       '@atproto/xrpc-server':
         specifier: ^0.7.13
         version: 0.7.13
@@ -483,12 +456,6 @@ importers:
       dotenv:
         specifier: ^16.4.7
         version: 16.4.7
-      pino:
-        specifier: ^9.6.0
-        version: 9.6.0
-      pino-pretty:
-        specifier: ^13.0.0
-        version: 13.0.0
       zod:
         specifier: ^3.24.2
         version: 3.24.2

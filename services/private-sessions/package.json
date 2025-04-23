@@ -21,7 +21,6 @@
   },
   "dependencies": {
     "@atproto/lexicon": "^0.4.9",
-    "@atproto/xrpc": "^0.6.11",
     "@atproto/xrpc-server": "^0.7.13",
     "@prisma/client": "^6.5.0",
     "@speakeasy-services/common": "workspace:*",
@@ -29,7 +28,6 @@
     "@speakeasy-services/queue": "workspace:*",
     "@speakeasy-services/service-base": "workspace:*",
     "dotenv": "^16.4.7",
-    "express": "^4.21.2",
     "node-cache": "^5.1.2",
     "node-fetch": "^3.3.2",
     "pino": "^9.6.0",
@@ -37,9 +35,7 @@
     "zod": "^3.24.2"
   },
   "devDependencies": {
-    "@types/express": "^4.17.21",
     "@types/node": "^22.13.11",
-    "@types/node-cache": "^4.2.5",
     "@typescript-eslint/eslint-plugin": "^7.0.1",
     "@typescript-eslint/parser": "^7.0.1",
     "eslint": "^8.56.0",

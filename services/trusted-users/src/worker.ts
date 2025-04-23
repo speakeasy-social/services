@@ -12,7 +12,6 @@ interface RotateSessionJob {
 }
 
 const worker = new Worker({ name: 'trusted-users-worker' });
-const queue = Queue.getInstance();
 
 worker.start().catch((error: Error) => {
   console.error('Failed to start worker:', error);

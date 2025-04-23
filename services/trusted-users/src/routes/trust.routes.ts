@@ -3,13 +3,13 @@
  */
 
 import { TrustService } from '../services/trust.service.js';
-import { HandlerOutput } from '@atproto/xrpc-server';
 import {
   ValidationError,
   authorize,
   RequestHandler,
+  RequestHandlerReturn,
   ExtendedRequest,
-  Subject,
+  validateAgainstLexicon,
 } from '@speakeasy-services/common';
 import {
   getTrustedDef,
@@ -20,40 +20,6 @@ import { toTrustedUsersListView } from '../views/trusted-user.view.js';
 
 const trustService = new TrustService();
 
-// Helper function to validate against lexicon schema
-function validateAgainstLexicon(lexicon: any, params: any) {
-  const schema = lexicon.defs.main.parameters;
-  if (!schema) return;
-
-  // Check required fields
-  if (schema.required) {
-    for (const field of schema.required) {
-      if (params[field] === undefined) {
-        throw new ValidationError(`${field} is required`);
-      }
-    }
-  }
-
-  // Check field types
-  if (schema.properties) {
-    for (const [field, def] of Object.entries(schema.properties)) {
-      const value = params[field];
-      if (value === undefined) continue;
-
-      const type = (def as any).type;
-      if (type === 'string' && typeof value !== 'string') {
-        throw new ValidationError(`${field} must be a string`);
-      } else if (type === 'number' && typeof value !== 'number') {
-        throw new ValidationError(`${field} must be a number`);
-      } else if (type === 'boolean' && typeof value !== 'boolean') {
-        throw new ValidationError(`${field} must be a boolean`);
-      } else if (type === 'array' && !Array.isArray(value)) {
-        throw new ValidationError(`${field} must be an array`);
-      }
-    }
-  }
-}
-
 // Define method handlers
 const methodHandlers = {
   /**
@@ -61,19 +27,21 @@ const methodHandlers = {
    */
   'social.spkeasy.graph.getTrusted': async (
     req: ExtendedRequest,
-  ): Promise<HandlerOutput> => {
+  ): RequestHandlerReturn => {
     // Validate input against lexicon
     validateAgainstLexicon(getTrustedDef, req.query);
 
     const { authorDid, recipientDid } = req.query;
 
     // Get the data from the service
-    const trustedUsers = await trustService.getTrusted(authorDid, recipientDid);
+    const trustedUsers = await trustService.getTrusted(
+      authorDid as string,
+      recipientDid as string,
+    );
     authorize(req, 'list', 'trusted_user', trustedUsers);
 
     // Transform to view
     return {
-      encoding: 'application/json',
       body: { trusted: toTrustedUsersListView(trustedUsers) },
     };
   },
@@ -83,12 +51,12 @@ const methodHandlers = {
    */
   'social.spkeasy.graph.addTrusted': async (
     req: ExtendedRequest,
-  ): Promise<HandlerOutput> => {
+  ): RequestHandlerReturn => {
     const { recipientDid } = req.body as { recipientDid: string };
     // Validate input against lexicon
     validateAgainstLexicon(addTrustedDef, req.body);
 
-    const authorDid = req.user.did;
+    const authorDid = req.user?.did;
 
     // Authorize the action
     authorize(req, 'create', 'trusted_user', { authorDid });
@@ -97,7 +65,6 @@ const methodHandlers = {
     await trustService.addTrusted(authorDid!, recipientDid);
 
     return {
-      encoding: 'application/json',
       body: { success: true },
     };
   },
@@ -107,7 +74,7 @@ const methodHandlers = {
    */
   'social.spkeasy.graph.removeTrusted': async (
     req: ExtendedRequest,
-  ): Promise<HandlerOutput> => {
+  ): RequestHandlerReturn => {
     // Validate input against lexicon
     validateAgainstLexicon(removeTrustedDef, req.body);
 
@@ -125,7 +92,6 @@ const methodHandlers = {
     await trustService.removeTrusted(authorDid, recipientDid);
 
     return {
-      encoding: 'application/json',
       body: { success: true },
     };
   },
