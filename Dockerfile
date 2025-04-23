@@ -10,8 +10,8 @@ WORKDIR /app
 # Copy all files
 COPY . .
 
-# Install production dependencies only
-RUN pnpm install --frozen-lockfile --prod
+# Install all dependencies (including dev) for build
+RUN pnpm install --frozen-lockfile
 
 # Build all services and their dependencies
 RUN pnpm turbo run build --filter=@speakeasy-services/private-sessions... && \
@@ -33,6 +33,9 @@ COPY --from=base /app/packages ./packages
 COPY --from=base /app/services ./services
 COPY --from=base /app/package.json .
 COPY --from=base /app/pnpm-lock.yaml .
+
+# Install production dependencies only
+RUN pnpm install --frozen-lockfile --prod
 
 # Copy supervisor script and make it executable
 COPY supervisor.js ./
