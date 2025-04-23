@@ -16,11 +16,13 @@ const keySchema = z.object({
 export type Key = z.infer<typeof keySchema>;
 
 type PublicKeyResponse = {
+  id: string;
   publicKey: string;
   authorDid: string;
 };
 
 type PrivateKeyResponse = {
+  id: string;
   privateKey: string;
   authorDid: string;
 };
@@ -51,6 +53,7 @@ export class KeyService {
         createdAt: 'desc',
       },
       select: {
+        id: true,
         publicKey: true,
         authorDid: true,
       },
@@ -60,7 +63,7 @@ export class KeyService {
       await this.createKeyPair(authorDid);
     }
 
-    return key;
+    return key!;
   }
 
   /**
@@ -78,6 +81,7 @@ export class KeyService {
         createdAt: 'desc',
       },
       select: {
+        id: true,
         publicKey: true,
         authorDid: true,
       },
@@ -94,7 +98,7 @@ export class KeyService {
     const mlkem = new MlKem768();
     const [publicKey, privateKey] = await mlkem.generateKeyPair();
 
-    await this.prisma.userKey.create({
+    const key = await this.prisma.userKey.create({
       data: {
         authorDid,
         publicKey: safeBtoa(publicKey),
@@ -105,6 +109,7 @@ export class KeyService {
     return {
       publicKey: safeBtoa(publicKey),
       authorDid,
+      id: key.id,
     } as PublicKeyResponse;
   }
 
@@ -123,6 +128,7 @@ export class KeyService {
         createdAt: 'desc',
       },
       select: {
+        id: true,
         privateKey: true,
         authorDid: true,
       },

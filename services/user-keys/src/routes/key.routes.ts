@@ -89,8 +89,9 @@ const methodHandlers = {
 
     return {
       body: {
+        id: key.id,
         // FIXME use view pattern
-        publicKey: key.privateKey,
+        privateKey: key.privateKey,
         authorDid: key.authorDid,
       },
     };

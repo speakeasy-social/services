@@ -17,6 +17,7 @@ export const toSessionKeyView = createView<SessionKey, EncryptedSessionKeyView>(
     sessionId: (value: string) => value,
     encryptedDek: (value: Uint8Array) => value.toString(),
     recipientDid: (value: string) => value,
+    userKeyPairId: (value: string) => value,
     createdAt: (value: Date) => value.toISOString(),
   },
 );
