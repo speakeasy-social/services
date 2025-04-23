@@ -7,21 +7,11 @@ RUN corepack enable && corepack prepare pnpm@8.15.4 --activate
 # Set working directory
 WORKDIR /app
 
-# Copy package files
-COPY package.json pnpm-lock.yaml ./
-COPY packages/common/package.json ./packages/common/
-COPY packages/crypto/package.json ./packages/crypto/
-COPY packages/queue/package.json ./packages/queue/
-COPY packages/service-base/package.json ./packages/service-base/
-COPY services/private-sessions/package.json ./services/private-sessions/
-COPY services/trusted-users/package.json ./services/trusted-users/
-COPY services/user-keys/package.json ./services/user-keys/
+# Copy all files first
+COPY . .
 
 # Install dependencies
 RUN pnpm install --frozen-lockfile
-
-# Copy the rest of the code
-COPY . .
 
 # Build all services
 RUN pnpm build
