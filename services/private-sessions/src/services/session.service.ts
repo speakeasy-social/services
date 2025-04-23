@@ -5,7 +5,10 @@ import {
   SessionKey,
   EncryptedPost,
 } from '../generated/prisma-client/index.js';
-import { encryptSessionKey } from '@speakeasy-services/crypto';
+import {
+  decryptSessionKey,
+  encryptSessionKey,
+} from '@speakeasy-services/crypto';
 import { NotFoundError, safeAtob } from '@speakeasy-services/common';
 import { Queue } from 'packages/queue/dist/index.js';
 import { JOB_NAMES } from 'packages/queue/dist/index.js';
@@ -152,5 +155,65 @@ export class SessionService {
     });
 
     return { success: true };
+  }
+
+  /**
+   * Updates session keys for a batch of sessions by re-encrypting the data encryption keys (DEKs)
+   * with a new public key. This is typically used when rotating or updating encryption keys.
+   *
+   * Keys are updated in batches and the reference to userKeyPairId means we can pick up where
+   * we left off if the work is interrupted for any reason
+   *
+   * @param body - Object containing key update parameters
+   * @param body.prevKeyId - The ID of the previous key pair
+   * @param body.newKeyId - The ID of the new key pair
+   * @param body.prevPrivateKey - The private key from the previous key pair, used to decrypt existing DEKs
+   * @param body.newPublicKey - The public key from the new key pair, used to re-encrypt the DEKs
+   */
+  async updateSessionKeys(body: {
+    prevKeyId: string;
+    newKeyId: string;
+    prevPrivateKey: string;
+    newPublicKey: string;
+  }): Promise<{ success: boolean }> {
+    const BATCH_SIZE = 100;
+    let hasMore = true;
+
+    while (hasMore) {
+      const sessionKeys = await prisma.sessionKey.findMany({
+        where: { sessionId: { in: [body.prevKeyId] } },
+        take: BATCH_SIZE,
+      });
+
+      if (sessionKeys.length === 0) {
+        hasMore = false;
+        continue;
+      }
+
+      await Promise.all(
+        sessionKeys.map(async (sessionKey) => {
+          const rawDek = await decryptSessionKey(
+            sessionKey.encryptedDek.toString(),
+            body.prevPrivateKey,
+          );
+          const newEncryptedDek = await encryptSessionKey(
+            rawDek,
+            body.newPublicKey,
+          );
+          await prisma.sessionKey.update({
+            where: {
+              sessionId_recipientDid: {
+                sessionId: sessionKey.sessionId,
+                recipientDid: sessionKey.recipientDid,
+              },
+            },
+            data: {
+              userKeyPairId: body.newKeyId,
+              encryptedDek: Buffer.from(newEncryptedDek),
+            },
+          });
+        }),
+      );
+    }
   }
 }

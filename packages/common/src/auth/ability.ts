@@ -47,6 +47,7 @@ const userAbilities = [
 
   // Authors can manage their own sessions and posts
   // FIXME the second param needs to === subject.constructor.name
+  can('create', 'private_session', { authorDid: 'did' }),
   can('revoke', 'private_session', { authorDid: 'did' }),
   can('*', 'private_post', { authorDid: 'did' }),
   // Recipients can read posts shared with them
@@ -65,6 +66,7 @@ const userAbilities = [
 const serviceAbilities = [
   can('get_public_key', 'key', { name: '=private-sessions}' }),
   can('list', 'trusted_user', { name: '=private-sessions' }),
+  can('update', 'private_session', { name: '=user-keys' }),
 ];
 
 /**

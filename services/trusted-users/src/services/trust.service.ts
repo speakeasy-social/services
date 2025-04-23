@@ -37,12 +37,6 @@ export class TrustService {
         createdAt: new Date(),
       },
     });
-
-    // Schedule session update after transaction completes
-    Queue.publish(JOB_NAMES.ADD_RECIPIENT_TO_SESSION, {
-      authorDid,
-      recipientDid,
-    });
   }
 
   /**

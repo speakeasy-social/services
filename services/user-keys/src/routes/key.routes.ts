@@ -34,10 +34,7 @@ const methodHandlers = {
     const { did } = req.query as { did: string };
 
     // Public key is publicly accessible
-    const key = await keyService.getPublicKey(did);
-    if (!key) {
-      throw new NotFoundError('Public key not found');
-    }
+    const key = await keyService.getOrCreatePublicKey(did);
 
     return {
       body: {

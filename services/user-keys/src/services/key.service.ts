@@ -41,7 +41,7 @@ export class KeyService {
    * @param authorDid - The DID (Decentralized Identifier) of the author
    * @returns A Promise that resolves to the UserKey object if found, or null if no active key exists
    */
-  async getPublicKey(authorDid: string): Promise<PublicKeyResponse | null> {
+  async getOrCreatePublicKey(authorDid: string): Promise<PublicKeyResponse> {
     const key = await this.prisma.userKey.findFirst({
       where: {
         authorDid,

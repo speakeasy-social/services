@@ -118,3 +118,37 @@ export const createSessionDef: LexiconDoc = {
     },
   },
 };
+
+export const updateSessionKeysDef: LexiconDoc = {
+  lexicon: 1,
+  id: 'social.spkeasy.privateSession.updateKeys',
+  defs: {
+    main: {
+      type: 'procedure',
+      description: 'Update session keys with new encryption keys',
+      input: {
+        encoding: 'application/json',
+        schema: {
+          type: 'object',
+          required: ['prevKeyId', 'newKeyId', 'prevPrivateKey', 'newPublicKey'],
+          properties: {
+            prevKeyId: { type: 'string' },
+            newKeyId: { type: 'string' },
+            prevPrivateKey: { type: 'string' },
+            newPublicKey: { type: 'string' },
+          },
+        },
+      },
+      output: {
+        encoding: 'application/json',
+        schema: {
+          type: 'object',
+          required: ['success'],
+          properties: {
+            success: { type: 'boolean' },
+          },
+        },
+      },
+    },
+  },
+};

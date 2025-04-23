@@ -10,6 +10,7 @@ import {
   revokeSessionDef,
   addUserDef,
   createSessionDef,
+  updateSessionKeysDef,
 } from '../lexicon/types/session.js';
 import { toSessionKeyView } from '../views/private-sessions.views.js';
 
@@ -102,6 +103,22 @@ const methodHandlers = {
       body: { success: true },
     };
   },
+
+  'social.spkeasy.privateSession.updateKeys': async (
+    req: ExtendedRequest,
+  ): RequestHandlerReturn => {
+    // Validate input against lexicon
+    validateAgainstLexicon(updateSessionKeysDef, req.body);
+
+    const authorDid = req.user?.did!;
+
+    authorize(req, 'update', 'private_session');
+
+    await sessionService.updateSessionKeys(req.body);
+    return {
+      body: { success: true },
+    };
+  },
 } as const;
 
 // Define methods using XRPC lexicon
@@ -118,6 +135,9 @@ export const methods: Record<MethodName, { handler: RequestHandler }> = {
   },
   'social.spkeasy.privateSession.getSession': {
     handler: methodHandlers['social.spkeasy.privateSession.getSession'],
+  },
+  'social.spkeasy.privateSession.updateKeys': {
+    handler: methodHandlers['social.spkeasy.privateSession.updateKeys'],
   },
 };
 

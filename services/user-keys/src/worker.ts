@@ -19,7 +19,7 @@ worker.queue.work<UpdateUserKeysJob>(
   async (job) => {
     const { prevKeyId, newKeyId } = job.data;
 
-    // Fetch both keys in a single query
+    // Fetch previous and new keys
     const keys = await prisma.userKey.findMany({
       where: {
         id: {
@@ -49,6 +49,8 @@ worker.queue.work<UpdateUserKeysJob>(
         toService: 'private-sessions',
       },
       {
+        prevKeyId,
+        newKeyId,
         // We pass it the old private key so it can decrypt the session key
         prevPrivateKey: prevKey.privateKey,
         // We pass it the new public key so it can encrypt the session key
