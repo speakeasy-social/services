@@ -125,7 +125,7 @@ worker.queue.work<RotateSessionJob>(JOB_NAMES.REVOKE_SESSION, async (job) => {
     data: { revokedAt: new Date() },
   });
 
-  // If a recipient was revoked, delete their sessions keys
+  // If a recipient was untrusted, delete their sessions keys
   if (recipientDid) {
     await prisma.sessionKey.deleteMany({
       where: {
