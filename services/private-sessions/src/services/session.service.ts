@@ -127,7 +127,11 @@ export class SessionService {
    */
   async addRecipientToSession(
     authorDid: string,
-    recipientDid: string,
+    body: {
+      recipientDid: string;
+      encryptedDek: string;
+      userKeyPairId: string;
+    },
   ): Promise<{ success: boolean }> {
     const session = await prisma.session.findFirst({
       where: { authorDid, revokedAt: null },
@@ -138,14 +142,12 @@ export class SessionService {
       throw new NotFoundError('Session not found');
     }
 
-    throw new Error('Not implemented');
-
     await prisma.sessionKey.create({
       data: {
         sessionId: session!.id,
-        recipientDid,
-        encryptedDek: Buffer.from(''),
-        userKeyPairId: '',
+        recipientDid: body.recipientDid,
+        encryptedDek: Buffer.from(body.encryptedDek),
+        userKeyPairId: body.userKeyPairId,
       },
     });
 

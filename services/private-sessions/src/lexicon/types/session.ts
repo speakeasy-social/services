@@ -41,6 +41,8 @@ export const addUserDef: LexiconDoc = {
         properties: {
           sessionId: { type: 'string' },
           recipientDid: { type: 'string' },
+          encryptedDek: { type: 'string' },
+          userKeyPairId: { type: 'string' },
         },
       },
       output: {

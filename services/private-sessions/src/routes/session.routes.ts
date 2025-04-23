@@ -91,13 +91,13 @@ const methodHandlers = {
     // Validate input against lexicon
     validateAgainstLexicon(addUserDef, req.body);
 
-    const { authorDid, recipientDid } = req.body;
+    const authorDid = req.user?.did!;
 
     authorize(req, 'add_recipient', 'private_session', {
       authorDid,
     });
 
-    await sessionService.addRecipientToSession(authorDid, recipientDid);
+    await sessionService.addRecipientToSession(authorDid, req.body);
     return {
       body: { success: true },
     };
