@@ -1,7 +1,7 @@
 import { ServiceError } from '../errors.js';
 import { createLogger } from '../logger.js';
 import { Request, Response, NextFunction, ErrorRequestHandler } from 'express';
-import { Prisma } from '@prisma/client';
+import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 
 // Define custom error interface
 interface CustomError extends Error {
@@ -87,7 +87,7 @@ export const errorHandler: ErrorRequestHandler = (
   }
 
   if (error.name === 'PrismaClientKnownRequestError') {
-    const prismaError = error as Prisma.PrismaClientKnownRequestError;
+    const prismaError = error as PrismaClientKnownRequestError;
     errorLog = {
       ...errorLog,
       meta: prismaError.meta,
