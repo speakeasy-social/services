@@ -180,7 +180,7 @@ Returns a list of private posts that the specified recipient has access to.
 {
   "posts": Array<{
     uri: string
-    cid: string
+    rkey: string
     author: {
       did: string
       handle: string
@@ -216,7 +216,7 @@ Creates a new private post in the specified session.
 ```typescript
 {
   "uri": string
-  "cid": string
+  "rkey": string
   "author": {
     "did": string
     "handle": string

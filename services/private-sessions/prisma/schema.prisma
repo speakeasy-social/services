@@ -16,13 +16,10 @@ model Session {
   createdAt         DateTime  @default(now()) 
   expiresAt         DateTime?
   revokedAt         DateTime?
-  previousSessionId String?   @unique @db.Uuid
 
   // Relationships
-  previousSession   Session?  @relation("SessionHistory", fields: [previousSessionId], references: [id])
-  nextSession      Session?  @relation("SessionHistory")
   sessionKeys       SessionKey[]
-  posts            EncryptedPost[]
+  posts             EncryptedPost[]
 
   @@index([authorDid, createdAt(sort: Desc)], name: "idx_sessions_current")
   @@map("sessions")
@@ -30,6 +27,7 @@ model Session {
 
 model SessionKey {
   sessionId    String @db.Uuid
+  userKeyPairId String @db.Uuid
   recipientDid String
   encryptedDek Bytes
   createdAt    DateTime  @default(now()) 
@@ -44,7 +42,7 @@ model SessionKey {
 }
 
 model EncryptedPost {
-  cid           String   @id
+  rkey           String  @id
   sessionId     String   @db.Uuid
   authorDid     String
   langs         String[]

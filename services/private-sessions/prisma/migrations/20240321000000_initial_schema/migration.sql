@@ -8,13 +8,13 @@ CREATE TABLE "sessions" (
 	"createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	"expiresAt" TIMESTAMP(3),
 	"revokedAt" TIMESTAMP(3),
-	"previousSessionId" UUID,
 	CONSTRAINT "sessions_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "session_keys" (
 	"sessionId" UUID NOT NULL,
+	"userKeyPairId" TEXT NOT NULL,
 	"recipientDid" TEXT NOT NULL,
 	"encryptedDek" BYTEA NOT NULL,
 	CONSTRAINT "session_keys_pkey" PRIMARY KEY ("sessionId", "recipientDid")
@@ -22,7 +22,7 @@ CREATE TABLE "session_keys" (
 
 -- CreateTable
 CREATE TABLE "encrypted_posts" (
-	"cid" TEXT NOT NULL,
+	"rkey" TEXT NOT NULL,
 	"sessionId" UUID NOT NULL,
 	"authorDid" TEXT NOT NULL,
 	"langs" TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[],
@@ -30,7 +30,7 @@ CREATE TABLE "encrypted_posts" (
 	"replyRef" TEXT NOT NULL,
 	"encryptedContent" BYTEA NOT NULL,
 	"createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-	CONSTRAINT "encrypted_posts_pkey" PRIMARY KEY ("cid")
+	CONSTRAINT "encrypted_posts_pkey" PRIMARY KEY ("rkey")
 );
 
 -- CreateTable

@@ -7,7 +7,7 @@ import {
 
 export type EncryptedPostView = {
   uri: string;
-  cid: string;
+  rkey: string;
   authorDid: string;
   encryptedContent: string;
   createdAt: string;
@@ -24,8 +24,8 @@ export type EncryptedPostView = {
  */
 export function toEncryptedPostView(post: EncryptedPost): EncryptedPostView {
   return {
-    uri: `at://${post.authorDid}/app.bsky.feed.post/${post.cid}`,
-    cid: post.cid,
+    uri: `at://${post.authorDid}/social.spkeasy.encryptedPosts.post/${post.rkey}`,
+    rkey: post.rkey,
     authorDid: post.authorDid,
     encryptedContent: safeBtoa(post.encryptedContent),
     createdAt: post.createdAt.toISOString(),

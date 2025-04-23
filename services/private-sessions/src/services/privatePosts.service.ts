@@ -12,7 +12,7 @@ interface GetPostsOptions {
   limit?: number;
   cursor?: string;
   authorDids?: string[];
-  replyPostCid?: string;
+  replyTo?: string;
 }
 
 export class PrivatePostsService {
@@ -45,7 +45,7 @@ export class PrivatePostsService {
     authorDid: string,
     body: {
       encryptedPosts: {
-        cid: string;
+        rkey: string;
         encryptedPost: string;
         reply?: {
           root: string;
@@ -60,7 +60,7 @@ export class PrivatePostsService {
     await prisma.encryptedPost.createMany({
       data: body.encryptedPosts.map((post) => ({
         authorDid,
-        cid: post.cid,
+        rkey: post.rkey,
         sessionId: body.sessionId,
         encryptedContent: safeAtob(post.encryptedContent),
         langs: post.langs,
@@ -101,20 +101,20 @@ export class PrivatePostsService {
       where.authorDid = { in: options.authorDids };
     }
 
-    if (options.replyPostCid) {
-      where.replyRef = options.replyPostCid;
-      where.replyRoot = options.replyPostCid;
+    if (options.replyTo) {
+      where.replyRef = options.replyTo;
+      where.replyRoot = options.replyTo;
     }
 
     if (options.cursor) {
       const decodedCursor = Buffer.from(options.cursor, 'base64').toString(
         'utf-8',
       );
-      const [createdAt, cid] = decodedCursor.split('#');
+      const [createdAt, rkey] = decodedCursor.split('#');
       where.OR = [
         { createdAt: { lt: new Date(createdAt) } },
         {
-          AND: [{ createdAt: new Date(createdAt) }, { cid: { lt: cid } }],
+          AND: [{ createdAt: new Date(createdAt) }, { rkey: { lt: rkey } }],
         },
       ];
     }
@@ -124,9 +124,9 @@ export class PrivatePostsService {
       take: options.limit ?? DEFAULT_LIMIT,
       orderBy: {
         createdAt: 'desc',
-        // Order by cid when time is the same for predictable
+        // Order by rkey when time is the same for predictable
         // pagination
-        cid: 'asc',
+        rkey: 'asc',
       },
     });
 
@@ -142,9 +142,9 @@ export class PrivatePostsService {
 
     if (posts.length > (options.limit ?? DEFAULT_LIMIT)) {
       const lastPost = posts[posts.length - 1];
-      // Cursor is base64 encoded string of createdAt and cid
+      // Cursor is base64 encoded string of createdAt and rkey
       newCursor = Buffer.from(
-        `${lastPost.createdAt.toISOString()}#${lastPost.cid}`,
+        `${lastPost.createdAt.toISOString()}#${lastPost.rkey}`,
       ).toString('base64');
     }
 

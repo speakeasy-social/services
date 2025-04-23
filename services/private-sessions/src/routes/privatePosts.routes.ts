@@ -77,7 +77,7 @@ const methodHandlers = {
 
     const result = await privatePostsService.getPosts(req.user.did!, {
       authorDids: authors?.split(','),
-      replyPostCid: replyTo,
+      replyTo,
       limit: limitNum,
       cursor,
     });

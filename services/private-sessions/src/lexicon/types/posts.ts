@@ -91,9 +91,9 @@ export const createPostsDef: LexiconDoc = {
     },
     encryptedPost: {
       type: 'object',
-      required: ['cid', 'langs', 'encryptedContent'],
+      required: ['rkey', 'langs', 'encryptedContent'],
       properties: {
-        cid: { type: 'string' },
+        rkey: { type: 'string' },
         reply: {
           type: 'ref',
           ref: '#reply',
