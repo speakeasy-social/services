@@ -15,6 +15,12 @@ const privatePostsService = new PrivatePostsService();
 const methodHandlers = {
   /**
    * Retrieves encrypted posts for specified recipients
+   *
+   * Three options
+   * - Get posts by people you follow (by author)
+   * - Get posts by people who trust you (author omitted)
+   * - Get posts by thread (replyTo)
+   *
    * @param req - The request containing recipient DIDs and pagination parameters
    * @returns Promise containing encrypted posts and session keys
    */
@@ -37,7 +43,7 @@ const methodHandlers = {
     });
 
     authorize(req, 'list', 'private_post', result.encryptedPosts);
-    authorize(req, 'list', 'private_session', result.encryptedSessionKeys);
+    authorize(req, 'list', 'session_key', result.encryptedSessionKeys);
 
     return {
       body: {

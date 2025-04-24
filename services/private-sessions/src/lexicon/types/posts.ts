@@ -9,7 +9,7 @@ export const getPostsDef: LexiconDoc = {
       description: 'Get private posts for specified authors',
       parameters: {
         type: 'params',
-        required: ['authors'],
+        required: [],
         properties: {
           authors: {
             type: 'string',

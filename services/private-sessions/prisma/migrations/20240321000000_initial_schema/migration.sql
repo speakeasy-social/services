@@ -3,7 +3,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- CreateTable
 CREATE TABLE "sessions" (
-	"id" UUID NOT NULL,
+	"id" UUID NOT NULL DEFAULT uuid_generate_v4(),
 	"authorDid" TEXT NOT NULL,
 	"createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	"expiresAt" TIMESTAMP(3) NOT NULL,
@@ -23,6 +23,7 @@ CREATE TABLE "session_keys" (
 
 -- CreateTable
 CREATE TABLE "encrypted_posts" (
+	"id" UUID NOT NULL DEFAULT uuid_generate_v4(),
 	"rkey" TEXT NOT NULL,
 	"sessionId" UUID NOT NULL,
 	"authorDid" TEXT NOT NULL,
@@ -31,7 +32,7 @@ CREATE TABLE "encrypted_posts" (
 	"replyUri" TEXT NOT NULL,
 	"encryptedContent" BYTEA NOT NULL,
 	"createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-	CONSTRAINT "encrypted_posts_pkey" PRIMARY KEY ("rkey")
+	CONSTRAINT "encrypted_posts_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable

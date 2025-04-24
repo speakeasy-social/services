@@ -125,12 +125,16 @@ export class PrivatePostsService {
     const posts = await prisma.encryptedPost.findMany({
       where,
       take: options.limit ?? DEFAULT_LIMIT,
-      orderBy: {
-        createdAt: 'desc',
-        // Order by rkey when time is the same for predictable
-        // pagination
-        rkey: 'asc',
-      },
+      orderBy: [
+        {
+          createdAt: 'desc',
+        },
+        {
+          // Order by rkey when time is the same for predictable
+          // pagination
+          rkey: 'asc',
+        },
+      ],
     });
 
     // Get the associated session keys for the posts

@@ -42,7 +42,8 @@ model SessionKey {
 }
 
 model EncryptedPost {
-  rkey           String  @id
+  id            String   @id @default(uuid()) @db.Uuid
+  rkey          String
   sessionId     String   @db.Uuid
   authorDid     String
   langs         String[]

@@ -17,6 +17,7 @@ export type Action =
 export type Subject =
   | 'private_post'
   | 'private_session'
+  | 'session_key'
   | 'trusted_user'
   | 'group'
   | 'feature'
@@ -52,6 +53,7 @@ const userAbilities = [
   can('*', 'private_post', { authorDid: 'did' }),
   // Recipients can read posts shared with them
   can('list', 'private_post', { recipientDid: 'did' }),
+  can('list', 'session_key', { recipientDid: 'did' }),
   can('list', 'feature', { userDid: 'did' }),
 
   // Users can manage their own keys

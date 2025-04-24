@@ -27,7 +27,7 @@ export function toEncryptedPostView(post: EncryptedPost): EncryptedPostView {
     uri: `at://${post.authorDid}/social.spkeasy.encryptedPosts.post/${post.rkey}`,
     rkey: post.rkey,
     authorDid: post.authorDid,
-    encryptedContent: post.encryptedContent.toString(),
+    encryptedContent: Buffer.from(post.encryptedContent).toString(),
     // encryptedContent: safeBtoa(post.encryptedContent),
     createdAt: post.createdAt.toISOString(),
     sessionId: post.sessionId,
