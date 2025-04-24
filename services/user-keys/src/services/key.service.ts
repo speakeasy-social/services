@@ -44,7 +44,7 @@ export class KeyService {
    * @returns A Promise that resolves to the UserKey object if found, or null if no active key exists
    */
   async getOrCreatePublicKey(authorDid: string): Promise<PublicKeyResponse> {
-    const key = await this.prisma.userKey.findFirst({
+    let key = await this.prisma.userKey.findFirst({
       where: {
         authorDid,
         deletedAt: null,
@@ -60,7 +60,7 @@ export class KeyService {
     });
 
     if (!key) {
-      await this.createKeyPair(authorDid);
+      key = await this.createKeyPair(authorDid);
     }
 
     return key!;
