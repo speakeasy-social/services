@@ -55,7 +55,7 @@ const userAbilities = [
   can('list', 'feature', { userDid: 'did' }),
 
   // Users can manage their own keys
-  can('*', 'key', { did: 'did' }),
+  can('*', 'key', { authorDid: 'did' }),
   // Anyone can read public keys
   can('get_public_key', 'key'),
 ];

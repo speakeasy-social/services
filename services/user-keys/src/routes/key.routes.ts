@@ -25,7 +25,7 @@ const methodHandlers = {
   /**
    * Get a user's public key by their DID
    */
-  'social.spkeasy.keys.getPublicKey': async (
+  'social.spkeasy.key.getPublicKey': async (
     req: ExtendedRequest,
   ): RequestHandlerReturn => {
     // Validate input against lexicon
@@ -40,6 +40,7 @@ const methodHandlers = {
       body: {
         publicKey: key.publicKey,
         recipientDid: key.authorDid,
+        userKeyPairId: key.id,
       },
     };
   },
@@ -47,7 +48,7 @@ const methodHandlers = {
   /**
    * Get a user's public key by their DID
    */
-  'social.spkeasy.keys.getPublicKeys': async (
+  'social.spkeasy.key.getPublicKeys': async (
     req: ExtendedRequest,
   ): RequestHandlerReturn => {
     // Validate input against lexicon
@@ -63,6 +64,7 @@ const methodHandlers = {
         publicKeys: keys.map((key) => ({
           publicKey: key.publicKey,
           recipientDid: key.authorDid,
+          userKeyPairId: key.id,
         })),
       },
     };
@@ -71,13 +73,11 @@ const methodHandlers = {
   /**
    * Get the authenticated user's private key
    */
-  'social.spkeasy.keys.getPrivateKey': async (
+  'social.spkeasy.key.getPrivateKey': async (
     req: ExtendedRequest,
   ): RequestHandlerReturn => {
     // Validate input against lexicon
     validateAgainstLexicon(getPrivateKeyDef, {});
-
-    authorize(req, 'get_private_key', 'key', { authorDid: req.user?.did });
 
     // Only the owner can access their private key
     const key = await keyService.getPrivateKey(req.user?.did!);
@@ -93,6 +93,7 @@ const methodHandlers = {
         // FIXME use view pattern
         privateKey: key.privateKey,
         authorDid: key.authorDid,
+        userKeyPairId: key.id,
       },
     };
   },
@@ -100,7 +101,7 @@ const methodHandlers = {
   /**
    * Rotate a user's key pair with new public/private keys
    */
-  'social.spkeasy.keys.rotate': async (
+  'social.spkeasy.key.rotate': async (
     req: ExtendedRequest,
   ): RequestHandlerReturn => {
     // Validate input against lexicon
@@ -116,7 +117,10 @@ const methodHandlers = {
       publicKey,
     );
     return {
-      body: result!,
+      body: {
+        userKeyPairId: result!.id,
+        publicKey: result!.publicKey,
+      },
     };
   },
 } as const;
@@ -124,16 +128,16 @@ const methodHandlers = {
 type MethodName = keyof typeof methodHandlers;
 
 export const methods: Record<MethodName, { handler: RequestHandler }> = {
-  'social.spkeasy.keys.getPublicKey': {
-    handler: methodHandlers['social.spkeasy.keys.getPublicKey'],
+  'social.spkeasy.key.getPublicKey': {
+    handler: methodHandlers['social.spkeasy.key.getPublicKey'],
   },
-  'social.spkeasy.keys.getPublicKeys': {
-    handler: methodHandlers['social.spkeasy.keys.getPublicKeys'],
+  'social.spkeasy.key.getPublicKeys': {
+    handler: methodHandlers['social.spkeasy.key.getPublicKeys'],
   },
-  'social.spkeasy.keys.getPrivateKey': {
-    handler: methodHandlers['social.spkeasy.keys.getPrivateKey'],
+  'social.spkeasy.key.getPrivateKey': {
+    handler: methodHandlers['social.spkeasy.key.getPrivateKey'],
   },
-  'social.spkeasy.keys.rotate': {
-    handler: methodHandlers['social.spkeasy.keys.rotate'],
+  'social.spkeasy.key.rotate': {
+    handler: methodHandlers['social.spkeasy.key.rotate'],
   },
 };
