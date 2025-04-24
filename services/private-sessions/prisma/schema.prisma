@@ -46,8 +46,8 @@ model EncryptedPost {
   sessionId     String   @db.Uuid
   authorDid     String
   langs         String[]
-  replyRoot     String?
-  replyRef      String?
+  replyRootUri  String?
+  replyUri      String?
   encryptedContent Bytes
   createdAt     DateTime @default(now())
 
@@ -56,8 +56,8 @@ model EncryptedPost {
 
   @@index([authorDid, createdAt(sort: Desc)], name: "idx_posts_by_author_created")
   @@index([sessionId, createdAt(sort: Desc), authorDid], name: "idx_posts_by_session_created_author")
-  @@index([replyRoot, sessionId], name: "idx_posts_by_reply_root")
-  @@index([replyRef, sessionId], name: "idx_posts_by_reply_parent")
+  @@index([replyRootUri, sessionId], name: "idx_posts_by_reply_root")
+  @@index([replyUri, sessionId], name: "idx_posts_by_reply_parent")
   @@map("encrypted_posts")
 }
 

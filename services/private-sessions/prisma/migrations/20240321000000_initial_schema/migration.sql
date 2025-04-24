@@ -26,8 +26,8 @@ CREATE TABLE "encrypted_posts" (
 	"sessionId" UUID NOT NULL,
 	"authorDid" TEXT NOT NULL,
 	"langs" TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[],
-	"replyRoot" TEXT NOT NULL,
-	"replyRef" TEXT NOT NULL,
+	"replyRootUri" TEXT NOT NULL,
+	"replyUri" TEXT NOT NULL,
 	"encryptedContent" BYTEA NOT NULL,
 	"createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	CONSTRAINT "encrypted_posts_pkey" PRIMARY KEY ("rkey")
@@ -54,21 +54,16 @@ CREATE INDEX "idx_posts_by_author_created" ON "encrypted_posts"("authorDid", "cr
 CREATE INDEX "idx_posts_by_session_created_author" ON "encrypted_posts"("sessionId", "createdAt" DESC, "authorDid");
 
 -- CreateIndex
-CREATE INDEX "idx_posts_by_reply_root" ON "encrypted_posts"("replyRoot", "sessionId");
+CREATE INDEX "idx_posts_by_reply_root" ON "encrypted_posts"("replyRootUri", "sessionId");
+
+-- CreateIndex
+CREATE INDEX "idx_posts_by_reply_parent" ON "encrypted_posts"("replyUri", "sessionId");
 
 -- CreateIndex
 CREATE INDEX "idx_session_keys_by_recipient" ON "session_keys"("recipientDid", "sessionId");
 
 -- CreateIndex
 CREATE INDEX "idx_session_keys_with_session" ON "session_keys"("sessionId", "recipientDid") INCLUDE ("encryptedDek");
-
--- AddForeignKey
-ALTER TABLE
-	"sessions"
-ADD
-	CONSTRAINT "sessions_previousSessionId_fkey" FOREIGN KEY ("previousSessionId") REFERENCES "sessions"("id") ON DELETE
-SET
-	NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE

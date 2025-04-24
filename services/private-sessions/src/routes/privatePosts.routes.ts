@@ -57,14 +57,11 @@ const methodHandlers = {
     req: ExtendedRequest,
   ): RequestHandlerReturn => {
     // Validate input against lexicon
-    const validatedBody = validateAgainstLexicon(createPostsDef, req.body);
+    validateAgainstLexicon(createPostsDef, req.body);
 
     authorize(req, 'create', 'private_post', { authorDid: req.user?.did });
 
-    await privatePostsService.createEncryptedPosts(
-      req.user!.did!,
-      validatedBody,
-    );
+    await privatePostsService.createEncryptedPosts(req.user!.did!, req.body);
 
     return {
       body: { success: true },

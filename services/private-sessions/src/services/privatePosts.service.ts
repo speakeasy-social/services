@@ -48,8 +48,8 @@ export class PrivatePostsService {
         rkey: string;
         encryptedPost: string;
         reply?: {
-          root: string;
-          parent: string;
+          root: { uri: string };
+          parent: { uri: string };
         };
         langs: string[];
         encryptedContent: string;
@@ -62,10 +62,11 @@ export class PrivatePostsService {
         authorDid,
         rkey: post.rkey,
         sessionId: body.sessionId,
-        encryptedContent: safeAtob(post.encryptedContent),
+        // encryptedContent: safeAtob(post.encryptedContent),
+        encryptedContent: Buffer.from(post.encryptedContent),
         langs: post.langs,
-        replyRoot: post.reply?.root ?? null,
-        replyRef: post.reply?.parent ?? null,
+        replyRootUri: post.reply?.root?.uri ?? null,
+        replyUri: post.reply?.parent?.uri ?? null,
       })),
     });
   }
@@ -102,8 +103,10 @@ export class PrivatePostsService {
     }
 
     if (options.replyTo) {
-      where.replyRef = options.replyTo;
-      where.replyRoot = options.replyTo;
+      where.OR = [
+        { replyUri: options.replyTo },
+        { replyRootUri: options.replyTo },
+      ];
     }
 
     if (options.cursor) {

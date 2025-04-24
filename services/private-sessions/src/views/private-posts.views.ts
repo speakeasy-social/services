@@ -13,9 +13,9 @@ export type EncryptedPostView = {
   createdAt: string;
   sessionId: string;
   reply: {
-    root: string | null;
-    parent: string | null;
-  };
+    root: { uri: string };
+    parent: { uri: string };
+  } | null;
   langs: string[];
 };
 
@@ -27,13 +27,16 @@ export function toEncryptedPostView(post: EncryptedPost): EncryptedPostView {
     uri: `at://${post.authorDid}/social.spkeasy.encryptedPosts.post/${post.rkey}`,
     rkey: post.rkey,
     authorDid: post.authorDid,
-    encryptedContent: safeBtoa(post.encryptedContent),
+    encryptedContent: post.encryptedContent.toString(),
+    // encryptedContent: safeBtoa(post.encryptedContent),
     createdAt: post.createdAt.toISOString(),
     sessionId: post.sessionId,
-    reply: {
-      root: post.replyRoot,
-      parent: post.replyRef,
-    },
+    reply: post.replyUri
+      ? {
+          root: { uri: post.replyRootUri! },
+          parent: { uri: post.replyUri! },
+        }
+      : null,
     langs: post.langs,
   };
 }
