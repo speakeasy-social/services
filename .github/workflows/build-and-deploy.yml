@@ -83,6 +83,7 @@ jobs:
           passphrase: ${{ secrets.SSH_PASSPHRASE }}
           source: ${{ github.workspace }}/speakeasy-services.tar.gz
           target: /home/speakeasy
+          strip_components: 1
 
       - name: Load Docker Image
         uses: appleboy/ssh-action@v1.0.3
