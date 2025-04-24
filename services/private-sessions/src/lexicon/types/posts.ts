@@ -75,8 +75,7 @@ export const createPostsDef: LexiconDoc = {
               },
             },
             sessionId: {
-              type: 'array',
-              items: { type: 'string' },
+              type: 'string',
             },
           },
         },
@@ -111,8 +110,14 @@ export const createPostsDef: LexiconDoc = {
     reply: {
       type: 'object',
       properties: {
-        root: { type: 'string' },
-        parent: { type: 'string' },
+        root: { type: 'ref', ref: '#recordRef' },
+        parent: { type: 'ref', ref: '#recordRef' },
+      },
+    },
+    recordRef: {
+      type: 'object',
+      properties: {
+        uri: { type: 'string' },
       },
     },
   },

@@ -17,6 +17,8 @@ type LexiconDefinition = {
       properties?: Record<string, any>;
     };
   };
+  required?: string[];
+  properties?: Record<string, any>;
 };
 
 /**
@@ -31,7 +33,7 @@ function lexiconToZodSchema(
     throw new Error(`Definition ${defName} not found in lexicon`);
   }
 
-  const schema = def.parameters || def.input?.schema;
+  const schema = def.parameters || def.input?.schema || def;
   if (!schema) {
     return z.object({});
   }
@@ -60,14 +62,14 @@ function lexiconToZodSchema(
         break;
       case 'array':
         if (propDef.items?.type === 'ref') {
-          const refDef = propDef.items.ref.split('#')[0];
+          const refDef = propDef.items.ref.split('#')[1];
           zodType = z.array(lexiconToZodSchema(lexicon, refDef));
         } else {
           zodType = z.array(z.unknown());
         }
         break;
       case 'ref':
-        const refDef = propDef.ref.split('#')[0];
+        const refDef = propDef.ref.split('#')[1];
         zodType = lexiconToZodSchema(lexicon, refDef);
         break;
       default:
@@ -78,7 +80,11 @@ function lexiconToZodSchema(
       zodType = zodType.describe(propDef.description);
     }
 
-    zodSchema[key] = required.includes(key) ? zodType : zodType.optional();
+    if (!required.includes(key)) {
+      zodType = zodType.optional();
+    }
+
+    zodSchema[key] = zodType;
   }
 
   return z.object(zodSchema);
