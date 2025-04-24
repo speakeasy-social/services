@@ -28,8 +28,8 @@ CREATE TABLE "encrypted_posts" (
 	"sessionId" UUID NOT NULL,
 	"authorDid" TEXT NOT NULL,
 	"langs" TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[],
-	"replyRootUri" TEXT NOT NULL,
-	"replyUri" TEXT NOT NULL,
+	"replyRootUri" TEXT,
+	"replyUri" TEX,
 	"encryptedContent" BYTEA NOT NULL,
 	"createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	CONSTRAINT "encrypted_posts_pkey" PRIMARY KEY ("id")
