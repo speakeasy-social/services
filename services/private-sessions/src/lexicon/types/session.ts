@@ -99,7 +99,7 @@ export const createSessionDef: LexiconDoc = {
               type: 'array',
               items: {
                 type: 'ref',
-                ref: 'social.spkeasy.privateSession.sessionKey#main',
+                ref: 'social.spkeasy.privateSession.sessionKey#sessionKey',
               },
             },
           },
@@ -114,6 +114,14 @@ export const createSessionDef: LexiconDoc = {
             sessionId: { type: 'string' },
           },
         },
+      },
+    },
+    sessionKey: {
+      type: 'object',
+      properties: {
+        recipientDid: { type: 'string' },
+        userKeyPairId: { type: 'string' },
+        encryptedDek: { type: 'string' },
       },
     },
   },
