@@ -75,7 +75,7 @@ jobs:
           path: ${{ github.workspace }}
 
       - name: Copy Docker Image to Server
-        uses: appleboy/scp-action@master
+        uses: appleboy/scp-action@latest
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
@@ -93,6 +93,8 @@ jobs:
           passphrase: ${{ secrets.SSH_PASSPHRASE }}
           script: |
             set -e
+            ls -la
+            ls -la /home/speakeasy
             TAR_GZ="/home/speakeasy/speakeasy-services.tar.gz"
             TAR="/home/speakeasy/speakeasy-services.tar"
 
