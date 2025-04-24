@@ -1,6 +1,6 @@
 import { Worker } from '@speakeasy-services/service-base';
 import { JOB_NAMES } from '@speakeasy-services/queue';
-import { speakeasyApiRequest } from '@speakeasy-services/common';
+import { speakeasyApiRequest, safeAtob } from '@speakeasy-services/common';
 import { PrismaClient } from './generated/prisma-client/index.js';
 import {
   encryptSessionKey,
@@ -101,7 +101,7 @@ worker.queue.work<AddRecipientToSessionJob>(
         return {
           sessionId: session.id,
           recipientDid,
-          encryptedDek: Buffer.from(encryptedDek),
+          encryptedDek: safeAtob(encryptedDek),
           userKeyPairId: recipientPublicKeyBody.id,
         };
       }),

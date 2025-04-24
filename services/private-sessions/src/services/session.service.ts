@@ -9,7 +9,11 @@ import {
   decryptSessionKey,
   encryptSessionKey,
 } from '@speakeasy-services/crypto';
-import { NotFoundError, safeAtob } from '@speakeasy-services/common';
+import {
+  NotFoundError,
+  ValidationError,
+  safeAtob,
+} from '@speakeasy-services/common';
 import { Queue } from 'packages/queue/dist/index.js';
 import { JOB_NAMES } from 'packages/queue/dist/index.js';
 
@@ -38,11 +42,20 @@ export class SessionService {
     }[];
     expirationHours?: number;
   }): Promise<{ sessionId: string }> {
+    const ownSessionKey = recipients.find(
+      (recipient) => recipient.recipientDid === authorDid,
+    );
+    if (!ownSessionKey) {
+      throw new ValidationError(
+        `Session author must be among recipients or they won't be able to read their own posts!`,
+      );
+    }
+
     // open transaction
     const session = await prisma.$transaction(async (tx) => {
       const previousSessions = await tx.$queryRaw<
         Session[]
-      >`SELECT * FROM sessions WHERE author_did = ${authorDid} AND revoked_at IS NULL FOR UPDATE`;
+      >`SELECT * FROM sessions WHERE "authorDid" = ${authorDid} AND "revokedAt" IS NULL FOR UPDATE`;
 
       const previousSession = previousSessions[0];
 
@@ -69,7 +82,7 @@ export class SessionService {
             create: recipients.map((recipient) => ({
               userKeyPairId: recipient.userKeyPairId,
               recipientDid: recipient.recipientDid,
-              encryptedDek: Buffer.from(recipient.encryptedDek),
+              encryptedDek: safeAtob(recipient.encryptedDek),
             })),
           },
         },

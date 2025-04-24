@@ -1,5 +1,9 @@
 import { Session, SessionKey } from '../generated/prisma-client/index.js';
-import { createView, createListView } from '@speakeasy-services/common';
+import {
+  createView,
+  createListView,
+  safeBtoa,
+} from '@speakeasy-services/common';
 
 export type EncryptedSessionKeyView = {
   sessionId: string;
@@ -15,7 +19,7 @@ export const toSessionKeyView = createView<SessionKey, EncryptedSessionKeyView>(
   ['sessionId', 'encryptedDek', 'recipientDid', 'createdAt'],
   {
     sessionId: (value: string) => value,
-    encryptedDek: (value: Uint8Array) => value.toString(),
+    encryptedDek: (value: Uint8Array) => safeBtoa(value),
     recipientDid: (value: string) => value,
     userKeyPairId: (value: string) => value,
     createdAt: (value: Date) => value.toISOString(),
