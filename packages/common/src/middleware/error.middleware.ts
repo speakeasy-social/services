@@ -51,12 +51,14 @@ export const errorHandler: ErrorRequestHandler = (
     errors?: any;
     meta?: any;
     code?: string;
+    stack?: string;
   };
 
   errorLog = {
     name: error.name,
     message: error.message,
     statusCode: error.statusCode,
+    stack: error.stack,
   };
 
   if (
