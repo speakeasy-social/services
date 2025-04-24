@@ -24,7 +24,7 @@ const methodHandlers = {
    * @param req - The request containing recipient DIDs and pagination parameters
    * @returns Promise containing encrypted posts and session keys
    */
-  'social.spkeasy.privatePosts.getPosts': async (
+  'social.spkeasy.privatePost.getPosts': async (
     req: ExtendedRequest,
   ): RequestHandlerReturn => {
     // Validate input against lexicon
@@ -59,7 +59,7 @@ const methodHandlers = {
    * @param req - The request containing the encrypted posts data
    * @returns Promise indicating success of post creation
    */
-  'social.spkeasy.privatePosts.createPosts': async (
+  'social.spkeasy.privatePost.createPosts': async (
     req: ExtendedRequest,
   ): RequestHandlerReturn => {
     // Validate input against lexicon
@@ -79,7 +79,7 @@ const methodHandlers = {
    * @param req - The request containing the post URI to delete
    * @returns Promise indicating success of post deletion
    */
-  'social.spkeasy.privatePosts.deletePost': async (
+  'social.spkeasy.privatePost.deletePost': async (
     req: ExtendedRequest,
   ): RequestHandlerReturn => {
     // Validate input against lexicon
@@ -95,14 +95,14 @@ const methodHandlers = {
 // Define methods using XRPC lexicon
 export const methods: Record<MethodName, { handler: RequestHandler }> = {
   // Post management methods
-  'social.spkeasy.privatePosts.getPosts': {
-    handler: methodHandlers['social.spkeasy.privatePosts.getPosts'],
+  'social.spkeasy.privatePost.getPosts': {
+    handler: methodHandlers['social.spkeasy.privatePost.getPosts'],
   },
-  'social.spkeasy.privatePosts.createPosts': {
-    handler: methodHandlers['social.spkeasy.privatePosts.createPosts'],
+  'social.spkeasy.privatePost.createPosts': {
+    handler: methodHandlers['social.spkeasy.privatePost.createPosts'],
   },
-  'social.spkeasy.privatePosts.deletePost': {
-    handler: methodHandlers['social.spkeasy.privatePosts.deletePost'],
+  'social.spkeasy.privatePost.deletePost': {
+    handler: methodHandlers['social.spkeasy.privatePost.deletePost'],
   },
 };
 
