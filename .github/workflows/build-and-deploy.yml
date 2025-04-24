@@ -96,7 +96,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: push-to-production
     environment: production
-    if: github.ref == 'refs/heads/main' && (contains(github.event.head_commit.modified, 'packages/') || contains(github.event.head_commit.modified, 'services/private-sessions/'))
+    #    if: github.ref == 'refs/heads/main' && (contains(github.event.head_commit.modified, 'packages/') || contains(github.event.head_commit.modified, 'services/private-sessions/'))
 
     steps:
       - name: Run Database Migrations
@@ -108,7 +108,7 @@ jobs:
           passphrase: ${{ secrets.SSH_PASSPHRASE }}
           script: |
             docker run --rm \
-              -e PRIVATE_SESSIONS_DATABASE_URL="${{ secrets.PRIVATE_SESSIONS_DATABASE_MIGRATION_URL }}" \
+              -e PRIVATE_SESSIONS_DATABASE_URL="${{ secrets.PRIVATE_SESSIONS_MIGRATION_DATABASE_URL }}" \
               speakeasy-services-image:${{ needs.build.outputs.version }} \
               pnpm --filter @speakeasy-services/private-sessions prisma:migrate
 
@@ -120,13 +120,13 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           passphrase: ${{ secrets.SSH_PASSPHRASE }}
           script: |
-            docker-compose -f /home/speakeasy/docker-compose.prod.yml up -d private-sessions
+            docker-compose -f /home/speakeasy/app/docker-compose.yml up -d private-sessions
 
   deploy-trusted-users:
     runs-on: ubuntu-latest
     needs: push-to-production
     environment: production
-    if: github.ref == 'refs/heads/main' && (contains(github.event.head_commit.modified, 'packages/') || contains(github.event.head_commit.modified, 'services/trusted-users/'))
+    #    if: github.ref == 'refs/heads/main' && (contains(github.event.head_commit.modified, 'packages/') || contains(github.event.head_commit.modified, 'services/trusted-users/'))
 
     steps:
       - name: Run Database Migrations
@@ -138,7 +138,7 @@ jobs:
           passphrase: ${{ secrets.SSH_PASSPHRASE }}
           script: |
             docker run --rm \
-              -e TRUSTED_USERS_DATABASE_URL="${{ secrets.TRUSTED_USERS_DATABASE_MIGRATION_URL }}" \
+              -e TRUSTED_USERS_DATABASE_URL="${{ secrets.TRUSTED_USERS_MIGRATION_DATABASE_URL }}" \
               speakeasy-services-image:${{ needs.build.outputs.version }} \
               pnpm --filter @speakeasy-services/trusted-users prisma:migrate
 
@@ -150,13 +150,13 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           passphrase: ${{ secrets.SSH_PASSPHRASE }}
           script: |
-            docker-compose -f /home/speakeasy/docker-compose.prod.yml up -d trusted-users
+            docker-compose -f /home/speakeasy/app/docker-compose.yml up -d trusted-users
 
   deploy-user-keys:
     runs-on: ubuntu-latest
     needs: push-to-production
     environment: keys-production
-    if: github.ref == 'refs/heads/main' && (contains(github.event.head_commit.modified, 'packages/') || contains(github.event.head_commit.modified, 'services/user-keys/'))
+    #    if: github.ref == 'refs/heads/main' && (contains(github.event.head_commit.modified, 'packages/') || contains(github.event.head_commit.modified, 'services/user-keys/'))
 
     steps:
       - name: Load Docker Image
@@ -184,7 +184,7 @@ jobs:
           passphrase: ${{ secrets.SSH_PASSPHRASE }}
           script: |
             docker run --rm \
-              -e USER_KEYS_DATABASE_URL="${{ secrets.USER_KEYS_DATABASE_MIGRATION_URL }}" \
+              -e USER_KEYS_DATABASE_URL="${{ secrets.USER_KEYS_MIGRATION_DATABASE_URL }}" \
               speakeasy-services-image:${{ needs.build.outputs.version }} \
               pnpm --filter @speakeasy-services/user-keys prisma:migrate
 
@@ -196,4 +196,4 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           passphrase: ${{ secrets.SSH_PASSPHRASE }}
           script: |
-            docker-compose -f /home/speakeasy/docker-compose.prod.yml up -d user-keys
+            docker-compose -f /home/speakeasy/app/docker-compose.yml up -d user-keys
