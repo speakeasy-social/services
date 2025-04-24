@@ -6,7 +6,7 @@ CREATE TABLE "sessions" (
 	"id" UUID NOT NULL,
 	"authorDid" TEXT NOT NULL,
 	"createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-	"expiresAt" TIMESTAMP(3),
+	"expiresAt" TIMESTAMP(3) NOT NULL,
 	"revokedAt" TIMESTAMP(3),
 	CONSTRAINT "sessions_pkey" PRIMARY KEY ("id")
 );
@@ -17,6 +17,7 @@ CREATE TABLE "session_keys" (
 	"userKeyPairId" TEXT NOT NULL,
 	"recipientDid" TEXT NOT NULL,
 	"encryptedDek" BYTEA NOT NULL,
+	"createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	CONSTRAINT "session_keys_pkey" PRIMARY KEY ("sessionId", "recipientDid")
 );
 

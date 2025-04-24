@@ -14,7 +14,7 @@ model Session {
   id                String    @id @default(uuid()) @db.Uuid
   authorDid         String
   createdAt         DateTime  @default(now()) 
-  expiresAt         DateTime?
+  expiresAt         DateTime
   revokedAt         DateTime?
 
   // Relationships
