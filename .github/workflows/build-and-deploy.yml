@@ -16,10 +16,10 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Setup Docker buildx
-        uses: docker/setup-buildx-action@v1
+        uses: docker/setup-buildx-action@v3
 
       - name: Set outputs
         id: vars
@@ -41,6 +41,10 @@ jobs:
             EXPO_PUBLIC_BUNDLE_IDENTIFIER=${{ steps.vars.outputs.sha_short }}
           tags: speakeasy-services-image:${{ steps.vars.outputs.version }}
 
+      - name: Set build outputs
+        run: |
+          echo "version=${{ steps.vars.outputs.version }}" >> $GITHUB_OUTPUT
+
       - name: Gzip Docker Image
         run: |
           gzip -c ${{ github.workspace }}/speakeasy-services.tar > ${{ github.workspace }}/speakeasy-services.tar.gz
@@ -50,6 +54,7 @@ jobs:
         with:
           name: speakeasy-services-tar-gz
           path: ${{ github.workspace }}/speakeasy-services.tar.gz
+          retention-days: 1
 
   push-to-production:
     runs-on: ubuntu-latest
@@ -70,7 +75,7 @@ jobs:
           path: ${{ github.workspace }}
 
       - name: Copy Docker Image to Server
-        uses: appleboy/scp-action@master
+        uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
@@ -78,21 +83,28 @@ jobs:
           passphrase: ${{ secrets.SSH_PASSPHRASE }}
           source: ${{ github.workspace }}/speakeasy-services.tar.gz
           target: /home/speakeasy
+          strip_components: 0
 
       - name: Load Docker Image
-        uses: appleboy/ssh-action@master
+        uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_KEY }}
           passphrase: ${{ secrets.SSH_PASSPHRASE }}
           script: |
+            set -e
             TAR_GZ="/home/speakeasy/speakeasy-services.tar.gz"
             TAR="/home/speakeasy/speakeasy-services.tar"
 
-            gunzip -c ${TAR_GZ} > ${TAR}
-            docker load < ${TAR}
-            rm -f ${TAR}
+            if [ ! -f "${TAR_GZ}" ]; then
+              echo "Error: Docker image file not found"
+              exit 1
+            fi
+
+            gunzip -c "${TAR_GZ}" > "${TAR}"
+            docker load < "${TAR}"
+            rm -f "${TAR}"
 
   deploy-private-sessions:
     runs-on: ubuntu-latest
@@ -102,7 +114,7 @@ jobs:
 
     steps:
       - name: Run Database Migrations
-        uses: appleboy/ssh-action@master
+        uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
@@ -115,7 +127,7 @@ jobs:
               pnpm --filter @speakeasy-services/private-sessions prisma:migrate
 
       - name: Deploy Service
-        uses: appleboy/ssh-action@master
+        uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
@@ -132,7 +144,7 @@ jobs:
 
     steps:
       - name: Run Database Migrations
-        uses: appleboy/ssh-action@master
+        uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
@@ -145,7 +157,7 @@ jobs:
               pnpm --filter @speakeasy-services/trusted-users prisma:migrate
 
       - name: Deploy Service
-        uses: appleboy/ssh-action@master
+        uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
@@ -162,23 +174,29 @@ jobs:
 
     steps:
       - name: Load Docker Image
-        uses: appleboy/ssh-action@master
+        uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_KEY }}
           passphrase: ${{ secrets.SSH_PASSPHRASE }}
           script: |
+            set -e
             SERVICE="user-keys"
             TAR_GZ="/home/speakeasy/speakeasy-services.tar.gz"
             TAR="/home/speakeasy/speakeasy-services-${SERVICE}.tar"
 
-            gunzip -c ${TAR_GZ} > ${TAR}
-            docker load < ${TAR}
-            rm -f ${TAR}
+            if [ ! -f "${TAR_GZ}" ]; then
+              echo "Error: Docker image file not found"
+              exit 1
+            fi
+
+            gunzip -c "${TAR_GZ}" > "${TAR}"
+            docker load < "${TAR}"
+            rm -f "${TAR}"
 
       - name: Run Database Migrations
-        uses: appleboy/ssh-action@master
+        uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
@@ -191,7 +209,7 @@ jobs:
               pnpm --filter @speakeasy-services/user-keys prisma:migrate
 
       - name: Deploy Service
-        uses: appleboy/ssh-action@master
+        uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
