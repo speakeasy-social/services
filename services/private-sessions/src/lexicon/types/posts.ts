@@ -27,6 +27,11 @@ export const getPostsDef: LexiconDoc = {
             type: 'string',
             description: 'Optional cursor for pagination',
           },
+          filter: {
+            type: 'string',
+            description:
+              'Set to "follows" to only get posts from people you follow',
+          },
         },
       },
       output: {

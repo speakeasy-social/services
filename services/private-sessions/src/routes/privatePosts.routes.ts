@@ -16,10 +16,10 @@ const methodHandlers = {
   /**
    * Retrieves encrypted posts for specified recipients
    *
-   * Three options
-   * - Get posts by people you follow (by author)
-   * - Get posts by people who trust you (author omitted)
-   * - Get posts by thread (replyTo)
+   * The posts can be filtered in the following ways:
+   * - author= Specific post authors (comma separated list of DIDs)
+   * - replyTo= Posts in the thread for the given post URI
+   * - filter= If follows, then limit the posts to those authored by user you follow
    *
    * @param req - The request containing recipient DIDs and pagination parameters
    * @returns Promise containing encrypted posts and session keys
@@ -30,16 +30,17 @@ const methodHandlers = {
     // Validate input against lexicon
     const validatedQuery = validateAgainstLexicon(getPostsDef, req.query);
 
-    const { authors, replyTo, limit, cursor } = validatedQuery;
+    const { authors, replyTo, limit, cursor, filter } = validatedQuery;
 
     // Convert limit to number if provided
     const limitNum = limit ? parseInt(limit, 10) : undefined;
 
-    const result = await privatePostsService.getPosts(req.user!.did!, {
+    const result = await privatePostsService.getPosts(req, req.user!.did!, {
       authorDids: authors?.split(','),
       replyTo,
       limit: limitNum,
       cursor,
+      filter,
     });
 
     authorize(req, 'list', 'private_post', result.encryptedPosts);

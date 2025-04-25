@@ -4,7 +4,12 @@ import {
   SessionKey,
   EncryptedPost,
 } from '../generated/prisma-client/index.js';
-import { NotFoundError, safeAtob } from '@speakeasy-services/common';
+import {
+  ExtendedRequest,
+  NotFoundError,
+  fetchFollowingDids,
+  safeAtob,
+} from '@speakeasy-services/common';
 
 const prisma = new PrismaClient();
 
@@ -13,6 +18,7 @@ interface GetPostsOptions {
   cursor?: string;
   authorDids?: string[];
   replyTo?: string;
+  filter?: string;
 }
 
 export class PrivatePostsService {
@@ -78,15 +84,21 @@ export class PrivatePostsService {
    * @returns Promise containing encrypted posts, session keys, and pagination cursor
    */
   async getPosts(
+    req: ExtendedRequest,
     recipientDid: string,
     options: GetPostsOptions,
   ): Promise<{
     encryptedPosts: EncryptedPost[];
     encryptedSessionKeys: SessionKey[];
-    cursor: string | undefined;
+    cursor?: string;
   }> {
     const DEFAULT_LIMIT = 50;
 
+    if (options.filter === 'follows') {
+      const followingDids = await fetchFollowingDids(req, recipientDid);
+      // Merge options.authorDids with followingDids
+      options.authorDids = [...(options.authorDids || []), ...followingDids];
+    }
     // Fetch posts from database
     const where: Prisma.EncryptedPostWhereInput = {
       session: {

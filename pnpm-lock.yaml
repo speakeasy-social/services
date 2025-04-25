@@ -79,7 +79,7 @@ importers:
         version: 0.7.13
       '@prisma/client':
         specifier: ^6.5.0
-        version: 6.5.0(prisma@6.5.0)(typescript@5.8.3)
+        version: 6.5.0(typescript@5.8.3)
       '@types/jsonwebtoken':
         specifier: ^9.0.9
         version: 9.0.9
@@ -1514,6 +1514,22 @@ packages:
         optional: true
     dependencies:
       prisma: 6.5.0(typescript@5.8.3)
+      typescript: 5.8.3
+    dev: false
+
+  /@prisma/client@6.5.0(typescript@5.8.3):
+    resolution: {integrity: sha512-M6w1Ql/BeiGoZmhMdAZUXHu5sz5HubyVcKukbLs3l0ELcQb8hTUJxtGEChhv4SVJ0QJlwtLnwOLgIRQhpsm9dw==}
+    engines: {node: '>=18.18'}
+    requiresBuild: true
+    peerDependencies:
+      prisma: '*'
+      typescript: '>=5.1.0'
+    peerDependenciesMeta:
+      prisma:
+        optional: true
+      typescript:
+        optional: true
+    dependencies:
       typescript: 5.8.3
     dev: false
 

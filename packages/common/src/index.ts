@@ -9,3 +9,4 @@ export * from './middleware/error.middleware.js';
 export * from './express-extensions.js';
 export * from './utils/encoding.js';
 export * from './lexicon/lexicon-validation.js';
+export * from './bsky.js';

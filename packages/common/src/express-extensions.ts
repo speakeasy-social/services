@@ -7,6 +7,7 @@ export interface User {
   type: 'user';
   did: string;
   handle: string;
+  token: string;
 }
 
 export interface Service {
