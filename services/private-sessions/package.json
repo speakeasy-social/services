@@ -23,7 +23,6 @@
     "@atproto/lexicon": "^0.4.9",
     "@atproto/xrpc-server": "^0.7.13",
     "@prisma/client": "^6.5.0",
-    "@speakeasy-services/common": "workspace:*",
     "@speakeasy-services/crypto": "workspace:*",
     "@speakeasy-services/queue": "workspace:*",
     "@speakeasy-services/service-base": "workspace:*",
@@ -35,11 +34,14 @@
     "zod": "^3.24.2"
   },
   "devDependencies": {
+    "@mermaid-js/mermaid-cli": "^11.4.2",
+    "@speakeasy-services/common": "workspace:^",
     "@types/node": "^22.13.11",
     "@typescript-eslint/eslint-plugin": "^7.0.1",
     "@typescript-eslint/parser": "^7.0.1",
     "eslint": "^8.56.0",
     "prisma": "^6.5.0",
+    "prisma-erd-generator": "^2.0.4",
     "tsx": "^4.19.3",
     "typescript": "^5.8.3"
   }

@@ -18,6 +18,8 @@ pnpm dev:private-sessions
 
 If you've borked your database `pnpm dev:setup` will wipe and reinitialise it
 
+[Database ER Diagrams](DATABASE_DIAGRAMS.md)
+
 ## Project Structure
 
 ```

@@ -48,3 +48,4 @@ yarn-error.log*
 prisma/*.db
 prisma/migrations/
 services/*/src/generated/
+packages/*/prisma/debug/

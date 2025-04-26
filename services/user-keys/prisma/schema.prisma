@@ -21,3 +21,7 @@ model UserKey {
   @@unique([authorDid], name: "user_keys_author_did_key") // Where deleted_at is null
   @@map("user_keys")
 }
+
+// generator erd {
+//  provider = "prisma-erd-generator"
+// }

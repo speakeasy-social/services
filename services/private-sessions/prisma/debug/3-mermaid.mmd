@@ -1,0 +1,45 @@
+erDiagram
+
+  "sessions" {
+    String id "🗝️"
+    String authorDid 
+    DateTime createdAt 
+    DateTime expiresAt 
+    DateTime revokedAt "❓"
+    }
+  
+
+  "session_keys" {
+    String userKeyPairId 
+    String recipientDid "🗝️"
+    Bytes encryptedDek 
+    DateTime createdAt 
+    }
+  
+
+  "encrypted_posts" {
+    String id "🗝️"
+    String uri 
+    String rkey 
+    String authorDid 
+    String langs 
+    String replyRootUri "❓"
+    String replyUri "❓"
+    Bytes encryptedContent 
+    DateTime createdAt 
+    }
+  
+
+  "user_features" {
+    String id "🗝️"
+    String userDid 
+    String key 
+    String value 
+    DateTime createdAt 
+    DateTime updatedAt 
+    }
+  
+    "sessions" o{--}o "session_keys" : "sessionKeys"
+    "sessions" o{--}o "encrypted_posts" : "posts"
+    "session_keys" o|--|| "sessions" : "session"
+    "encrypted_posts" o|--|| "sessions" : "session"

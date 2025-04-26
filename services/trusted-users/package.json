@@ -34,7 +34,8 @@
     "zod": "^3.24.2"
   },
   "devDependencies": {
-    "@speakeasy-services/test-utils": "workspace:*",
+    "@mermaid-js/mermaid-cli": "^11.4.2",
+    "@speakeasy-services/test-utils": "workspace:^",
     "@types/jest": "^29.5.12",
     "@types/node": "^22.13.11",
     "@typescript-eslint/eslint-plugin": "^7.0.1",
@@ -44,6 +45,7 @@
     "jest-environment-node": "^29.7.0",
     "jest-mock-extended": "^3.0.5",
     "prisma": "^6.5.0",
+    "prisma-erd-generator": "^2.0.4",
     "supertest": "^6.3.4",
     "ts-jest": "^29.1.2",
     "tsx": "^4.19.3",

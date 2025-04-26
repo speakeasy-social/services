@@ -21,3 +21,7 @@ model TrustedUser {
   @@index([recipientDid, deletedAt, createdAt(sort: Desc)], name: "idx_trusted_users_by_recipient")
   @@map("trusted_users")
 }
+
+// generator erd {
+//  provider = "prisma-erd-generator"
+// }
