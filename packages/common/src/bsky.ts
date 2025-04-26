@@ -81,7 +81,7 @@ export async function fetchFollowingDids(
   }
 
   const host = getHostFromToken(token);
-  const allFollowDids: string[] = [];
+  const allFollowDids: string[] = [req.user?.did!];
   let cursor: string | undefined;
 
   try {
