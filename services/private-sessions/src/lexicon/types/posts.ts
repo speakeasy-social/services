@@ -2,7 +2,7 @@ import { LexiconDoc } from '@atproto/lexicon';
 
 export const getPostsDef: LexiconDoc = {
   lexicon: 1,
-  id: 'social.spkeasy.privatePosts.getPosts',
+  id: 'social.spkeasy.privatePost.getPosts',
   defs: {
     main: {
       type: 'query',
@@ -12,8 +12,14 @@ export const getPostsDef: LexiconDoc = {
         required: [],
         properties: {
           authors: {
-            type: 'string',
-            description: 'Comma-separated list of author DIDs',
+            type: 'array',
+            items: { type: 'string' },
+            description: 'List of author DIDs',
+          },
+          uris: {
+            type: 'array',
+            items: { type: 'string' },
+            description: 'URIs of exact posts to retrieve',
           },
           replyTo: {
             type: 'string',
@@ -61,7 +67,7 @@ export const getPostsDef: LexiconDoc = {
 
 export const createPostsDef: LexiconDoc = {
   lexicon: 1,
-  id: 'social.spkeasy.privatePosts.createPosts',
+  id: 'social.spkeasy.privatePost.createPosts',
   defs: {
     main: {
       type: 'procedure',
@@ -130,7 +136,7 @@ export const createPostsDef: LexiconDoc = {
 
 export const deletePostDef: LexiconDoc = {
   lexicon: 1,
-  id: 'social.spkeasy.privatePosts.deletePost',
+  id: 'social.spkeasy.privatePost.deletePost',
   defs: {
     main: {
       type: 'procedure',

@@ -24,7 +24,7 @@ export type EncryptedPostView = {
  */
 export function toEncryptedPostView(post: EncryptedPost): EncryptedPostView {
   return {
-    uri: `at://${post.authorDid}/social.spkeasy.feed.privatePost/${post.rkey}`,
+    uri: post.uri,
     rkey: post.rkey,
     authorDid: post.authorDid,
     encryptedContent: Buffer.from(post.encryptedContent).toString(),

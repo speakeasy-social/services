@@ -7,6 +7,7 @@ import {
 import {
   ExtendedRequest,
   NotFoundError,
+  ValidationError,
   fetchFollowingDids,
   safeAtob,
 } from '@speakeasy-services/common';
@@ -17,6 +18,7 @@ interface GetPostsOptions {
   limit?: number;
   cursor?: string;
   authorDids?: string[];
+  uris?: string[];
   replyTo?: string;
   filter?: string;
 }
@@ -30,7 +32,7 @@ export class PrivatePostsService {
    */
   async getPost(uri: string): Promise<{ authorDid: string }> {
     const post = await prisma.encryptedPost.findMany({
-      // where: { postId: uri },
+      where: { uri },
       select: { authorDid: true },
     });
 
@@ -51,6 +53,7 @@ export class PrivatePostsService {
     authorDid: string,
     body: {
       encryptedPosts: {
+        uri: string;
         rkey: string;
         encryptedPost: string;
         reply?: {
@@ -64,16 +67,25 @@ export class PrivatePostsService {
     },
   ): Promise<void> {
     await prisma.encryptedPost.createMany({
-      data: body.encryptedPosts.map((post) => ({
-        authorDid,
-        rkey: post.rkey,
-        sessionId: body.sessionId,
-        // encryptedContent: safeAtob(post.encryptedContent),
-        encryptedContent: Buffer.from(post.encryptedContent),
-        langs: post.langs,
-        replyRootUri: post.reply?.root?.uri ?? null,
-        replyUri: post.reply?.parent?.uri ?? null,
-      })),
+      data: body.encryptedPosts.map((post) => {
+        if (
+          post.uri !==
+          `at://${authorDid}/social.spkeasy.feed.privatePost/${post.rkey}`
+        ) {
+          throw new ValidationError(`Invalid URI for post ${post.uri}`);
+        }
+        return {
+          authorDid,
+          uri: post.uri,
+          rkey: post.rkey,
+          sessionId: body.sessionId,
+          // encryptedContent: safeAtob(post.encryptedContent),
+          encryptedContent: Buffer.from(post.encryptedContent),
+          langs: post.langs,
+          replyRootUri: post.reply?.root?.uri ?? null,
+          replyUri: post.reply?.parent?.uri ?? null,
+        };
+      }),
     });
   }
 
@@ -112,6 +124,10 @@ export class PrivatePostsService {
 
     if (options.authorDids) {
       where.authorDid = { in: options.authorDids };
+    }
+
+    if (options.uris) {
+      where.uri = { in: options.uris };
     }
 
     if (options.replyTo) {

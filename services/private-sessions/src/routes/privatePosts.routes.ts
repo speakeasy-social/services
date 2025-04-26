@@ -30,13 +30,14 @@ const methodHandlers = {
     // Validate input against lexicon
     const validatedQuery = validateAgainstLexicon(getPostsDef, req.query);
 
-    const { authors, replyTo, limit, cursor, filter } = validatedQuery;
+    const { uris, authors, replyTo, limit, cursor, filter } = validatedQuery;
 
     // Convert limit to number if provided
     const limitNum = limit ? parseInt(limit, 10) : undefined;
 
     const result = await privatePostsService.getPosts(req, req.user!.did!, {
-      authorDids: authors?.split(','),
+      authorDids: authors,
+      uris,
       replyTo,
       limit: limitNum,
       cursor,

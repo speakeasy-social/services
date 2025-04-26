@@ -24,12 +24,13 @@ CREATE TABLE "session_keys" (
 -- CreateTable
 CREATE TABLE "encrypted_posts" (
 	"id" UUID NOT NULL DEFAULT uuid_generate_v4(),
+	"uri" TEXT NOT NULL,
 	"rkey" TEXT NOT NULL,
 	"sessionId" UUID NOT NULL,
 	"authorDid" TEXT NOT NULL,
 	"langs" TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[],
 	"replyRootUri" TEXT,
-	"replyUri" TEX,
+	"replyUri" TEXT,
 	"encryptedContent" BYTEA NOT NULL,
 	"createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	CONSTRAINT "encrypted_posts_pkey" PRIMARY KEY ("id")
@@ -54,6 +55,9 @@ CREATE INDEX "idx_posts_by_author_created" ON "encrypted_posts"("authorDid", "cr
 
 -- CreateIndex
 CREATE INDEX "idx_posts_by_session_created_author" ON "encrypted_posts"("sessionId", "createdAt" DESC, "authorDid");
+
+-- CreateIndex
+CREATE INDEX "idx_posts_by_uri" ON "encrypted_posts"("uri");
 
 -- CreateIndex
 CREATE INDEX "idx_posts_by_reply_root" ON "encrypted_posts"("replyRootUri", "sessionId");
