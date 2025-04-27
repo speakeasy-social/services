@@ -1,5 +1,6 @@
 import pino from 'pino';
 import { ExtendedRequest } from './express-extensions.js';
+import crypto from 'crypto';
 
 export interface LoggerOptions {
   serviceName: string;
@@ -33,15 +34,36 @@ export function createLogger({
   return pino.pino(options);
 }
 
-export function logAttributes(req: ExtendedRequest, status: number) {
+/**
+ * Extracts and formats logging attributes from an Express request and response status.
+ * This function is typically used to create consistent log entries for HTTP requests.
+ *
+ * @param req - The Express request object with extended properties
+ * @param status - The HTTP status code of the response
+ * @returns An object containing relevant logging attributes including:
+ *   - method: The HTTP method used
+ *   - duration: Request processing time in milliseconds
+ *   - status: The HTTP status code
+ *   - ip: Client IP address
+ *   - userAgent: Client's user agent string
+ *   - user: User identifier (DID for users, name for other types)
+ */
+export async function logAttributes(req: ExtendedRequest, status: number) {
   const method = req.params.method;
-  const ip = req.ip;
+  const ip = req.ip ? await hmac(req.ip) : undefined;
   const userAgent = req.headers['user-agent'];
-  const user = req.user
-    ? req.user.type === 'user'
-      ? req.user.did
-      : req.user.name
-    : undefined;
+  let user;
+
+  if (req.user) {
+    if (req.user.type === 'user') {
+      // HMAC the user DID
+      user = await hmac(req.user.did);
+    } else {
+      // No need to obscure which service made the request,
+      // that's not private
+      user = req.user.name;
+    }
+  }
 
   return {
     method,
@@ -51,4 +73,20 @@ export function logAttributes(req: ExtendedRequest, status: number) {
     userAgent,
     user,
   };
+}
+
+async function hmac(data: string) {
+  const secretKey = process.env.HMAC_SECRET;
+  const logSalt = process.env.LOG_SALT;
+
+  if (!secretKey || !logSalt) {
+    throw new Error(
+      'HMAC_SECRET and LOG_SALT environment variables must be set',
+    );
+  }
+
+  return crypto
+    .createHmac('sha256', secretKey)
+    .update(data + logSalt)
+    .digest('hex');
 }

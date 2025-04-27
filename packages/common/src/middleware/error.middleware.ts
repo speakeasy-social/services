@@ -10,7 +10,7 @@ interface CustomError extends Error {
   code?: string;
 }
 
-export const errorHandler: ErrorRequestHandler = (
+export const errorHandler: ErrorRequestHandler = async (
   error: CustomError,
   request: Request,
   res: Response,
@@ -97,7 +97,7 @@ export const errorHandler: ErrorRequestHandler = (
 
   req.logger.error(
     {
-      ...logAttributes(req, statusCode),
+      ...(await logAttributes(req, statusCode)),
       error: errorLog,
     },
     errorMessage,

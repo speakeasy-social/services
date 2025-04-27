@@ -122,7 +122,7 @@ export class Server {
           // Get the method handler
           const methodHandler = this.options.methods[method];
           if (!methodHandler) {
-            req.logger.warn(logAttributes(req, 404), 'Method not found');
+            req.logger.warn(await logAttributes(req, 404), 'Method not found');
             res.status(404).json({ error: 'Method not found' });
             return;
           }
@@ -130,7 +130,10 @@ export class Server {
           // Call the method handler directly
           const output = await methodHandler.handler(req, res);
           if (!output || !('body' in output)) {
-            req.logger.error(logAttributes(req, 500), 'Invalid handler output');
+            req.logger.error(
+              await logAttributes(req, 500),
+              'Invalid handler output',
+            );
             res.status(500).json({ error: 'Internal server error' });
             return;
           }
@@ -138,7 +141,7 @@ export class Server {
           // Send the JSON response
           res.status(200).json(output.body);
 
-          req.logger.info(logAttributes(req, 200));
+          req.logger.info(await logAttributes(req, 200));
         } catch (error) {
           next(error);
         }
