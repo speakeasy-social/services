@@ -41,9 +41,9 @@ jobs:
             EXPO_PUBLIC_BUNDLE_IDENTIFIER=${{ steps.set_version.outputs.sha_short }}
           tags: speakeasy-services-image:${{ steps.set_version.outputs.version }}
 
-      - name: Set build outputs
-        run: |
-          echo "version=${{ steps.set_version.outputs.version }}" >> $GITHUB_OUTPUT
+      # - name: Set build outputs
+      #   run: |
+      #     echo "version=${{ steps.set_version.outputs.version }}" >> $GITHUB_OUTPUT
 
       - name: Gzip Docker Image
         run: |
