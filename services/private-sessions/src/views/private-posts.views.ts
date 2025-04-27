@@ -27,8 +27,8 @@ export function toEncryptedPostView(post: EncryptedPost): EncryptedPostView {
     uri: post.uri,
     rkey: post.rkey,
     authorDid: post.authorDid,
-    encryptedContent: Buffer.from(post.encryptedContent).toString(),
-    // encryptedContent: safeBtoa(post.encryptedContent),
+    // encryptedContent: Buffer.from(post.encryptedContent).toString(),
+    encryptedContent: safeBtoa(post.encryptedContent),
     createdAt: post.createdAt.toISOString(),
     sessionId: post.sessionId,
     reply: post.replyUri
