@@ -11,8 +11,6 @@ jobs:
   build:
     runs-on: ubuntu-latest
     environment: production
-    outputs:
-      version: ${{ steps.set_version.outputs.version }}
 
     steps:
       - name: Checkout code
@@ -26,6 +24,7 @@ jobs:
         run: |
           echo "version=$(date +%Y%m%d%H%M%S)" >> $GITHUB_OUTPUT
           echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+          echo "$(date +%Y%m%d%H%M%S)" > version.txt
 
       - name: Build Docker image
         id: build
@@ -41,10 +40,6 @@ jobs:
             EXPO_PUBLIC_BUNDLE_IDENTIFIER=${{ steps.set_version.outputs.sha_short }}
           tags: speakeasy-services-image:${{ steps.set_version.outputs.version }}
 
-      # - name: Set build outputs
-      #   run: |
-      #     echo "version=${{ steps.set_version.outputs.version }}" >> $GITHUB_OUTPUT
-
       - name: Gzip Docker Image
         run: |
           gzip -c ${{ github.workspace }}/speakeasy-services.tar > ${{ github.workspace }}/speakeasy-services.tar.gz
@@ -53,7 +48,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: speakeasy-services-tar-gz
-          path: ${{ github.workspace }}/speakeasy-services.tar.gz
+          path: |
+            ${{ github.workspace }}/speakeasy-services.tar.gz
+            ${{ github.workspace }}/version.txt
           retention-days: 1
 
   push-to-production:
@@ -115,6 +112,11 @@ jobs:
     #    if: github.ref == 'refs/heads/main' && (contains(github.event.head_commit.modified, 'packages/') || contains(github.event.head_commit.modified, 'services/private-sessions/'))
 
     steps:
+      - name: Get version
+        id: version
+        run: |
+          echo "version=$(cat version.txt)" >> $GITHUB_OUTPUT
+
       - name: Run Database Migrations
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -125,7 +127,7 @@ jobs:
           script: |
             docker run --rm \
               -e PRIVATE_SESSIONS_DATABASE_URL="${{ secrets.PRIVATE_SESSIONS_MIGRATION_DATABASE_URL }}" \
-              speakeasy-services-image:${{ needs.build.outputs.version }} \
+              speakeasy-services-image:${{ steps.version.outputs.version }} \
               pnpm --filter @speakeasy-services/private-sessions prisma:migrate
 
       - name: Deploy Service
@@ -145,6 +147,11 @@ jobs:
     #    if: github.ref == 'refs/heads/main' && (contains(github.event.head_commit.modified, 'packages/') || contains(github.event.head_commit.modified, 'services/trusted-users/'))
 
     steps:
+      - name: Get version
+        id: version
+        run: |
+          echo "version=$(cat version.txt)" >> $GITHUB_OUTPUT
+
       - name: Run Database Migrations
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -155,7 +162,7 @@ jobs:
           script: |
             docker run --rm \
               -e TRUSTED_USERS_DATABASE_URL="${{ secrets.TRUSTED_USERS_MIGRATION_DATABASE_URL }}" \
-              speakeasy-services-image:${{ needs.build.outputs.version }} \
+              speakeasy-services-image:${{ steps.version.outputs.version }} \
               pnpm --filter @speakeasy-services/trusted-users prisma:migrate
 
       - name: Deploy Service
@@ -175,6 +182,11 @@ jobs:
     #    if: github.ref == 'refs/heads/main' && (contains(github.event.head_commit.modified, 'packages/') || contains(github.event.head_commit.modified, 'services/trusted-users/'))
 
     steps:
+      - name: Get version
+        id: version
+        run: |
+          echo "version=$(cat version.txt)" >> $GITHUB_OUTPUT
+
       - name: Run Database Migrations
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -185,7 +197,7 @@ jobs:
           script: |
             docker run --rm \
               -e ADMIN_DATABASE_URL="${{ secrets.ADMIN_MIGRATION_DATABASE_URL }}" \
-              speakeasy-services-image:${{ needs.build.outputs.version }} \
+              speakeasy-services-image:${{ steps.version.outputs.version }} \
               pnpm --filter @speakeasy-services/admin prisma:migrate
 
       - name: Deploy Service
@@ -205,6 +217,11 @@ jobs:
     #    if: github.ref == 'refs/heads/main' && (contains(github.event.head_commit.modified, 'packages/') || contains(github.event.head_commit.modified, 'services/user-keys/'))
 
     steps:
+      - name: Get version
+        id: version
+        run: |
+          echo "version=$(cat version.txt)" >> $GITHUB_OUTPUT
+
       - name: Load Docker Image
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -237,7 +254,7 @@ jobs:
           script: |
             docker run --rm \
               -e USER_KEYS_DATABASE_URL="${{ secrets.USER_KEYS_MIGRATION_DATABASE_URL }}" \
-              speakeasy-services-image:${{ needs.build.outputs.version }} \
+              speakeasy-services-image:${{ steps.version.outputs.version }} \
               pnpm --filter @speakeasy-services/user-keys prisma:migrate
 
       - name: Deploy Service
