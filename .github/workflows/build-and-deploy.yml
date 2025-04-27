@@ -23,8 +23,6 @@ jobs:
         id: set_version
         run: |
           echo "version=$(date +%Y%m%d%H%M%S)" >> $GITHUB_OUTPUT
-          echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
-          echo "$(date +%Y%m%d%H%M%S)" > version.txt
 
       - name: Build Docker image
         id: build
@@ -34,23 +32,23 @@ jobs:
           push: false
           file: ./Dockerfile
           cache-from: type=gha
-          cache-to: type=gha,mode=max
-          outputs: type=docker,dest=${{ github.workspace }}/speakeasy-services.tar
+          cache-to: type=gha,mode=min
+          outputs: type=docker,dest=${{ github.workspace }}/speakeasy-services-${{ steps.set_version.outputs.version }}.tar
           build-args: |
-            EXPO_PUBLIC_BUNDLE_IDENTIFIER=${{ steps.set_version.outputs.sha_short }}
-          tags: speakeasy-services-image:${{ steps.set_version.outputs.version }}
+            EXPO_PUBLIC_BUNDLE_IDENTIFIER=${{ github.sha }}
+          tags: |
+            speakeasy-services-image:latest
+            speakeasy-services-image:${{ steps.set_version.outputs.version }}
 
       - name: Gzip Docker Image
         run: |
-          gzip -c ${{ github.workspace }}/speakeasy-services.tar > ${{ github.workspace }}/speakeasy-services.tar.gz
+          gzip -c ${{ github.workspace }}/speakeasy-services-${{ steps.set_version.outputs.version }}.tar > ${{ github.workspace }}/speakeasy-services-${{ steps.set_version.outputs.version }}.tar.gz
 
       - name: Upload Docker Image Artifact
         uses: actions/upload-artifact@v4
         with:
           name: speakeasy-services-tar-gz
-          path: |
-            ${{ github.workspace }}/speakeasy-services.tar.gz
-            ${{ github.workspace }}/version.txt
+          path: ${{ github.workspace }}/speakeasy-services-${{ steps.set_version.outputs.version }}.tar.gz
           retention-days: 1
 
   push-to-production:
@@ -78,13 +76,11 @@ jobs:
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_KEY }}
           passphrase: ${{ secrets.SSH_PASSPHRASE }}
-          source: |
-            ${{ github.workspace }}/speakeasy-services.tar.gz
-            ${{ github.workspace }}/version.txt
+          source: ${{ github.workspace }}/speakeasy-services-*.tar.gz
           target: /home/speakeasy
           strip_components: 2
 
-      - name: Load Docker Image
+      - name: Load Docker Image and Cleanup
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SSH_HOST }}
@@ -93,19 +89,29 @@ jobs:
           passphrase: ${{ secrets.SSH_PASSPHRASE }}
           script: |
             set -e
-            ls -la
-            ls -la /home/speakeasy
-            TAR_GZ="/home/speakeasy/speakeasy-services.tar.gz"
-            TAR="/home/speakeasy/speakeasy-services.tar"
 
-            if [ ! -f "${TAR_GZ}" ]; then
+            # Find most recent tar.gz file
+            LATEST_TAR=$(ls -t /home/speakeasy/speakeasy-services-*.tar.gz | head -n1)
+
+            if [ ! -f "${LATEST_TAR}" ]; then
               echo "Error: Docker image file not found"
               exit 1
             fi
 
-            gunzip -c "${TAR_GZ}" > "${TAR}"
-            docker load < "${TAR}"
-            rm -f "${TAR}"
+            # Load the image
+            gunzip -c "${LATEST_TAR}" > "${LATEST_TAR%.gz}"
+            docker load < "${LATEST_TAR%.gz}"
+            rm -f "${LATEST_TAR}"
+
+            # Keep only the 3 most recent tar.gz files
+            cd /home/speakeasy
+            ls -t speakeasy-services-*.tar.gz | tail -n +4 | xargs -r rm
+
+            # Cleanup old Docker images
+            # Keep only the 3 most recent versions plus 'latest' tag
+            docker images "speakeasy-services-image:*" --format "{{.Tag}}" | \
+              grep -v "latest" | sort -r | tail -n +4 | \
+              xargs -r -I {} docker rmi speakeasy-services-image:{}
 
   deploy-private-sessions:
     runs-on: ubuntu-latest
@@ -114,11 +120,6 @@ jobs:
     #    if: github.ref == 'refs/heads/main' && (contains(github.event.head_commit.modified, 'packages/') || contains(github.event.head_commit.modified, 'services/private-sessions/'))
 
     steps:
-      - name: Get version
-        id: version
-        run: |
-          echo "version=$(cat version.txt)" >> $GITHUB_OUTPUT
-
       - name: Run Database Migrations
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -129,7 +130,7 @@ jobs:
           script: |
             docker run --rm \
               -e PRIVATE_SESSIONS_DATABASE_URL="${{ secrets.PRIVATE_SESSIONS_MIGRATION_DATABASE_URL }}" \
-              speakeasy-services-image:${{ steps.version.outputs.version }} \
+              speakeasy-services-image:latest \
               pnpm --filter @speakeasy-services/private-sessions prisma:migrate
 
       - name: Deploy Service
@@ -149,11 +150,6 @@ jobs:
     #    if: github.ref == 'refs/heads/main' && (contains(github.event.head_commit.modified, 'packages/') || contains(github.event.head_commit.modified, 'services/trusted-users/'))
 
     steps:
-      - name: Get version
-        id: version
-        run: |
-          echo "version=$(cat version.txt)" >> $GITHUB_OUTPUT
-
       - name: Run Database Migrations
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -164,7 +160,7 @@ jobs:
           script: |
             docker run --rm \
               -e TRUSTED_USERS_DATABASE_URL="${{ secrets.TRUSTED_USERS_MIGRATION_DATABASE_URL }}" \
-              speakeasy-services-image:${{ steps.version.outputs.version }} \
+              speakeasy-services-image:latest \
               pnpm --filter @speakeasy-services/trusted-users prisma:migrate
 
       - name: Deploy Service
@@ -184,11 +180,6 @@ jobs:
     #    if: github.ref == 'refs/heads/main' && (contains(github.event.head_commit.modified, 'packages/') || contains(github.event.head_commit.modified, 'services/trusted-users/'))
 
     steps:
-      - name: Get version
-        id: version
-        run: |
-          echo "version=$(cat version.txt)" >> $GITHUB_OUTPUT
-
       - name: Run Database Migrations
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -199,7 +190,7 @@ jobs:
           script: |
             docker run --rm \
               -e ADMIN_DATABASE_URL="${{ secrets.ADMIN_MIGRATION_DATABASE_URL }}" \
-              speakeasy-services-image:${{ steps.version.outputs.version }} \
+              speakeasy-services-image:latest \
               pnpm --filter @speakeasy-services/admin prisma:migrate
 
       - name: Deploy Service
@@ -219,33 +210,6 @@ jobs:
     #    if: github.ref == 'refs/heads/main' && (contains(github.event.head_commit.modified, 'packages/') || contains(github.event.head_commit.modified, 'services/user-keys/'))
 
     steps:
-      - name: Get version
-        id: version
-        run: |
-          echo "version=$(cat version.txt)" >> $GITHUB_OUTPUT
-
-      - name: Load Docker Image
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USERNAME }}
-          key: ${{ secrets.SSH_KEY }}
-          passphrase: ${{ secrets.SSH_PASSPHRASE }}
-          script: |
-            set -e
-            SERVICE="user-keys"
-            TAR_GZ="/home/speakeasy/speakeasy-services.tar.gz"
-            TAR="/home/speakeasy/speakeasy-services-${SERVICE}.tar"
-
-            if [ ! -f "${TAR_GZ}" ]; then
-              echo "Error: Docker image file not found"
-              exit 1
-            fi
-
-            gunzip -c "${TAR_GZ}" > "${TAR}"
-            docker load < "${TAR}"
-            rm -f "${TAR}"
-
       - name: Run Database Migrations
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -256,7 +220,7 @@ jobs:
           script: |
             docker run --rm \
               -e USER_KEYS_DATABASE_URL="${{ secrets.USER_KEYS_MIGRATION_DATABASE_URL }}" \
-              speakeasy-services-image:${{ steps.version.outputs.version }} \
+              speakeasy-services-image:latest \
               pnpm --filter @speakeasy-services/user-keys prisma:migrate
 
       - name: Deploy Service
