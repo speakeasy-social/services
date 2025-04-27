@@ -78,7 +78,9 @@ jobs:
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_KEY }}
           passphrase: ${{ secrets.SSH_PASSPHRASE }}
-          source: ${{ github.workspace }}/speakeasy-services.tar.gz
+          source: |
+            ${{ github.workspace }}/speakeasy-services.tar.gz
+            ${{ github.workspace }}/version.txt
           target: /home/speakeasy
           strip_components: 2
 
