@@ -102,18 +102,6 @@ model SeenNotifications {
   @@map("seen_notifications")
 }
 
-model UserFeature {
-  id           String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  userDid      String
-  key          String
-  value        String
-  createdAt    DateTime  @default(now()) 
-  updatedAt    DateTime?
-
-  @@index([userDid, key], name: "idx_user_did_key_index")
-  @@map("user_features")
-}
-
 // Generates a broken ER diagram, see README.md if you
 // need to update the diagram
 // generator erd {

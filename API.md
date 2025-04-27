@@ -33,14 +33,14 @@ social.spkeasy.notification.updateSeen    - Update last seen time for notificati
 social.spkeasy.actor.getProfile           - Returns encrypted private profile
 social.spkeasy.actor.putProfile           - Update encrypted private profile
 
+# Feature Management
+social.spkeasy.actor.getFeatures          - Get features enabled for an actor
+social.spkeasy.actor.applyInviteCode      - Apply a code to enable a feature
+
 # Key Management - Swiss service
 social.spkeasy.keys.getPublicKey          - Get user's public key for encryption
 social.spkeasy.keys.getPrivateKey         - Get user's private key (owner only)
 social.spkeasy.keys.rotate                - Request key rotation
-
-# Feature Management
-social.spkeasy.server.getFeatures          - Get features enabled for an actor
-social.spkeasy.server.applyInviteCode      - Apply a code to enable a feature
 ```
 
 ## Trust Management

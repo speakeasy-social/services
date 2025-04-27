@@ -36,17 +36,6 @@ CREATE TABLE "encrypted_posts" (
 	CONSTRAINT "encrypted_posts_pkey" PRIMARY KEY ("id")
 );
 
--- CreateTable
-CREATE TABLE "user_features" (
-	"id" UUID NOT NULL DEFAULT uuid_generate_v4(),
-	"userDid" TEXT NOT NULL,
-	"key" TEXT NOT NULL,
-	"value" TEXT NOT NULL,
-	"createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-	"updatedAt" TIMESTAMP(3),
-	CONSTRAINT "user_features_pkey" PRIMARY KEY ("id")
-);
-
 -- CreateIndex
 CREATE INDEX "idx_sessions_current" ON "sessions"("authorDid", "createdAt" DESC);
 
@@ -73,9 +62,6 @@ CREATE INDEX "idx_session_keys_with_session_created_at" ON "session_keys"("sessi
 
 -- CreateIndex
 CREATE INDEX "idx_session_keys_with_user_key_pair_id" ON "session_keys"("userKeyPairId");
-
--- CreateIndex
-CREATE INDEX "idx_user_did_key_index" ON "user_features"("userDid", "key");
 
 -- AddForeignKey
 ALTER TABLE

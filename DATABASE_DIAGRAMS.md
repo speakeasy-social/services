@@ -14,6 +14,10 @@ See below for instructions on updating the diagrams without extra relationship l
 
 ![User Keys](services/user-keys/prisma/ERD.svg)
 
+# Admin
+
+![Admin](services/admin/prisma/ERD.svg)
+
 ### Updating the diagrams
 
 Autogeneration is disabled because it generates additional lines.

@@ -9,6 +9,7 @@ export type Action =
   | 'delete'
   | 'revoke'
   | 'update'
+  | 'apply'
   | 'add_recipient'
   | 'get_public_key'
   | 'get_private_key';
@@ -23,6 +24,7 @@ export type Subject =
   | 'feature'
   | 'notification'
   | 'reaction'
+  | 'invite_code'
   | 'key';
 
 export type Ability = {

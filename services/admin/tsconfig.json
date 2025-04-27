@@ -1,0 +1,26 @@
+{
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "src",
+    "composite": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "tsBuildInfoFile": "./dist/.tsbuildinfo",
+    "paths": {
+      "@speakeasy-services/common/*": ["../../packages/common/src/*"],
+      "@speakeasy-services/crypto/*": ["../../packages/crypto/src/*"],
+      "@speakeasy-services/service-base/*": ["../../packages/service-base/src/*"],
+      "@speakeasy-services/queue/*": ["../../packages/queue/src/*"]
+    }
+  },
+  "references": [
+    { "path": "../../packages/common" },
+    { "path": "../../packages/crypto" },
+    { "path": "../../packages/service-base" },
+    { "path": "../../packages/queue" }
+  ],
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist", "**/*.test.ts", "**/*.spec.ts"]
+}

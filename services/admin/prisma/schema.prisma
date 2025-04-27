@@ -1,0 +1,63 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  output = "../src/generated/prisma-client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("ADMIN_DATABASE_URL")
+}
+
+model InviteCode {
+  id            String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  code          String   @unique
+  totalUses     Int      @default(1)
+  remainingUses Int      @default(1)
+  key           String   
+  value         String   @default("true")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime?
+
+  // Relationships
+  uses     InviteCodeUse[]
+
+  @@map("invite_codes")
+}
+
+model InviteCodeUse {
+  id             String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  inviteCodeId   String   @db.Uuid
+  userFeatureId  String   @db.Uuid
+  createdAt      DateTime @default(now())
+
+  // Relationships
+  inviteCode InviteCode    @relation(fields: [inviteCodeId], references: [id])
+  feature    UserFeature   @relation(fields: [userFeatureId], references: [id])
+
+  @@unique([inviteCodeId, userFeatureId])
+  @@map("invite_code_uses")
+}
+
+model UserFeature {
+  id        String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  userDid   String
+  key       String
+  value     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime?
+
+  // Relationships
+  inviteCodeUse InviteCodeUse[]
+
+  @@index([userDid, key], name: "idx_user_did_key_index")
+  @@map("user_features")
+} 
+
+// Generates a broken ER diagram, see README.md if you
+// need to update the diagram
+// generator erd {
+//  provider = "prisma-erd-generator"
+// }

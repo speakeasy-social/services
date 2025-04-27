@@ -1,0 +1,42 @@
+{
+  "name": "@speakeasy-services/admin",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "prebuild": "prisma generate",
+    "build": "prisma generate && tsc --build",
+    "typecheck": "tsc --noEmit",
+    "dev": "tsx watch src/api.ts",
+    "dev:prisma": "prisma generate --watch",
+    "dev:api": "tsx watch src/api.ts",
+    "clean": "rm -rf dist",
+    "lint": "eslint src",
+    "test": "jest",
+    "prisma:migrate": "prisma migrate deploy"
+  },
+  "dependencies": {
+    "@atproto/lexicon": "^0.4.9",
+    "@atproto/xrpc-server": "^0.7.13",
+    "@prisma/client": "^6.5.0",
+    "@speakeasy-services/common": "workspace:^",
+    "@speakeasy-services/service-base": "workspace:^",
+    "dotenv": "^16.4.7",
+    "pino": "^9.6.0",
+    "pino-pretty": "^13.0.0",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.11",
+    "@typescript-eslint/eslint-plugin": "^7.0.1",
+    "@typescript-eslint/parser": "^7.0.1",
+    "eslint": "^8.56.0",
+    "prisma": "^6.5.0",
+    "prisma-erd-generator": "^2.0.4",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.3"
+  }
+} 

@@ -49,3 +49,4 @@ prisma/*.db
 prisma/migrations/
 services/*/src/generated/
 packages/*/prisma/debug/
+services/*/prisma/debug/
