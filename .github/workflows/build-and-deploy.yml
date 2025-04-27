@@ -78,7 +78,7 @@ jobs:
           passphrase: ${{ secrets.SSH_PASSPHRASE }}
           source: ${{ github.workspace }}/speakeasy-services-*.tar.gz
           target: /home/speakeasy
-          strip_components: 2
+          strip_components: 5
 
       - name: Load Docker Image and Cleanup
         uses: appleboy/ssh-action@v1.0.3
