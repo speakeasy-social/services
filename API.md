@@ -22,8 +22,14 @@ social.spkeasy.privatePosts.getPosts      - List private posts accessible to a r
 social.spkeasy.privatePosts.createPost    - Create a new private post
 social.spkeasy.privatePosts.deletePost    - Delete a private post
 
+social.spkeasy.reaction.createReaction    - Create like
+social.spkeasy.reaction.deleteReaction    - Delete like
+
+social.spkeasy.notification.getUnreadCount  - Get count of unread notifications
+social.spkeasy.notification.listNotification  - List notifications
+social.spkeasy.notification.updateSeen    - Update last seen time for notifications
+
 # User management
-social.spkeasy.actor.getFeatures          - Get features enabled for an actor
 social.spkeasy.actor.getProfile           - Returns encrypted private profile
 social.spkeasy.actor.putProfile           - Update encrypted private profile
 
@@ -31,6 +37,10 @@ social.spkeasy.actor.putProfile           - Update encrypted private profile
 social.spkeasy.keys.getPublicKey          - Get user's public key for encryption
 social.spkeasy.keys.getPrivateKey         - Get user's private key (owner only)
 social.spkeasy.keys.rotate                - Request key rotation
+
+# Feature Management
+social.spkeasy.server.getFeatures          - Get features enabled for an actor
+social.spkeasy.server.applyInviteCode      - Apply a code to enable a feature
 ```
 
 ## Trust Management

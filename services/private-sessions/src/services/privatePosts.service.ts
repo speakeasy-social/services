@@ -8,6 +8,9 @@ import {
   ExtendedRequest,
   NotFoundError,
   ValidationError,
+  createCursorWhereClause,
+  decodeCursor,
+  encodeCursor,
   fetchFollowingDids,
   safeAtob,
 } from '@speakeasy-services/common';
@@ -120,6 +123,7 @@ export class PrivatePostsService {
           },
         },
       },
+      ...createCursorWhereClause(options.cursor),
     };
 
     if (options.authorDids) {
@@ -134,19 +138,6 @@ export class PrivatePostsService {
       where.OR = [
         { replyUri: options.replyTo },
         { replyRootUri: options.replyTo },
-      ];
-    }
-
-    if (options.cursor) {
-      const decodedCursor = Buffer.from(options.cursor, 'base64').toString(
-        'utf-8',
-      );
-      const [createdAt, rkey] = decodedCursor.split('#');
-      where.OR = [
-        { createdAt: { lt: new Date(createdAt) } },
-        {
-          AND: [{ createdAt: new Date(createdAt) }, { rkey: { lt: rkey } }],
-        },
       ];
     }
 
@@ -178,9 +169,7 @@ export class PrivatePostsService {
     if (posts.length > (options.limit ?? DEFAULT_LIMIT)) {
       const lastPost = posts[posts.length - 1];
       // Cursor is base64 encoded string of createdAt and rkey
-      newCursor = Buffer.from(
-        `${lastPost.createdAt.toISOString()}#${lastPost.rkey}`,
-      ).toString('base64');
+      newCursor = encodeCursor(lastPost);
     }
 
     return {

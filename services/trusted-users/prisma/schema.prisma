@@ -19,6 +19,7 @@ model TrustedUser {
   @@id([authorDid, recipientDid, createdAt])
   @@index([authorDid, deletedAt, createdAt(sort: Desc)], name: "idx_trusted_users_by_author")
   @@index([recipientDid, deletedAt, createdAt(sort: Desc)], name: "idx_trusted_users_by_recipient")
+  @@unique([authorDid, recipientDid], name: "idx_trusted_users_unique_active")
   @@map("trusted_users")
 }
 

@@ -14,7 +14,7 @@ CREATE TABLE "sessions" (
 -- CreateTable
 CREATE TABLE "session_keys" (
 	"sessionId" UUID NOT NULL,
-	"userKeyPairId" TEXT NOT NULL,
+	"userKeyPairId" UUID NOT NULL,
 	"recipientDid" TEXT NOT NULL,
 	"encryptedDek" BYTEA NOT NULL,
 	"createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -28,7 +28,7 @@ CREATE TABLE "encrypted_posts" (
 	"rkey" TEXT NOT NULL,
 	"sessionId" UUID NOT NULL,
 	"authorDid" TEXT NOT NULL,
-	"langs" TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[],
+	"langs" TEXT[] NOT NULL,
 	"replyRootUri" TEXT,
 	"replyUri" TEXT,
 	"encryptedContent" BYTEA NOT NULL,
@@ -66,10 +66,16 @@ CREATE INDEX "idx_posts_by_reply_root" ON "encrypted_posts"("replyRootUri", "ses
 CREATE INDEX "idx_posts_by_reply_parent" ON "encrypted_posts"("replyUri", "sessionId");
 
 -- CreateIndex
-CREATE INDEX "idx_session_keys_by_recipient" ON "session_keys"("recipientDid", "sessionId");
+CREATE INDEX "idx_session_keys_by_recipient_session_created_at" ON "session_keys"("recipientDid", "sessionId", "createdAt");
 
 -- CreateIndex
-CREATE INDEX "idx_session_keys_with_session" ON "session_keys"("sessionId", "recipientDid") INCLUDE ("encryptedDek");
+CREATE INDEX "idx_session_keys_with_session_created_at" ON "session_keys"("sessionId", "createdAt");
+
+-- CreateIndex
+CREATE INDEX "idx_session_keys_with_user_key_pair_id" ON "session_keys"("userKeyPairId");
+
+-- CreateIndex
+CREATE INDEX "idx_user_did_key_index" ON "user_features"("userDid", "key");
 
 -- AddForeignKey
 ALTER TABLE
