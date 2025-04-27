@@ -1,8 +1,8 @@
 import { ServiceError } from '../errors.js';
-import { createLogger } from '../logger.js';
 import { Request, Response, NextFunction, ErrorRequestHandler } from 'express';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
-
+import { ExtendedRequest } from '../express-extensions.js';
+import { logAttributes } from '../logger.js';
 // Define custom error interface
 interface CustomError extends Error {
   statusCode?: number;
@@ -10,25 +10,13 @@ interface CustomError extends Error {
   code?: string;
 }
 
-// Define custom request interface with user
-interface CustomRequest extends Request {
-  user?: {
-    type: string;
-    did?: string;
-    name?: string;
-  };
-}
-
-const logger = createLogger({ serviceName: 'common' });
-
 export const errorHandler: ErrorRequestHandler = (
   error: CustomError,
-  req: CustomRequest,
+  request: Request,
   res: Response,
   next: NextFunction,
 ) => {
-  const path = req.url;
-  const method = req.method;
+  const req = request as ExtendedRequest;
   let responseObject: {
     error: string;
     message: string;
@@ -40,9 +28,6 @@ export const errorHandler: ErrorRequestHandler = (
     message: 'An unexpected error occurred',
   };
   let statusCode = 500;
-  const ip = req.ip;
-  const userAgent = req.headers['user-agent'];
-  const user = req.user?.type === 'user' ? req.user.did : req.user?.name;
   let errorMessage = 'Unhandled error occurred';
   let errorLog: {
     name: string;
@@ -110,15 +95,10 @@ export const errorHandler: ErrorRequestHandler = (
     }
   }
 
-  logger.error(
+  req.logger.error(
     {
+      ...logAttributes(req, statusCode),
       error: errorLog,
-      path,
-      method,
-      status: statusCode,
-      ip,
-      userAgent,
-      user,
     },
     errorMessage,
   );

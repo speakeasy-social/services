@@ -20,6 +20,7 @@ export interface ExtendedRequest extends Request {
   user?: User | Service;
   abilities?: Ability[];
   logger: ReturnType<typeof createLogger>;
+  startTime: number;
 }
 
 export type RequestHandlerReturn = Promise<{ body: object }>;

@@ -1,4 +1,5 @@
 import pino from 'pino';
+import { ExtendedRequest } from './express-extensions.js';
 
 export interface LoggerOptions {
   serviceName: string;
@@ -6,7 +7,11 @@ export interface LoggerOptions {
   pretty?: boolean;
 }
 
-export function createLogger({ serviceName, level = 'info', pretty = true }: LoggerOptions) {
+export function createLogger({
+  serviceName,
+  level = 'info',
+  pretty = true,
+}: LoggerOptions) {
   const options: pino.LoggerOptions = {
     level,
     base: {
@@ -20,10 +25,30 @@ export function createLogger({ serviceName, level = 'info', pretty = true }: Log
       options: {
         translateTime: 'SYS:standard',
         clearScreen: false,
-        singleLine: true
+        singleLine: true,
       },
     };
   }
 
   return pino.pino(options);
+}
+
+export function logAttributes(req: ExtendedRequest, status: number) {
+  const method = req.params.method;
+  const ip = req.ip;
+  const userAgent = req.headers['user-agent'];
+  const user = req.user
+    ? req.user.type === 'user'
+      ? req.user.did
+      : req.user.name
+    : undefined;
+
+  return {
+    method,
+    duration: Date.now() - req.startTime,
+    status,
+    ip,
+    userAgent,
+    user,
+  };
 }

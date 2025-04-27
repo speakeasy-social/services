@@ -9,6 +9,7 @@ import {
   ExtendedRequest,
   RequestHandler,
 } from '@speakeasy-services/common';
+import { logAttributes } from 'packages/common/dist/logger.js';
 
 // Extend Express Request type to include logger
 declare global {
@@ -92,7 +93,7 @@ export class Server {
     // Parse JSON bodies
     app.use(express.json());
 
-    // Add request logger middleware
+    // Add logger to the request for easy access
     app.use((req, res, next) => {
       req.logger = this.logger.child({
         requestId: (req.headers['x-request-id'] as string) || 'unknown',
@@ -112,53 +113,24 @@ export class Server {
     // Mount XRPC routes
     app.all(
       '/xrpc/:method',
-      async (req: Request, res: Response, next: NextFunction) => {
-        const startTime = Date.now();
+      async (request: Request, res: Response, next: NextFunction) => {
+        const req = request as ExtendedRequest;
+        req.startTime = Date.now();
         const method = req.params.method;
-        const ip = req.ip;
-        const userAgent = req.headers['user-agent'];
-        const user = req.user
-          ? req.user.type === 'user'
-            ? req.user.did
-            : req.user.name
-          : undefined;
 
         try {
           // Get the method handler
           const methodHandler = this.options.methods[method];
           if (!methodHandler) {
-            req.logger.warn(
-              {
-                method,
-                duration: Date.now() - startTime,
-                status: 404,
-                ip,
-                userAgent,
-                user,
-              },
-              'Method not found',
-            );
+            req.logger.warn(logAttributes(req, 404), 'Method not found');
             res.status(404).json({ error: 'Method not found' });
             return;
           }
 
           // Call the method handler directly
-          const output = await methodHandler.handler(
-            req as ExtendedRequest,
-            res,
-          );
+          const output = await methodHandler.handler(req, res);
           if (!output || !('body' in output)) {
-            req.logger.error(
-              {
-                method,
-                duration: Date.now() - startTime,
-                status: 500,
-                ip,
-                userAgent,
-                user,
-              },
-              'Invalid handler output',
-            );
+            req.logger.error(logAttributes(req, 500), 'Invalid handler output');
             res.status(500).json({ error: 'Internal server error' });
             return;
           }
@@ -166,14 +138,7 @@ export class Server {
           // Send the JSON response
           res.status(200).json(output.body);
 
-          req.logger.info({
-            method,
-            duration: Date.now() - startTime,
-            status: 200,
-            ip,
-            userAgent,
-            user,
-          });
+          req.logger.info(logAttributes(req, 200));
         } catch (error) {
           next(error);
         }
