@@ -13,8 +13,8 @@ datasource db {
 model UserKey {
   id         String   @id @default(uuid())
   authorDid  String
-  publicKey  String
-  privateKey String
+  publicKey  Bytes
+  privateKey Bytes
   createdAt  DateTime @default(now())
   deletedAt  DateTime?
 

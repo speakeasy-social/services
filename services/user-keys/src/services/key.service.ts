@@ -1,6 +1,10 @@
 import { z } from 'zod';
 import { PrismaClient, UserKey } from '../generated/prisma-client/index.js';
-import { safeBtoa, ValidationError } from '@speakeasy-services/common';
+import {
+  safeAtob,
+  safeBtoa,
+  ValidationError,
+} from '@speakeasy-services/common';
 import { Queue, JOB_NAMES } from '@speakeasy-services/queue';
 import { MlKem768 } from 'crystals-kyber-js';
 
@@ -17,13 +21,13 @@ export type Key = z.infer<typeof keySchema>;
 
 type PublicKeyResponse = {
   id: string;
-  publicKey: string;
+  publicKey: Uint8Array<ArrayBufferLike>;
   authorDid: string;
 };
 
 type PrivateKeyResponse = {
   id: string;
-  privateKey: string;
+  privateKey: Uint8Array<ArrayBufferLike>;
   authorDid: string;
 };
 
@@ -101,13 +105,13 @@ export class KeyService {
     const key = await this.prisma.userKey.create({
       data: {
         authorDid,
-        publicKey: safeBtoa(publicKey),
-        privateKey: safeBtoa(privateKey),
+        publicKey,
+        privateKey,
       },
     });
 
     return {
-      publicKey: safeBtoa(publicKey),
+      publicKey,
       authorDid,
       id: key.id,
     } as PublicKeyResponse;
@@ -185,8 +189,8 @@ export class KeyService {
         const newKey = await tx.userKey.create({
           data: {
             authorDid,
-            publicKey,
-            privateKey,
+            publicKey: safeAtob(publicKey),
+            privateKey: safeAtob(privateKey),
           },
         });
 

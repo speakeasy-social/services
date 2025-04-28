@@ -110,8 +110,6 @@ const methodHandlers = {
     // Validate input against lexicon
     validateAgainstLexicon(updateSessionKeysDef, req.body);
 
-    const authorDid = req.user?.did!;
-
     authorize(req, 'update', 'private_session');
 
     await sessionService.updateSessionKeys(req.body);

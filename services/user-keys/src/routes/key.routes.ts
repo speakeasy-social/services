@@ -17,6 +17,11 @@ import {
   rotateKeyDef,
   getPublicKeysDef,
 } from '../lexicon/types/key.js';
+import {
+  toPublicKeyView,
+  toPublicKeyListView,
+  toPrivateKeyView,
+} from '../views/key.views.js';
 
 const keyService = new KeyService();
 
@@ -37,11 +42,7 @@ const methodHandlers = {
     const key = await keyService.getOrCreatePublicKey(did);
 
     return {
-      body: {
-        publicKey: key.publicKey,
-        recipientDid: key.authorDid,
-        userKeyPairId: key.id,
-      },
+      body: toPublicKeyView(key),
     };
   },
 
@@ -61,11 +62,7 @@ const methodHandlers = {
 
     return {
       body: {
-        publicKeys: keys.map((key) => ({
-          publicKey: key.publicKey,
-          recipientDid: key.authorDid,
-          userKeyPairId: key.id,
-        })),
+        publicKeys: toPublicKeyListView(keys),
       },
     };
   },
@@ -88,13 +85,7 @@ const methodHandlers = {
     authorize(req, 'get_private_key', 'key', key);
 
     return {
-      body: {
-        id: key.id,
-        // FIXME use view pattern
-        privateKey: key.privateKey,
-        authorDid: key.authorDid,
-        userKeyPairId: key.id,
-      },
+      body: toPrivateKeyView(key),
     };
   },
 
@@ -117,10 +108,7 @@ const methodHandlers = {
       publicKey,
     );
     return {
-      body: {
-        userKeyPairId: result!.id,
-        publicKey: result!.publicKey,
-      },
+      body: toPublicKeyView(result!),
     };
   },
 } as const;

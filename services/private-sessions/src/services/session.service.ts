@@ -13,6 +13,7 @@ import {
   NotFoundError,
   ValidationError,
   safeAtob,
+  safeBtoa,
 } from '@speakeasy-services/common';
 import { Queue } from 'packages/queue/dist/index.js';
 import { JOB_NAMES } from 'packages/queue/dist/index.js';
@@ -194,7 +195,7 @@ export class SessionService {
 
     while (hasMore) {
       const sessionKeys = await prisma.sessionKey.findMany({
-        where: { sessionId: { in: [body.prevKeyId] } },
+        where: { userKeyPairId: body.prevKeyId },
         take: BATCH_SIZE,
       });
 
@@ -206,7 +207,7 @@ export class SessionService {
       await Promise.all(
         sessionKeys.map(async (sessionKey) => {
           const rawDek = await decryptSessionKey(
-            sessionKey.encryptedDek.toString(),
+            safeBtoa(sessionKey.encryptedDek),
             body.prevPrivateKey,
           );
           const newEncryptedDek = await encryptSessionKey(
@@ -222,7 +223,7 @@ export class SessionService {
             },
             data: {
               userKeyPairId: body.newKeyId,
-              encryptedDek: Buffer.from(newEncryptedDek),
+              encryptedDek: safeAtob(newEncryptedDek),
             },
           });
         }),
