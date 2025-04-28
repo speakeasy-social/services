@@ -17,13 +17,13 @@ type PrivateKeyResponse = {
 };
 
 export type PublicKeyView = {
-  id: string;
+  userKeyPairId: string;
   publicKey: string;
-  authorDid: string;
+  recipientDid: string;
 };
 
 export type PrivateKeyView = {
-  id: string;
+  userKeyPairId: string;
   privateKey: string;
   authorDid: string;
 };
@@ -31,14 +31,11 @@ export type PrivateKeyView = {
 /**
  * Create a view that picks public key fields and converts binary data to base64
  */
-export const toPublicKeyView = createView<PublicKeyResponse, PublicKeyView>(
-  ['id', 'publicKey', 'authorDid'],
-  {
-    id: (value: string) => value,
-    publicKey: (value: Uint8Array) => safeBtoa(value),
-    authorDid: (value: string) => value,
-  },
-);
+export const toPublicKeyView = (key: PublicKeyResponse): PublicKeyView => ({
+  publicKey: safeBtoa(key.publicKey),
+  recipientDid: key.authorDid,
+  userKeyPairId: key.id,
+});
 
 /**
  * Create a list view that maps over the array
@@ -51,11 +48,16 @@ export const toPublicKeyListView = createListView<
 /**
  * Create a view that picks private key fields and converts binary data to base64
  */
-export const toPrivateKeyView = createView<PrivateKeyResponse, PrivateKeyView>(
-  ['id', 'privateKey', 'authorDid'],
-  {
-    id: (value: string) => value,
-    privateKey: (value: Uint8Array) => safeBtoa(value),
-    authorDid: (value: string) => value,
-  },
-);
+export const toPrivateKeyView = (key: PrivateKeyResponse): PrivateKeyView => ({
+  userKeyPairId: key.id,
+  privateKey: safeBtoa(key.privateKey),
+  authorDid: key.authorDid,
+});
+
+/**
+ * Create a list view that maps over the array
+ */
+export const toPrivateKeyListView = createListView<
+  PrivateKeyResponse,
+  PrivateKeyView
+>(toPrivateKeyView);

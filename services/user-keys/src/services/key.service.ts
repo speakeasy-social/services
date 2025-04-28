@@ -142,6 +142,36 @@ export class KeyService {
   }
 
   /**
+   * Retrieves private keys for a specific author by their IDs.
+   *
+   * @param authorDid - The DID (Decentralized Identifier) of the author whose keys are being retrieved
+   * @param ids - Array of key IDs to retrieve
+   * @returns A Promise that resolves to an array of PrivateKeyResponse objects containing the private keys
+   *          for the specified author and IDs, ordered by creation date (most recent first)
+   */
+  async getPrivateKeys(
+    authorDid: string,
+    ids: string[],
+  ): Promise<PrivateKeyResponse[]> {
+    const keys = await this.prisma.userKey.findMany({
+      where: {
+        authorDid,
+        id: { in: ids },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+      select: {
+        id: true,
+        privateKey: true,
+        authorDid: true,
+      },
+    });
+
+    return keys;
+  }
+
+  /**
    * Requests a key rotation for a given author.
    * This operation:
    * 1. Locks the existing key row for update
@@ -195,7 +225,7 @@ export class KeyService {
         });
 
         if (key) {
-          Queue.publish(JOB_NAMES.UPDATE_USER_KEYS, {
+          await Queue.publish(JOB_NAMES.UPDATE_USER_KEYS, {
             prevKeyId: key.id,
             newKeyId: newKey.id,
           });

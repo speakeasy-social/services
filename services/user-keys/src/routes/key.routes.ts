@@ -10,9 +10,11 @@ import {
   ExtendedRequest,
   NotFoundError,
   validateAgainstLexicon,
+  AuthorizationError,
 } from '@speakeasy-services/common';
 import {
   getPublicKeyDef,
+  getPrivateKeysDef,
   getPrivateKeyDef,
   rotateKeyDef,
   getPublicKeysDef,
@@ -20,6 +22,7 @@ import {
 import {
   toPublicKeyView,
   toPublicKeyListView,
+  toPrivateKeyListView,
   toPrivateKeyView,
 } from '../views/key.views.js';
 
@@ -82,10 +85,42 @@ const methodHandlers = {
       throw new NotFoundError('Private key not found');
     }
 
-    authorize(req, 'get_private_key', 'key', key);
+    authorize(req, 'get_private', 'key', key);
 
     return {
       body: toPrivateKeyView(key),
+    };
+  },
+
+  /**
+   * Get the authenticated user's private keys
+   */
+  'social.spkeasy.key.getPrivateKeys': async (
+    req: ExtendedRequest,
+  ): RequestHandlerReturn => {
+    console.log(req.query);
+    // Validate input against lexicon
+    const validatedQuery = validateAgainstLexicon(getPrivateKeysDef, req.query);
+
+    const { did, ids } = validatedQuery;
+
+    // Only the owner can access their private key
+    const keys = await keyService.getPrivateKeys(did, ids);
+
+    authorize(req, 'list_private', 'key', keys);
+
+    // Defence in depth
+    // Guards against mistakes that allow retrieval of multiple users private keys
+    // by throwing if there is more than one did in the result set
+    const keyDids = [...new Set(keys.map((key) => key.authorDid))];
+    if (keyDids.length > 1 || keyDids[0] !== did) {
+      throw new AuthorizationError('Internal Authorization Error Occurred', {
+        message: 'Attempt to send private keys of multiple users',
+      });
+    }
+
+    return {
+      body: { keys: toPrivateKeyListView(keys) },
     };
   },
 
@@ -124,6 +159,9 @@ export const methods: Record<MethodName, { handler: RequestHandler }> = {
   },
   'social.spkeasy.key.getPrivateKey': {
     handler: methodHandlers['social.spkeasy.key.getPrivateKey'],
+  },
+  'social.spkeasy.key.getPrivateKeys': {
+    handler: methodHandlers['social.spkeasy.key.getPrivateKeys'],
   },
   'social.spkeasy.key.rotate': {
     handler: methodHandlers['social.spkeasy.key.rotate'],

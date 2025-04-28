@@ -90,6 +90,56 @@ export const getPublicKeysDef: LexiconDoc = {
   },
 };
 
+export const getPrivateKeysDef: LexiconDoc = {
+  lexicon: 1,
+  id: 'social.spkeasy.keys.getPrivateKey',
+  defs: {
+    main: {
+      type: 'query',
+      description: "Get a user's private key",
+      parameters: {
+        type: 'params',
+        required: ['did'],
+        properties: {
+          ids: {
+            type: 'array',
+            description:
+              'Comma-separated list of user key pair IDs whose private keys to retrieve',
+            items: {
+              type: 'string',
+            },
+          },
+          did: {
+            type: 'string',
+            description: 'The DID of the user whose private keys to retrieve',
+          },
+        },
+      },
+      output: {
+        encoding: 'application/json',
+        schema: {
+          type: 'object',
+          required: ['publicKey', 'privateKey', 'authorDid'],
+          properties: {
+            publicKey: {
+              type: 'string',
+              description: "The user's public key in base64 format",
+            },
+            privateKey: {
+              type: 'string',
+              description: "The user's private key in base64 format",
+            },
+            authorDid: {
+              type: 'string',
+              description: 'The DID of the key owner',
+            },
+          },
+        },
+      },
+    },
+  },
+};
+
 export const getPrivateKeyDef: LexiconDoc = {
   lexicon: 1,
   id: 'social.spkeasy.keys.getPrivateKey',
