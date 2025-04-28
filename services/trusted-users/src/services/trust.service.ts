@@ -37,6 +37,11 @@ export class TrustService {
         createdAt: new Date(),
       },
     });
+
+    Queue.publish(JOB_NAMES.ADD_RECIPIENT_TO_SESSION, {
+      authorDid,
+      recipientDid,
+    });
   }
 
   /**

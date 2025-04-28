@@ -1,6 +1,10 @@
 import { Worker } from '@speakeasy-services/service-base';
 import { JOB_NAMES } from '@speakeasy-services/queue';
-import { speakeasyApiRequest, safeAtob } from '@speakeasy-services/common';
+import {
+  speakeasyApiRequest,
+  safeAtob,
+  safeBtoa,
+} from '@speakeasy-services/common';
 import { PrismaClient } from './generated/prisma-client/index.js';
 import {
   encryptSessionKey,
@@ -15,6 +19,13 @@ interface AddRecipientToSessionJob {
 interface RotateSessionJob {
   authorDid: string;
   recipientDid?: string;
+}
+
+interface UpdateSessionKeysJob {
+  prevKeyId: string;
+  newKeyId: string;
+  prevPrivateKey: string;
+  newPublicKey: string;
 }
 
 const worker = new Worker({ name: 'trusted-users-worker' });
@@ -48,8 +59,8 @@ worker.queue.work<AddRecipientToSessionJob>(
       (session) => session.sessionKeys.length > 0,
     );
 
+    // User hasn't yet made any private posts, we can stop here
     if (sessionsWithKeys.length === 0) {
-      worker.logger.error(`No sessions found for author ${authorDid}`);
       return;
     }
 
@@ -73,6 +84,7 @@ worker.queue.work<AddRecipientToSessionJob>(
         },
         { did: authorDid },
       ),
+      // This will trigger a new key if the recipient doesn't have one
       speakeasyApiRequest(
         {
           method: 'GET',
@@ -88,7 +100,7 @@ worker.queue.work<AddRecipientToSessionJob>(
       sessionsWithKeys.map(async (session) => {
         // Decrypt session DEK using author private key
         const decryptedDek = await decryptSessionKey(
-          session.sessionKeys[0].encryptedDek.toString(),
+          safeBtoa(session.sessionKeys[0].encryptedDek),
           authorPrivateKeyBody.privateKey,
         );
 
@@ -137,6 +149,52 @@ worker.queue.work<RotateSessionJob>(JOB_NAMES.REVOKE_SESSION, async (job) => {
     });
   }
 });
+
+/**
+ * Update session keys in batches when user keys are rotated
+ */
+worker.queue.work<UpdateSessionKeysJob>(
+  JOB_NAMES.UPDATE_SESSION_KEYS,
+  async (job) => {
+    const { prevKeyId, newKeyId, prevPrivateKey, newPublicKey } = job.data;
+    const BATCH_SIZE = 100;
+    let hasMore = true;
+
+    while (hasMore) {
+      const sessionKeys = await prisma.sessionKey.findMany({
+        where: { userKeyPairId: prevKeyId },
+        take: BATCH_SIZE,
+      });
+
+      if (sessionKeys.length === 0) {
+        hasMore = false;
+        continue;
+      }
+
+      await Promise.all(
+        sessionKeys.map(async (sessionKey) => {
+          const rawDek = await decryptSessionKey(
+            safeBtoa(sessionKey.encryptedDek),
+            prevPrivateKey,
+          );
+          const newEncryptedDek = await encryptSessionKey(rawDek, newPublicKey);
+          await prisma.sessionKey.update({
+            where: {
+              sessionId_recipientDid: {
+                sessionId: sessionKey.sessionId,
+                recipientDid: sessionKey.recipientDid,
+              },
+            },
+            data: {
+              userKeyPairId: newKeyId,
+              encryptedDek: safeAtob(newEncryptedDek),
+            },
+          });
+        }),
+      );
+    }
+  },
+);
 
 worker.start().catch((error: Error) => {
   console.error('Failed to start worker:', error);

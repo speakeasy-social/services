@@ -15,8 +15,7 @@ import {
   safeAtob,
   safeBtoa,
 } from '@speakeasy-services/common';
-import { Queue } from 'packages/queue/dist/index.js';
-import { JOB_NAMES } from 'packages/queue/dist/index.js';
+import { Queue, JOB_NAMES } from '@speakeasy-services/queue';
 
 const prisma = new PrismaClient();
 
@@ -190,44 +189,7 @@ export class SessionService {
     prevPrivateKey: string;
     newPublicKey: string;
   }): Promise<void> {
-    const BATCH_SIZE = 100;
-    let hasMore = true;
-
-    while (hasMore) {
-      const sessionKeys = await prisma.sessionKey.findMany({
-        where: { userKeyPairId: body.prevKeyId },
-        take: BATCH_SIZE,
-      });
-
-      if (sessionKeys.length === 0) {
-        hasMore = false;
-        continue;
-      }
-
-      await Promise.all(
-        sessionKeys.map(async (sessionKey) => {
-          const rawDek = await decryptSessionKey(
-            safeBtoa(sessionKey.encryptedDek),
-            body.prevPrivateKey,
-          );
-          const newEncryptedDek = await encryptSessionKey(
-            rawDek,
-            body.newPublicKey,
-          );
-          await prisma.sessionKey.update({
-            where: {
-              sessionId_recipientDid: {
-                sessionId: sessionKey.sessionId,
-                recipientDid: sessionKey.recipientDid,
-              },
-            },
-            data: {
-              userKeyPairId: body.newKeyId,
-              encryptedDek: safeAtob(newEncryptedDek),
-            },
-          });
-        }),
-      );
-    }
+    // Queue the job to update session keys in the background
+    await Queue.publish(JOB_NAMES.UPDATE_SESSION_KEYS, body);
   }
 }
