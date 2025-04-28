@@ -135,8 +135,11 @@ importers:
 
   packages/crypto:
     dependencies:
-      crystals-kyber-js:
-        specifier: 2.3.1
+      '@speakeasy-services/common':
+        specifier: workspace:^
+        version: link:../common
+      mlkem:
+        specifier: ^2.3.1
         version: 2.3.1
     devDependencies:
       eslint:
@@ -5708,6 +5711,13 @@ packages:
   /mitt@3.0.1:
     resolution: {integrity: sha512-vKivATfr97l2/QBCYAkXYDbrIWPM2IIKEl7YPhjCvKlG3kE2gm+uBo6nEXK3M5/Ffh/FLpKExzOQ3JJoJGFKBw==}
     dev: true
+
+  /mlkem@2.3.1:
+    resolution: {integrity: sha512-ZlhI0U1ZXpXd1U3DRyk1xafXNm7rU4lm2sSPIX5lidoLHJ7gyKQ4dafNd7W/MgIejadVfKTTa3uL1PDSbesL3g==}
+    engines: {node: '>=16.0.0'}
+    dependencies:
+      '@noble/hashes': 1.7.1
+    dev: false
 
   /mlly@1.7.4:
     resolution: {integrity: sha512-qmdSIPC4bDJXgZTCR7XosJiNKySV7O215tsPtDN9iEO/7q/76b/ijtgRu/+epFXSJhijtTCCGp3DWS549P3xKw==}
