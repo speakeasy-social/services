@@ -287,61 +287,6 @@ importers:
         specifier: ^5.8.3
         version: 5.8.3
 
-  services/admin:
-    dependencies:
-      '@atproto/lexicon':
-        specifier: ^0.4.9
-        version: 0.4.9
-      '@atproto/xrpc-server':
-        specifier: ^0.7.13
-        version: 0.7.13
-      '@prisma/client':
-        specifier: ^6.5.0
-        version: 6.5.0(prisma@6.5.0)(typescript@5.8.3)
-      '@speakeasy-services/common':
-        specifier: workspace:^
-        version: link:../../packages/common
-      '@speakeasy-services/service-base':
-        specifier: workspace:^
-        version: link:../../packages/service-base
-      dotenv:
-        specifier: ^16.4.7
-        version: 16.4.7
-      pino:
-        specifier: ^9.6.0
-        version: 9.6.0
-      pino-pretty:
-        specifier: ^13.0.0
-        version: 13.0.0
-      zod:
-        specifier: ^3.24.2
-        version: 3.24.2
-    devDependencies:
-      '@types/node':
-        specifier: ^22.13.11
-        version: 22.13.11
-      '@typescript-eslint/eslint-plugin':
-        specifier: ^7.0.1
-        version: 7.18.0(@typescript-eslint/parser@7.18.0)(eslint@8.57.1)(typescript@5.8.3)
-      '@typescript-eslint/parser':
-        specifier: ^7.0.1
-        version: 7.18.0(eslint@8.57.1)(typescript@5.8.3)
-      eslint:
-        specifier: ^8.56.0
-        version: 8.57.1
-      prisma:
-        specifier: ^6.5.0
-        version: 6.5.0(typescript@5.8.3)
-      prisma-erd-generator:
-        specifier: ^2.0.4
-        version: 2.0.4(@prisma/client@6.5.0)(puppeteer@23.11.1)(typescript@5.8.3)
-      tsx:
-        specifier: ^4.19.3
-        version: 4.19.3
-      typescript:
-        specifier: ^5.8.3
-        version: 5.8.3
-
   services/private-sessions:
     dependencies:
       '@atproto/lexicon':
@@ -387,6 +332,61 @@ importers:
       '@speakeasy-services/common':
         specifier: workspace:^
         version: link:../../packages/common
+      '@types/node':
+        specifier: ^22.13.11
+        version: 22.13.11
+      '@typescript-eslint/eslint-plugin':
+        specifier: ^7.0.1
+        version: 7.18.0(@typescript-eslint/parser@7.18.0)(eslint@8.57.1)(typescript@5.8.3)
+      '@typescript-eslint/parser':
+        specifier: ^7.0.1
+        version: 7.18.0(eslint@8.57.1)(typescript@5.8.3)
+      eslint:
+        specifier: ^8.56.0
+        version: 8.57.1
+      prisma:
+        specifier: ^6.5.0
+        version: 6.5.0(typescript@5.8.3)
+      prisma-erd-generator:
+        specifier: ^2.0.4
+        version: 2.0.4(@prisma/client@6.5.0)(puppeteer@23.11.1)(typescript@5.8.3)
+      tsx:
+        specifier: ^4.19.3
+        version: 4.19.3
+      typescript:
+        specifier: ^5.8.3
+        version: 5.8.3
+
+  services/service-admin:
+    dependencies:
+      '@atproto/lexicon':
+        specifier: ^0.4.9
+        version: 0.4.9
+      '@atproto/xrpc-server':
+        specifier: ^0.7.13
+        version: 0.7.13
+      '@prisma/client':
+        specifier: ^6.5.0
+        version: 6.5.0(prisma@6.5.0)(typescript@5.8.3)
+      '@speakeasy-services/common':
+        specifier: workspace:^
+        version: link:../../packages/common
+      '@speakeasy-services/service-base':
+        specifier: workspace:^
+        version: link:../../packages/service-base
+      dotenv:
+        specifier: ^16.4.7
+        version: 16.4.7
+      pino:
+        specifier: ^9.6.0
+        version: 9.6.0
+      pino-pretty:
+        specifier: ^13.0.0
+        version: 13.0.0
+      zod:
+        specifier: ^3.24.2
+        version: 3.24.2
+    devDependencies:
       '@types/node':
         specifier: ^22.13.11
         version: 22.13.11
