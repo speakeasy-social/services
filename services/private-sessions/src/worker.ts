@@ -1,15 +1,8 @@
 import { Worker } from '@speakeasy-services/service-base';
 import { JOB_NAMES } from '@speakeasy-services/queue';
-import {
-  speakeasyApiRequest,
-  safeAtob,
-  safeBtoa,
-} from '@speakeasy-services/common';
+import { speakeasyApiRequest } from '@speakeasy-services/common';
 import { PrismaClient } from './generated/prisma-client/index.js';
-import {
-  encryptSessionKey,
-  decryptSessionKey,
-} from '@speakeasy-services/crypto';
+import { recryptDEK } from '@speakeasy-services/crypto';
 
 interface AddRecipientToSessionJob {
   authorDid: string;
@@ -37,9 +30,14 @@ const WINDOW_FOR_NEW_TRUSTED_USER = 30 * 24 * 60 * 60 * 1000;
 /**
  * When a new recipient is added, add them to prior sessions.
  */
-worker.queue.work<AddRecipientToSessionJob>(
+worker.work<AddRecipientToSessionJob>(
   JOB_NAMES.ADD_RECIPIENT_TO_SESSION,
   async (job) => {
+    // FIXME we need some aborts to handle various kinds of debouncing
+    // We should about the job if
+    // * User has since untrusted the recipient
+    // * The session has already been updated
+
     const { authorDid, recipientDid } = job.data;
 
     const sessions = await prisma.session.findMany({
@@ -74,21 +72,25 @@ worker.queue.work<AddRecipientToSessionJob>(
       return;
     }
 
-    const [authorPrivateKeyBody, recipientPublicKeyBody] = await Promise.all([
+    const sessionKeyPairIds = sessionsWithKeys.map(
+      (session) => session.sessionKeys[0].userKeyPairId,
+    );
+
+    const [authorPrivateKeysBody, recipientPublicKeyBody] = await Promise.all([
       speakeasyApiRequest(
         {
           method: 'GET',
-          path: 'social.spkeasy.keys.getPrivateKey',
+          path: 'social.spkeasy.key.getPrivateKeys',
           fromService: 'private-sessions',
           toService: 'user-keys',
         },
-        { did: authorDid },
+        { ids: [sessionKeyPairIds], did: authorDid },
       ),
       // This will trigger a new key if the recipient doesn't have one
       speakeasyApiRequest(
         {
           method: 'GET',
-          path: 'social.spkeasy.keys.getPublicKey',
+          path: 'social.spkeasy.key.getPublicKey',
           fromService: 'private-sessions',
           toService: 'user-keys',
         },
@@ -96,28 +98,42 @@ worker.queue.work<AddRecipientToSessionJob>(
       ),
     ]);
 
-    const newSessionKeys = await Promise.all(
-      sessionsWithKeys.map(async (session) => {
-        // Decrypt session DEK using author private key
-        const decryptedDek = await decryptSessionKey(
-          safeBtoa(session.sessionKeys[0].encryptedDek),
-          authorPrivateKeyBody.privateKey,
-        );
+    const authorPrivateKeys: {
+      userKeyPairId: string;
+      privateKey: string;
+    }[] = authorPrivateKeysBody.keys;
 
-        // Encrypt session DEK using recipient public key
-        const encryptedDek = await encryptSessionKey(
-          decryptedDek,
-          recipientPublicKeyBody.publicKey,
-        );
-
-        return {
-          sessionId: session.id,
-          recipientDid,
-          encryptedDek: safeAtob(encryptedDek),
-          userKeyPairId: recipientPublicKeyBody.id,
-        };
-      }),
+    // Create a map of userKeyPairId to privateKey
+    const authorPrivateKeysMap = new Map(
+      authorPrivateKeys.map((key) => [key.userKeyPairId, key]),
     );
+
+    const newSessionKeys = (
+      await Promise.all(
+        sessionsWithKeys.map(async (session) => {
+          const privateKey = authorPrivateKeysMap.get(
+            session.sessionKeys[0].userKeyPairId,
+          );
+
+          if (!privateKey) {
+            return null;
+          }
+
+          const encryptedDek = await recryptDEK(
+            session.sessionKeys[0],
+            privateKey,
+            recipientPublicKeyBody.publicKey,
+          );
+
+          return {
+            sessionId: session.id,
+            recipientDid,
+            encryptedDek,
+            userKeyPairId: recipientPublicKeyBody.userKeyPairId,
+          };
+        }),
+      )
+    ).filter((val) => !!val);
 
     await prisma.sessionKey.createMany({
       data: newSessionKeys,
@@ -173,11 +189,11 @@ worker.queue.work<UpdateSessionKeysJob>(
 
       await Promise.all(
         sessionKeys.map(async (sessionKey) => {
-          const rawDek = await decryptSessionKey(
-            safeBtoa(sessionKey.encryptedDek),
-            prevPrivateKey,
+          const newEncryptedDek = await recryptDEK(
+            sessionKey,
+            { privateKey: prevPrivateKey, userKeyPairId: prevKeyId },
+            newPublicKey,
           );
-          const newEncryptedDek = await encryptSessionKey(rawDek, newPublicKey);
           await prisma.sessionKey.update({
             where: {
               sessionId_recipientDid: {
@@ -187,7 +203,7 @@ worker.queue.work<UpdateSessionKeysJob>(
             },
             data: {
               userKeyPairId: newKeyId,
-              encryptedDek: safeAtob(newEncryptedDek),
+              encryptedDek: newEncryptedDek,
             },
           });
         }),
