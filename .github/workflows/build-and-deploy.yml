@@ -141,7 +141,7 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           passphrase: ${{ secrets.SSH_PASSPHRASE }}
           script: |
-            docker-compose -f /home/speakeasy/app/docker-compose.yml up -d private-sessions
+            docker compose -f /home/speakeasy/app/docker-compose.yml up -d private-sessions
 
   deploy-trusted-users:
     runs-on: ubuntu-latest
@@ -171,7 +171,7 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           passphrase: ${{ secrets.SSH_PASSPHRASE }}
           script: |
-            docker-compose -f /home/speakeasy/app/docker-compose.yml up -d trusted-users
+            docker compose -f /home/speakeasy/app/docker-compose.yml up -d trusted-users
 
   deploy-admin:
     runs-on: ubuntu-latest
@@ -201,7 +201,7 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           passphrase: ${{ secrets.SSH_PASSPHRASE }}
           script: |
-            docker-compose -f /home/speakeasy/app/docker-compose.yml up -d admin
+            docker compose -f /home/speakeasy/app/docker-compose.yml up -d admin
 
   deploy-user-keys:
     runs-on: ubuntu-latest
@@ -219,6 +219,7 @@ jobs:
           passphrase: ${{ secrets.SSH_PASSPHRASE }}
           script: |
             docker run --rm \
+              --network db_speakeasy-internal \
               -e USER_KEYS_DATABASE_URL="${{ secrets.USER_KEYS_MIGRATION_DATABASE_URL }}" \
               speakeasy-services-image:latest \
               pnpm --filter @speakeasy-services/user-keys prisma:migrate
@@ -231,4 +232,4 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           passphrase: ${{ secrets.SSH_PASSPHRASE }}
           script: |
-            docker-compose -f /home/speakeasy/app/docker-compose.yml up -d user-keys
+            docker compose -f /home/speakeasy/app/docker-compose.yml up -d user-keys
