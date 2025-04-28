@@ -110,11 +110,7 @@ async function decryptDEK(
 ): Promise<Uint8Array> {
   // Decode private key and encrypted data from SafeText to Uint8Array format
   const privateKeyBytes = safeAtob(recipientPrivateKey);
-  console.log('privateKey', recipientPrivateKey);
-
   const data = encryptedDek;
-
-  console.log('latest');
 
   // Validate version header for compatibility checks
   const versionHeader = new TextEncoder().encode('KEMv1|');
@@ -143,8 +139,6 @@ async function decryptDEK(
     components.ciphertext,
     privateKeyBytes,
   );
-
-  console.log('sharedSecret', sharedSecret);
 
   // Derive AES and HMAC keys using HKDF from the shared secret and salt
   const hkdfKey = await crypto.subtle.importKey(
@@ -184,8 +178,6 @@ async function decryptDEK(
     ),
   ]);
 
-  console.log('hmacKey', hmacKey);
-
   // Verify authentication tag using HMAC-SHA256 to ensure integrity of ciphertext + IV
   const authData = new Uint8Array([...components.ciphertext, ...components.iv]);
   const valid = await crypto.subtle.verify(
@@ -221,8 +213,6 @@ export async function recryptDEK(
   },
   encryptionPublicKey: string,
 ): Promise<Uint8Array> {
-  console.log('sessionKey', sessionKey.userKeyPairId, Object.keys(sessionKey));
-  console.log('privateKey', privateKey.userKeyPairId, Object.keys(privateKey));
   if (privateKey.userKeyPairId !== sessionKey.userKeyPairId) {
     throw new ErrorWithDetails(
       'InternalError',
