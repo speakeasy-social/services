@@ -12,7 +12,7 @@ datasource db {
 }
 
 model InviteCode {
-  id            String   @id @db.Uuid
+  id            String   @id @default(uuid()) @db.Uuid
   code          String   @unique
   totalUses     Int      @default(1)
   remainingUses Int      @default(1)
@@ -28,7 +28,7 @@ model InviteCode {
 }
 
 model InviteCodeUse {
-  id             String   @id @db.Uuid
+  id             String   @id @default(uuid()) @db.Uuid
   inviteCodeId   String   @db.Uuid
   userFeatureId  String   @db.Uuid
   createdAt      DateTime @default(now())
@@ -42,7 +42,7 @@ model InviteCodeUse {
 }
 
 model UserFeature {
-  id        String   @id @db.Uuid
+  id        String   @id @default(uuid()) @db.Uuid
   userDid   String
   key       String
   value     String
