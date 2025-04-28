@@ -6,6 +6,7 @@ import {
   authenticateToken,
 } from '@speakeasy-services/common';
 import { lexicons } from './lexicon/index.js';
+import { Queue } from '@speakeasy-services/queue';
 
 const server = new Server({
   name: 'private-sessions',
@@ -15,4 +16,12 @@ const server = new Server({
   lexicons,
 });
 
-server.start();
+// Initialize and start the queue before starting the server
+Queue.start()
+  .then(() => {
+    server.start();
+  })
+  .catch((error) => {
+    console.error('Error starting queue', error);
+    process.exit(1);
+  });

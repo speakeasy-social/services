@@ -1,3 +1,12 @@
-import server from "./server.js";
+import server from './server.js';
+import { Queue } from '@speakeasy-services/queue';
 
-server.start();
+// Initialize and start the queue before starting the server
+Queue.start()
+  .then(() => {
+    server.start();
+  })
+  .catch((error) => {
+    console.error('Error starting queue', error);
+    process.exit(1);
+  });

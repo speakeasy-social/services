@@ -6,6 +6,7 @@ import {
   authenticateToken,
 } from '@speakeasy-services/common';
 import { lexicons } from './lexicon/index.js';
+import { Queue } from '@speakeasy-services/queue';
 
 const server = new Server({
   name: 'user-keys',
@@ -15,7 +16,15 @@ const server = new Server({
   lexicons,
 });
 
-server.start().catch((error: Error) => {
-  console.error({ error }, 'Failed to start server');
-  process.exit(1);
-});
+// Initialize and start the queue before starting the server
+Queue.start()
+  .then(() => {
+    server.start().catch((error: Error) => {
+      console.error({ error }, 'Failed to start server');
+      process.exit(1);
+    });
+  })
+  .catch((error) => {
+    console.error('Error starting queue', error);
+    process.exit(1);
+  });
