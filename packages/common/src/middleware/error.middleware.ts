@@ -8,6 +8,7 @@ interface CustomError extends Error {
   statusCode?: number;
   errors?: any;
   code?: string;
+  details?: Record<string, any>;
 }
 
 export const errorHandler: ErrorRequestHandler = async (
@@ -44,6 +45,7 @@ export const errorHandler: ErrorRequestHandler = async (
     message: error.message,
     statusCode: error.statusCode,
     stack: error.stack,
+    meta: error.details,
   };
 
   if (
