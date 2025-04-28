@@ -79,6 +79,7 @@ export async function speakeasyApiRequest(
     'private-sessions': process.env.PRIVATE_SESSIONS_HOST,
     'trusted-users': process.env.TRUSTED_USERS_HOST,
     'user-keys': process.env.USER_KEYS_HOST,
+    'service-admin': process.env.SERVICE_ADMIN_HOST,
   }[options.toService];
 
   const url = `${host}/xrpc/${options.path}`;

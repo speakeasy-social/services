@@ -37,6 +37,25 @@ export const baseSchema = {
     .string()
     .min(1)
     .describe('API key for user-keys service'),
+  SERVICE_ADMIN_API_KEY: z
+    .string()
+    .min(1)
+    .describe('API key for user-keys service'),
+
+  PRIVATE_SESSIONS_HOST: z
+    .string()
+    .min(1)
+    .describe('Host for private-sessions service'),
+  TRUSTED_USERS_HOST: z
+    .string()
+    .min(1)
+    .describe('Host for trusted-users service'),
+  USER_KEYS_HOST: z.string().min(1).describe('Host for user-keys service'),
+  SERVICE_ADMIN_HOST: z
+    .string()
+    .min(1)
+    .describe('Host for service-admin service'),
+
   HMAC_SECRET: z.string().min(1).describe('Secret key for HMAC hashing'),
   LOG_SALT: z.string().min(1).describe('Salt for HMAC hashing'),
 } as const;
