@@ -15,7 +15,7 @@
       "outputs": []
     },
     "dev": {
-      "dependsOn": ["^build", "prisma:generate"],
+      "dependsOn": ["build", "dev:api", "dev:worker"],
       "cache": false,
       "persistent": true,
       "inputs": ["src/**/*.ts", "src/**/*.tsx", "prisma/**/*.prisma"]
