@@ -82,7 +82,13 @@ export async function speakeasyApiRequest(
     'service-admin': process.env.SERVICE_ADMIN_HOST,
   }[options.toService];
 
-  let url = `${host}/xrpc/${options.path}`;
+  if (options.path.includes('?')) {
+    // This could lead to personal data in the logs when errors occur
+    throw new Error('Do not put query in path, put it in bodyOrQuery');
+  }
+
+  const baseUrl = `${host}/xrpc/${options.path}`;
+  let url = baseUrl;
   let body;
 
   // if the method is GET, put the body in the query string
@@ -116,7 +122,7 @@ export async function speakeasyApiRequest(
       `Internal API Request Failed`,
       500,
       {
-        url,
+        url: baseUrl,
         status: response.status,
       },
     );
