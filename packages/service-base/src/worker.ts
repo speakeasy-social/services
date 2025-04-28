@@ -4,6 +4,7 @@ import { createLogger } from '@speakeasy-services/common';
 import { validateEnv } from './config.js';
 import { baseSchema } from './config.js';
 import { z } from 'zod';
+import { Job } from '@speakeasy-services/queue/types';
 
 export interface WorkerOptions {
   name: string;
@@ -28,6 +29,20 @@ export class Worker {
     this.queue = Queue.getInstance({
       connectionString: process.env.DATABASE_URL!,
       schema: process.env.PGBOSS_SCHEMA || 'pgboss',
+    });
+  }
+
+  async work<T>(
+    jobName: string,
+    handler: (job: Job<T>) => Promise<void>,
+  ): Promise<void> {
+    await this.queue.work(jobName, async (job: Job<T>) => {
+      try {
+        return await handler(job);
+      } catch (error) {
+        this.logger.error(error);
+        throw error;
+      }
     });
   }
 
