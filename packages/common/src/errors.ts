@@ -1,5 +1,9 @@
 export class ServiceError extends Error {
-  constructor(message: string, public statusCode: number, public errors?: unknown[]) {
+  constructor(
+    message: string,
+    public statusCode: number,
+    public errors?: unknown[],
+  ) {
     super(message);
     this.name = 'ServiceError';
   }
@@ -27,9 +31,13 @@ export class AuthenticationError extends ServiceError {
 }
 
 export class AuthorizationError extends ServiceError {
-  constructor(message: string) {
+  constructor(
+    message: string,
+    public details?: Record<string, any>,
+  ) {
     super(message, 403);
     this.name = 'AuthorizationError';
+    this.details = details;
   }
 }
 
@@ -37,5 +45,18 @@ export class DatabaseError extends ServiceError {
   constructor(message: string) {
     super(message, 500);
     this.name = 'DatabaseError';
+  }
+}
+
+export class ErrorWithDetails extends ServiceError {
+  constructor(
+    name: string,
+    message: string,
+    public statusCode: number,
+    public details: Record<string, any>,
+  ) {
+    super(message, statusCode);
+    this.name = name;
+    this.details = details;
   }
 }
