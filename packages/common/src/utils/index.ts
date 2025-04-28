@@ -2,7 +2,7 @@ import { XRPCError } from '@atproto/xrpc';
 import { StatusCodes } from '../constants/index.js';
 import NodeCache from 'node-cache';
 import { getServiceApiKey } from '../auth/bearer-tokens.js';
-import { ServiceError } from '../errors.js';
+import { ErrorWithDetails } from '../errors.js';
 export { createLogger } from '../logger.js';
 export * from './view.js';
 
@@ -72,7 +72,7 @@ export async function speakeasyApiRequest(
     fromService: string;
     toService: string;
   },
-  body: any,
+  bodyOrQuery: any,
 ): Promise<any> {
   const apiKey = getServiceApiKey(options.fromService);
   const host = {
@@ -82,21 +82,37 @@ export async function speakeasyApiRequest(
     'service-admin': process.env.SERVICE_ADMIN_HOST,
   }[options.toService];
 
-  const url = `${host}/xrpc/${options.path}`;
+  let url = `${host}/xrpc/${options.path}`;
+  let body;
+
+  // if the method is GET, put the body in the query string
+  if (options.method === 'GET') {
+    const queryString = new URLSearchParams(bodyOrQuery).toString();
+    url = `${url}?${queryString}`;
+  } else {
+    body = JSON.stringify(bodyOrQuery);
+  }
+
   const response = await fetch(url, {
     method: options.method,
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${apiKey}`,
     },
-    body: JSON.stringify(body),
+    body,
   });
 
   if (!response.ok) {
-    throw new ServiceError(
-      `Failed to add recipient to session: ${response.status} ${response.statusText}`,
-      response.status,
+    const error = new ErrorWithDetails(
+      'InternalAPIError',
+      `Internal API Request Failed`,
+      500,
+      {
+        url,
+        status: response.status,
+      },
     );
+    throw error;
   }
 
   return response.json();
