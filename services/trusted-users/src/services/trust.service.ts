@@ -38,7 +38,7 @@ export class TrustService {
       },
     });
 
-    Queue.publish(JOB_NAMES.ADD_RECIPIENT_TO_SESSION, {
+    await Queue.publish(JOB_NAMES.ADD_RECIPIENT_TO_SESSION, {
       authorDid,
       recipientDid,
     });
@@ -66,7 +66,7 @@ export class TrustService {
       }
     });
 
-    Queue.publish(JOB_NAMES.REVOKE_SESSION, {
+    await Queue.publish(JOB_NAMES.REVOKE_SESSION, {
       authorDid,
       recipientDid,
     });

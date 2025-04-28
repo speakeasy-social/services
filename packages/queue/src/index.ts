@@ -62,7 +62,7 @@ export class Queue {
     config?: SendOptions,
   ): Promise<void> {
     const queue = this.getInstance();
-    await queue.publish(jobName, data, {
+    await queue.send(jobName, data, {
       ...DEFAULT_RETRY_CONFIG,
       ...config,
     });
