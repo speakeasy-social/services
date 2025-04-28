@@ -87,7 +87,15 @@ export async function speakeasyApiRequest(
 
   // if the method is GET, put the body in the query string
   if (options.method === 'GET') {
-    const queryString = new URLSearchParams(bodyOrQuery).toString();
+    const params = new URLSearchParams();
+    Object.entries(bodyOrQuery).forEach(([key, value]) => {
+      if (Array.isArray(value)) {
+        value.forEach((item) => params.append(key, item));
+      } else {
+        params.append(key, String(value));
+      }
+    });
+    const queryString = params.toString();
     url = `${url}?${queryString}`;
   } else {
     body = JSON.stringify(bodyOrQuery);
