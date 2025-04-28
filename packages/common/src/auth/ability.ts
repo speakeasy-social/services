@@ -10,9 +10,10 @@ export type Action =
   | 'revoke'
   | 'update'
   | 'apply'
+  | 'get'
   | 'add_recipient'
-  | 'get_public_key'
-  | 'get_private_key';
+  | 'list_private'
+  | 'get_private';
 
 // Define the subjects that can be acted upon
 export type Subject =
@@ -51,7 +52,6 @@ const userAbilities = [
   can('*', 'trusted_user', { authorDid: 'did' }),
 
   // Authors can manage their own sessions and posts
-  // FIXME the second param needs to === subject.constructor.name
   can('create', 'private_session', { authorDid: 'did' }),
   can('revoke', 'private_session', { authorDid: 'did' }),
   can('*', 'private_post', { authorDid: 'did' }),
@@ -66,14 +66,16 @@ const userAbilities = [
   // Users can manage their own keys
   can('*', 'key', { authorDid: 'did' }),
   // Anyone can read public keys
-  can('get_public_key', 'key'),
+  can('get', 'key'),
 ];
 
 /**
  * What services are allowed to do
  */
 const serviceAbilities = [
-  can('get_public_key', 'key', { name: '=private-sessions}' }),
+  can('get', 'key', { name: '=private-sessions' }),
+  can('get_private', 'key', { name: '=private-sessions' }),
+  can('list_private', 'key', { name: '=private-sessions' }),
   can('list', 'trusted_user', { name: '=private-sessions' }),
   can('update', 'private_session', { name: '=user-keys' }),
 ];
@@ -121,7 +123,11 @@ export function authorize(
 
   if (!isAllowed) {
     if (process.env.DEBUG_AUTH) console.log({ user: req.user, record: record });
-    throw new AuthorizationError(`Not authorized to ${action} ${subject}`);
+    throw new AuthorizationError(`Not authorized to ${action} on ${subject}`, {
+      action,
+      subject,
+      user: req.user,
+    });
   }
 }
 
