@@ -16,7 +16,7 @@ RUN pnpm install --frozen-lockfile
 # Build all services and their dependencies
 RUN pnpm turbo run build --filter=@speakeasy-services/private-sessions... && \
     pnpm turbo run build --filter=@speakeasy-services/trusted-users... && \
-    pnpm turbo run build --filter=@speakeasy-services/admin... && \
+    pnpm turbo run build --filter=@speakeasy-services/service-admin... && \
     pnpm turbo run build --filter=@speakeasy-services/user-keys...
 
 # Create a production image

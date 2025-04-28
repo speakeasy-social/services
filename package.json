@@ -11,7 +11,7 @@
     "dev:prisma": "turbo run dev:prisma",
     "build": "turbo run build",
     "clean": "turbo run clean",
-    "dev": "turbo run dev ",
+    "dev": "turbo run dev:api dev:worker --filter=./services/* --parallel",
     "dev:private-sessions": "turbo run dev:prisma dev:api dev:worker --filter=@speakeasy-services/private-sessions",
     "dev:trusted-users": "turbo run dev:prisma dev:api dev:worker --filter=@speakeasy-services/trusted-users",
     "dev:user-keys": "turbo run dev:prisma dev:api dev:worker --filter=@speakeasy-services/user-keys",

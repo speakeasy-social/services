@@ -16,7 +16,7 @@ See below for instructions on updating the diagrams without extra relationship l
 
 # Admin
 
-![Admin](services/admin/prisma/ERD.svg)
+![Admin](services/service-admin/prisma/ERD.svg)
 
 ### Updating the diagrams
 

@@ -8,11 +8,11 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("ADMIN_DATABASE_URL")
+  url      = env("SERVICE_ADMIN_DATABASE_URL")
 }
 
 model InviteCode {
-  id            String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  id            String   @id @db.Uuid
   code          String   @unique
   totalUses     Int      @default(1)
   remainingUses Int      @default(1)
@@ -28,7 +28,7 @@ model InviteCode {
 }
 
 model InviteCodeUse {
-  id             String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  id             String   @id @db.Uuid
   inviteCodeId   String   @db.Uuid
   userFeatureId  String   @db.Uuid
   createdAt      DateTime @default(now())
@@ -42,7 +42,7 @@ model InviteCodeUse {
 }
 
 model UserFeature {
-  id        String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  id        String   @id @db.Uuid
   userDid   String
   key       String
   value     String

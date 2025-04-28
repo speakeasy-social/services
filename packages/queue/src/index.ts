@@ -6,6 +6,7 @@ export const JOB_NAMES = {
   ADD_RECIPIENT_TO_SESSION: 'add-recipient-to-session',
   REVOKE_SESSION: 'revoke-session',
   UPDATE_USER_KEYS: 'update-user-keys',
+  UPDATE_SESSION_KEYS: 'update-session-keys',
 } as const;
 
 const queueConfigSchema = z.object({

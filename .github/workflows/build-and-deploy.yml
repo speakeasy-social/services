@@ -189,9 +189,9 @@ jobs:
           passphrase: ${{ secrets.SSH_PASSPHRASE }}
           script: |
             docker run --rm \
-              -e ADMIN_DATABASE_URL="${{ secrets.ADMIN_MIGRATION_DATABASE_URL }}" \
+              -e SERVICE_ADMIN_DATABASE_URL="${{ secrets.SERVICE_ADMIN_MIGRATION_DATABASE_URL }}" \
               speakeasy-services-image:latest \
-              pnpm --filter @speakeasy-services/admin prisma:migrate
+              pnpm --filter @speakeasy-services/service-admin prisma:migrate
 
       - name: Deploy Service
         uses: appleboy/ssh-action@v1.0.3

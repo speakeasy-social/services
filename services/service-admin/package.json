@@ -1,5 +1,5 @@
 {
-  "name": "@speakeasy-services/admin",
+  "name": "@speakeasy-services/service-admin",
   "version": "0.1.0",
   "private": true,
   "type": "module",
