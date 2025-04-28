@@ -65,7 +65,10 @@ function lexiconToZodSchema(
           const refDef = propDef.items.ref.split('#')[1];
           zodType = z.array(lexiconToZodSchema(lexicon, refDef));
         } else {
-          zodType = z.array(z.unknown());
+          zodType = z.union([
+            z.array(z.string()),
+            z.string().transform((val) => [val]),
+          ]);
         }
         break;
       case 'ref':
