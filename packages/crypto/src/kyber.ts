@@ -121,7 +121,6 @@ async function decryptDEK(
   ) {
     const versionDelimiter = data.indexOf('|'.charCodeAt(0));
     const version = new TextDecoder().decode(data.slice(0, versionDelimiter));
-    console.log('Invalid encrypted DEK version header:', version);
     throw new Error('Invalid version header');
   }
 

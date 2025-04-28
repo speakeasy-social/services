@@ -98,7 +98,6 @@ const methodHandlers = {
   'social.spkeasy.key.getPrivateKeys': async (
     req: ExtendedRequest,
   ): RequestHandlerReturn => {
-    console.log(req.query);
     // Validate input against lexicon
     const validatedQuery = validateAgainstLexicon(getPrivateKeysDef, req.query);
 
