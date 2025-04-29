@@ -11,3 +11,4 @@ export * from './utils/encoding.js';
 export * from './lexicon/lexicon-validation.js';
 export * from './bsky.js';
 export * from './utils/cursor.js';
+export * from './logger.js';

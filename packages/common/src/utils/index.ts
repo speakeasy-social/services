@@ -3,7 +3,6 @@ import { StatusCodes } from '../constants/index.js';
 import NodeCache from 'node-cache';
 import { getServiceApiKey } from '../auth/bearer-tokens.js';
 import { ErrorWithDetails } from '../errors.js';
-export { createLogger } from '../logger.js';
 export * from './view.js';
 
 export const cache = new NodeCache({ stdTTL: 300 });

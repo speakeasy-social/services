@@ -9,7 +9,7 @@ import {
   ExtendedRequest,
   RequestHandler,
 } from '@speakeasy-services/common';
-import { logAttributes } from 'packages/common/dist/logger.js';
+import { logAttributes } from '@speakeasy-services/common';
 
 // Extend Express Request type to include logger
 declare global {
