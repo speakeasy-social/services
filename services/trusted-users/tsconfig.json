@@ -13,7 +13,7 @@
       "@speakeasy-services/crypto/*": ["../../packages/crypto/src/*"]
     }
   },
-  "include": ["src/**/*.ts"],
+  "include": ["src/**/*"],
   "references": [
     { "path": "../../packages/common" },
     { "path": "../../packages/crypto" }

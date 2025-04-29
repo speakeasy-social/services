@@ -16,7 +16,8 @@
     "clean": "rm -rf dist",
     "lint": "eslint src",
     "test": "jest",
-    "prisma:migrate": "prisma migrate deploy"
+    "prisma:migrate": "prisma migrate deploy",
+    "prisma:generate": "prisma generate"
   },
   "dependencies": {
     "@atproto/lexicon": "^0.4.9",

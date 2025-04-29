@@ -37,11 +37,7 @@ COPY --from=base /app/pnpm-lock.yaml .
 COPY --from=base /app/pnpm-workspace.yaml .
 
 # Install production dependencies only and generate Prisma clients
-RUN pnpm install --frozen-lockfile --prod && \
-    pnpm --filter @speakeasy-services/private-sessions prisma generate && \
-    pnpm --filter @speakeasy-services/trusted-users prisma generate && \
-    pnpm --filter @speakeasy-services/service-admin prisma generate && \
-    pnpm --filter @speakeasy-services/user-keys prisma generate
+RUN pnpm install --frozen-lockfile --prod
 
 # Copy supervisor script and make it executable
 COPY supervisor.js ./
