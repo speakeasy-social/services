@@ -2,7 +2,7 @@
   "extends": "../tsconfig.json",
   "compilerOptions": {
     "composite": true,
-    "rootDir": "src",
+    "rootDir": ".",
     "outDir": "dist",
     "typeRoots": [
       "../node_modules/@types",
@@ -15,6 +15,7 @@
   },
   "include": [
     "src/**/*",
+    "src/generated/**/*"
   ],
   "exclude": [
     "node_modules",
