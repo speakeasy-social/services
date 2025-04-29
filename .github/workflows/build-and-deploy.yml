@@ -117,7 +117,6 @@ jobs:
     runs-on: ubuntu-latest
     needs: push-to-production
     environment: production
-    #    if: github.ref == 'refs/heads/main' && (contains(github.event.head_commit.modified, 'packages/') || contains(github.event.head_commit.modified, 'services/private-sessions/'))
 
     steps:
       - name: Run Database Migrations
@@ -142,6 +141,34 @@ jobs:
           passphrase: ${{ secrets.SSH_PASSPHRASE }}
           script: |
             docker compose -f /home/speakeasy/app/docker-compose.yaml up -d private-sessions
+
+            # Wait for container to be running
+            echo "Waiting for container to start..."
+            for i in {1..30}; do
+              if docker ps --filter "name=private-sessions" --format "{{.Status}}" | grep -q "Up"; then
+                echo "Container is running"
+                break
+              fi
+              if [ $i -eq 30 ]; then
+                echo "Container failed to start"
+                exit 1
+              fi
+              sleep 2
+            done
+
+            # Verify service health
+            echo "Verifying service health..."
+            for i in {1..10}; do
+              if curl -s http://localhost:3000/health > /dev/null; then
+                echo "Service is healthy"
+                exit 0
+              fi
+              if [ $i -eq 10 ]; then
+                echo "Service health check failed"
+                exit 1
+              fi
+              sleep 2
+            done
 
   deploy-trusted-users:
     runs-on: ubuntu-latest
@@ -173,6 +200,34 @@ jobs:
           script: |
             docker compose -f /home/speakeasy/app/docker-compose.yaml up -d trusted-users
 
+            # Wait for container to be running
+            echo "Waiting for container to start..."
+            for i in {1..30}; do
+              if docker ps --filter "name=trusted-users" --format "{{.Status}}" | grep -q "Up"; then
+                echo "Container is running"
+                break
+              fi
+              if [ $i -eq 30 ]; then
+                echo "Container failed to start"
+                exit 1
+              fi
+              sleep 2
+            done
+
+            # Verify service health
+            echo "Verifying service health..."
+            for i in {1..10}; do
+              if curl -s http://localhost:3001/health > /dev/null; then
+                echo "Service is healthy"
+                exit 0
+              fi
+              if [ $i -eq 10 ]; then
+                echo "Service health check failed"
+                exit 1
+              fi
+              sleep 2
+            done
+
   deploy-admin:
     runs-on: ubuntu-latest
     needs: push-to-production
@@ -202,6 +257,34 @@ jobs:
           passphrase: ${{ secrets.SSH_PASSPHRASE }}
           script: |
             docker compose -f /home/speakeasy/app/docker-compose.yaml up -d service-admin
+
+            # Wait for container to be running
+            echo "Waiting for container to start..."
+            for i in {1..30}; do
+              if docker ps --filter "name=service-admin" --format "{{.Status}}" | grep -q "Up"; then
+                echo "Container is running"
+                break
+              fi
+              if [ $i -eq 30 ]; then
+                echo "Container failed to start"
+                exit 1
+              fi
+              sleep 2
+            done
+
+            # Verify service health
+            echo "Verifying service health..."
+            for i in {1..10}; do
+              if curl -s http://localhost:3002/health > /dev/null; then
+                echo "Service is healthy"
+                exit 0
+              fi
+              if [ $i -eq 10 ]; then
+                echo "Service health check failed"
+                exit 1
+              fi
+              sleep 2
+            done
 
   deploy-user-keys:
     runs-on: ubuntu-latest
@@ -233,3 +316,31 @@ jobs:
           passphrase: ${{ secrets.SSH_PASSPHRASE }}
           script: |
             docker compose -f /home/speakeasy/app/docker-compose.yaml up -d user-keys
+
+            # Wait for container to be running
+            echo "Waiting for container to start..."
+            for i in {1..30}; do
+              if docker ps --filter "name=user-keys" --format "{{.Status}}" | grep -q "Up"; then
+                echo "Container is running"
+                break
+              fi
+              if [ $i -eq 30 ]; then
+                echo "Container failed to start"
+                exit 1
+              fi
+              sleep 2
+            done
+
+            # Verify service health
+            echo "Verifying service health..."
+            for i in {1..10}; do
+              if curl -s http://localhost:3003/health > /dev/null; then
+                echo "Service is healthy"
+                exit 0
+              fi
+              if [ $i -eq 10 ]; then
+                echo "Service health check failed"
+                exit 1
+              fi
+              sleep 2
+            done
