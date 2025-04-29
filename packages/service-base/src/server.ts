@@ -37,6 +37,7 @@ export interface ServerOptions {
   middleware?: any[];
   onShutdown?: () => Promise<void>;
   lexicons?: LexiconDoc[];
+  healthCheck: () => Promise<void>;
 }
 
 export class Server {
@@ -88,6 +89,18 @@ export class Server {
       }
 
       next();
+    });
+
+    // Add health check endpoint
+    app.get('/health', async (req: Request, res: Response) => {
+      try {
+        await this.options.healthCheck();
+      } catch (error) {
+        this.logger.error(error, 'Health check failed');
+        res.status(500).json({ status: 'unhealthy' });
+        return;
+      }
+      res.status(200).json({ status: 'ok' });
     });
 
     // Parse JSON bodies

@@ -7,6 +7,7 @@ import {
 } from '@speakeasy-services/common';
 import { lexicons } from './lexicon/index.js';
 import { Queue } from '@speakeasy-services/queue';
+import { PrismaClient } from './generated/prisma-client/index.js';
 
 const server = new Server({
   name: 'private-sessions',
@@ -14,6 +15,12 @@ const server = new Server({
   methods,
   middleware: [authenticateToken, authorizationMiddleware],
   lexicons,
+  healthCheck: async () => {
+    const prisma = new PrismaClient();
+    // The table may be empty, that's fine, just as long as an
+    // exception is not thrown
+    await prisma.session.findFirst();
+  },
 });
 
 // Initialize and start the queue before starting the server
