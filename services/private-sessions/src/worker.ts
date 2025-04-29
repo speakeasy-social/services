@@ -76,6 +76,8 @@ worker.work<AddRecipientToSessionJob>(
       (session) => session.sessionKeys[0].userKeyPairId,
     );
 
+    // Get the author's private keys and the recipient's public key
+    // so we can re-encrypt the DEKs for the new recipient
     const [authorPrivateKeysBody, recipientPublicKeyBody] = await Promise.all([
       speakeasyApiRequest(
         {

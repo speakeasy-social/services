@@ -112,7 +112,7 @@ const methodHandlers = {
     // Guards against mistakes that allow retrieval of multiple users private keys
     // by throwing if there is more than one did in the result set
     const keyDids = [...new Set(keys.map((key) => key.authorDid))];
-    if (keyDids.length > 1 || keyDids[0] !== did) {
+    if (keyDids.length > 1 || (keyDids[0] && keyDids[0] !== did)) {
       throw new AuthorizationError('Internal Authorization Error Occurred', {
         message: 'Attempt to send private keys of multiple users',
       });
