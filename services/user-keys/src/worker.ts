@@ -2,13 +2,18 @@ import { Worker } from '@speakeasy-services/service-base';
 import { JOB_NAMES } from '@speakeasy-services/queue';
 import { speakeasyApiRequest } from '@speakeasy-services/common';
 import { PrismaClient } from './generated/prisma-client/index.js';
+import { healthCheck } from './health.js';
 
 interface UpdateUserKeysJob {
   prevKeyId: string;
   newKeyId: string;
 }
 
-const worker = new Worker({ name: 'user-keys-worker' });
+const worker = new Worker({
+  name: 'user-keys-worker',
+  healthCheck,
+  port: parseInt(process.env.PORT || '4001'),
+});
 const prisma = new PrismaClient();
 
 /**

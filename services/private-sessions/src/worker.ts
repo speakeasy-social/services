@@ -3,7 +3,7 @@ import { JOB_NAMES } from '@speakeasy-services/queue';
 import { speakeasyApiRequest } from '@speakeasy-services/common';
 import { PrismaClient } from './generated/prisma-client/index.js';
 import { recryptDEK } from '@speakeasy-services/crypto';
-
+import { healthCheck } from './health.js';
 interface AddRecipientToSessionJob {
   authorDid: string;
   recipientDid: string;
@@ -21,7 +21,11 @@ interface UpdateSessionKeysJob {
   newPublicKey: string;
 }
 
-const worker = new Worker({ name: 'trusted-users-worker' });
+const worker = new Worker({
+  name: 'ptivate-sessions-worker',
+  healthCheck,
+  port: parseInt(process.env.PORT || '4003'),
+});
 const prisma = new PrismaClient();
 
 // Add a new recipient to 30 days prior

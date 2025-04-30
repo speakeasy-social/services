@@ -10,6 +10,7 @@ import {
   RequestHandler,
 } from '@speakeasy-services/common';
 import { logAttributes } from '@speakeasy-services/common';
+import { healthCheckAPI } from './health.js';
 
 // Extend Express Request type to include logger
 declare global {
@@ -91,17 +92,7 @@ export class Server {
       next();
     });
 
-    // Add health check endpoint
-    app.get('/health', async (req: Request, res: Response) => {
-      try {
-        await this.options.healthCheck();
-      } catch (error) {
-        this.logger.error(error, 'Health check failed');
-        res.status(500).json({ status: 'unhealthy' });
-        return;
-      }
-      res.status(200).json({ status: 'ok' });
-    });
+    app.get('/health', healthCheckAPI(this.options.healthCheck, this.logger));
 
     // Parse JSON bodies
     app.use(express.json());

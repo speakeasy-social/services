@@ -158,6 +158,39 @@ jobs:
               sleep 1
             done
 
+  deploy-private-sessions-worker:
+    runs-on: ubuntu-latest
+    needs: push-to-production
+    environment: production
+
+    steps:
+      - name: Deploy Worker
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          passphrase: ${{ secrets.SSH_PASSPHRASE }}
+          script: |
+            # Start new worker
+            docker compose -f /home/speakeasy/app/docker-compose.yaml up -d private-sessions-worker
+
+            # Wait for container to be running and healthy
+            echo "Waiting for container to be healthy..."
+            for i in {1..30}; do
+              HEALTH_STATUS=$(docker inspect --format='{{.State.Health.Status}}' private-sessions-worker)
+              if [ "$HEALTH_STATUS" = "healthy" ]; then
+                echo "Container is healthy"
+                exit 0
+              fi
+              if [ $i -eq 10 ]; then
+                echo "Container failed to become healthy"
+                docker logs private-sessions-worker
+                exit 1
+              fi
+              sleep 1
+            done
+
   deploy-trusted-users:
     runs-on: ubuntu-latest
     needs: push-to-production
@@ -292,6 +325,39 @@ jobs:
               if [ $i -eq 10 ]; then
                 echo "Container failed to become healthy"
                 docker logs user-keys
+                exit 1
+              fi
+              sleep 1
+            done
+
+  deploy-user-keys-worker:
+    runs-on: ubuntu-latest
+    needs: push-to-production
+    environment: production
+
+    steps:
+      - name: Deploy Worker
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          passphrase: ${{ secrets.SSH_PASSPHRASE }}
+          script: |
+            # Start new worker
+            docker compose -f /home/speakeasy/app/docker-compose.yaml up -d user-keys-worker
+
+            # Wait for container to be running and healthy
+            echo "Waiting for container to be healthy..."
+            for i in {1..30}; do
+              HEALTH_STATUS=$(docker inspect --format='{{.State.Health.Status}}' user-keys-worker)
+              if [ "$HEALTH_STATUS" = "healthy" ]; then
+                echo "Container is healthy"
+                exit 0
+              fi
+              if [ $i -eq 10 ]; then
+                echo "Container failed to become healthy"
+                docker logs user-keys-worker
                 exit 1
               fi
               sleep 1

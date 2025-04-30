@@ -6,20 +6,14 @@ import {
   authenticateToken,
 } from '@speakeasy-services/common';
 import { lexicons } from './lexicon/index.js';
-import { PrismaClient } from './generated/prisma-client/index.js';
-
+import { healthCheck } from './health.js';
 const server = new Server({
   name: 'service-admin',
   port: config.PORT,
   methods,
   middleware: [authenticateToken, authorizationMiddleware],
   lexicons,
-  healthCheck: async () => {
-    const prisma = new PrismaClient();
-    // The table may be empty, that's fine, just as long as an
-    // exception is not thrown
-    await prisma.userFeature.findFirst();
-  },
+  healthCheck,
 });
 
 export default server;

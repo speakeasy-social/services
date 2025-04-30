@@ -1,6 +1,5 @@
 import { Worker } from '@speakeasy-services/service-base';
-import { Queue, JOB_NAMES } from '@speakeasy-services/queue';
-import { speakeasyApiRequest } from '@speakeasy-services/common';
+import { healthCheck } from './health.js';
 
 interface AddRecipientToSessionJob {
   authorDid: string;
@@ -11,7 +10,11 @@ interface RotateSessionJob {
   authorDid: string;
 }
 
-const worker = new Worker({ name: 'trusted-users-worker' });
+const worker = new Worker({
+  name: 'trusted-users-worker',
+  healthCheck,
+  port: parseInt(process.env.PORT || '4002'),
+});
 
 worker.start().catch((error: Error) => {
   console.error('Failed to start worker:', error);
