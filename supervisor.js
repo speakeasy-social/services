@@ -1,6 +1,9 @@
 #!/usr/bin/env node
+const dotenv = require('dotenv');
 const cluster = require('cluster');
 const os = require('os');
+
+dotenv.config({ path: process.env.ENV_FILE });
 
 if (cluster.isMaster) {
   const numProcesses = 1;
