@@ -101,7 +101,7 @@ jobs:
             # Load the image
             gunzip -c "${LATEST_TAR}" > "${LATEST_TAR%.gz}"
             docker load < "${LATEST_TAR%.gz}"
-            rm -f "${LATEST_TAR}"
+            rm -f "${LATEST_TAR%.gz}"
 
             # Keep only the 3 most recent tar.gz files
             cd /home/speakeasy
