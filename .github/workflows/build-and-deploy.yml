@@ -140,19 +140,19 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           passphrase: ${{ secrets.SSH_PASSPHRASE }}
           script: |
-            docker compose -f /home/speakeasy/app/docker-compose.yaml up -d private-sessions
+            docker compose -f /home/speakeasy/app/docker-compose.yaml up -d speakeasy-private-sessions
 
             # Wait for container to be running and healthy
             echo "Waiting for container to be healthy..."
             for i in {1..30}; do
-              HEALTH_STATUS=$(docker inspect --format='{{.State.Health.Status}}' private-sessions)
+              HEALTH_STATUS=$(docker inspect --format='{{.State.Health.Status}}' speakeasy-private-sessions)
               if [ "$HEALTH_STATUS" = "healthy" ]; then
                 echo "Container is healthy"
                 exit 0
               fi
               if [ $i -eq 10 ]; then
                 echo "Container failed to become healthy"
-                docker logs private-sessions
+                docker logs speakeasy-private-sessions
                 exit 1
               fi
               sleep 1
@@ -168,19 +168,19 @@ jobs:
           passphrase: ${{ secrets.SSH_PASSPHRASE }}
           script: |
             # Start new worker
-            docker compose -f /home/speakeasy/app/docker-compose.yaml up -d private-sessions-worker
+            docker compose -f /home/speakeasy/app/docker-compose.yaml up -d speakeasy-private-sessions-worker
 
             # Wait for container to be running and healthy
             echo "Waiting for container to be healthy..."
             for i in {1..30}; do
-              HEALTH_STATUS=$(docker inspect --format='{{.State.Health.Status}}' private-sessions-worker)
+              HEALTH_STATUS=$(docker inspect --format='{{.State.Health.Status}}' speakeasy-private-sessions-worker)
               if [ "$HEALTH_STATUS" = "healthy" ]; then
                 echo "Container is healthy"
                 exit 0
               fi
               if [ $i -eq 10 ]; then
                 echo "Container failed to become healthy"
-                docker logs private-sessions-worker
+                docker logs speakeasy-private-sessions-worker
                 exit 1
               fi
               sleep 1
@@ -214,19 +214,19 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           passphrase: ${{ secrets.SSH_PASSPHRASE }}
           script: |
-            docker compose -f /home/speakeasy/app/docker-compose.yaml up -d trusted-users
+            docker compose -f /home/speakeasy/app/docker-compose.yaml up -d speakeasy-trusted-users
 
             # Wait for container to be running and healthy
             echo "Waiting for container to be healthy..."
             for i in {1..30}; do
-              HEALTH_STATUS=$(docker inspect --format='{{.State.Health.Status}}' trusted-users)
+              HEALTH_STATUS=$(docker inspect --format='{{.State.Health.Status}}' speakeasy-trusted-users)
               if [ "$HEALTH_STATUS" = "healthy" ]; then
                 echo "Container is healthy"
                 exit 0
               fi
               if [ $i -eq 10 ]; then
                 echo "Container failed to become healthy"
-                docker logs trusted-users
+                docker logs speakeasy-trusted-users
                 exit 1
               fi
               sleep 1
@@ -260,19 +260,19 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           passphrase: ${{ secrets.SSH_PASSPHRASE }}
           script: |
-            docker compose -f /home/speakeasy/app/docker-compose.yaml up -d service-admin
+            docker compose -f /home/speakeasy/app/docker-compose.yaml up -d speakeasy-service-admin
 
             # Wait for container to be running and healthy
             echo "Waiting for container to be healthy..."
             for i in {1..30}; do
-              HEALTH_STATUS=$(docker inspect --format='{{.State.Health.Status}}' service-admin)
+              HEALTH_STATUS=$(docker inspect --format='{{.State.Health.Status}}' speakeasy-service-admin)
               if [ "$HEALTH_STATUS" = "healthy" ]; then
                 echo "Container is healthy"
                 exit 0
               fi
               if [ $i -eq 10 ]; then
                 echo "Container failed to become healthy"
-                docker logs service-admin
+                docker logs speakeasy-service-admin
                 exit 1
               fi
               sleep 1
@@ -307,19 +307,19 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           passphrase: ${{ secrets.SSH_PASSPHRASE }}
           script: |
-            docker compose -f /home/speakeasy/app/docker-compose.yaml up -d user-keys
+            docker compose -f /home/speakeasy/app/docker-compose.yaml up -d speakeasy-user-keys
 
             # Wait for container to be running and healthy
             echo "Waiting for container to be healthy..."
             for i in {1..30}; do
-              HEALTH_STATUS=$(docker inspect --format='{{.State.Health.Status}}' user-keys)
+              HEALTH_STATUS=$(docker inspect --format='{{.State.Health.Status}}' speakeasy-user-keys)
               if [ "$HEALTH_STATUS" = "healthy" ]; then
                 echo "Container is healthy"
                 exit 0
               fi
               if [ $i -eq 10 ]; then
                 echo "Container failed to become healthy"
-                docker logs user-keys
+                docker logs speakeasy-user-keys
                 exit 1
               fi
               sleep 1
@@ -339,14 +339,14 @@ jobs:
             # Wait for container to be running and healthy
             echo "Waiting for container to be healthy..."
             for i in {1..30}; do
-              HEALTH_STATUS=$(docker inspect --format='{{.State.Health.Status}}' user-keys-worker)
+              HEALTH_STATUS=$(docker inspect --format='{{.State.Health.Status}}' speakeasy-user-keys-worker)
               if [ "$HEALTH_STATUS" = "healthy" ]; then
                 echo "Container is healthy"
                 exit 0
               fi
               if [ $i -eq 10 ]; then
                 echo "Container failed to become healthy"
-                docker logs user-keys-worker
+                docker logs speakeasy-user-keys-worker
                 exit 1
               fi
               sleep 1
