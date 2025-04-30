@@ -158,7 +158,7 @@ jobs:
               sleep 1
             done
 
-  deploy-private-sessions-worker:
+  deploy-worker-private-sessions:
     runs-on: ubuntu-latest
     needs: push-to-production
     environment: production
@@ -330,7 +330,7 @@ jobs:
               sleep 1
             done
 
-  deploy-user-keys-worker:
+  deploy-worker-user-keys:
     runs-on: ubuntu-latest
     needs: push-to-production
     environment: production
