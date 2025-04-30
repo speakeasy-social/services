@@ -4,6 +4,8 @@ import { speakeasyApiRequest } from '@speakeasy-services/common';
 import { PrismaClient } from './generated/prisma-client/index.js';
 import { recryptDEK } from '@speakeasy-services/crypto';
 import { healthCheck } from './health.js';
+import { getPrismaClient } from './db.js';
+
 interface AddRecipientToSessionJob {
   authorDid: string;
   recipientDid: string;
@@ -26,7 +28,7 @@ const worker = new Worker({
   healthCheck,
   port: 4001,
 });
-const prisma = new PrismaClient();
+const prisma = getPrismaClient();
 
 // Add a new recipient to 30 days prior
 const WINDOW_FOR_NEW_TRUSTED_USER = 30 * 24 * 60 * 60 * 1000;

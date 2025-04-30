@@ -1,6 +1,7 @@
 import { PrismaClient, Reaction } from '../generated/prisma-client/index.js';
+import { getPrismaClient } from '../db.js';
 
-const prisma = new PrismaClient();
+const prisma = getPrismaClient();
 
 export class ReactionService {
   /**

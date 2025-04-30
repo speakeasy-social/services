@@ -1,6 +1,6 @@
-import { PrismaClient } from './generated/prisma-client/index.js';
+import { getPrismaClient } from './db.js';
 
 export async function healthCheck() {
-  const prisma = new PrismaClient();
+  const prisma = getPrismaClient();
   await prisma.userFeature.findFirst();
 }

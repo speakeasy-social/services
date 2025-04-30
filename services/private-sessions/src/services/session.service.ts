@@ -9,8 +9,9 @@ import {
   safeAtob,
 } from '@speakeasy-services/common';
 import { Queue, JOB_NAMES } from '@speakeasy-services/queue';
+import { getPrismaClient } from '../db.js';
 
-const prisma = new PrismaClient();
+const prisma = getPrismaClient();
 
 // 7 days
 const DEFAULT_SESSION_EXPIRATION_HOURS = 24 * 7;

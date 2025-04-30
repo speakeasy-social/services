@@ -4,8 +4,9 @@ import {
   InviteCode,
 } from '../generated/prisma-client/index.js';
 import { NotFoundError, ValidationError } from '@speakeasy-services/common';
+import { getPrismaClient } from '../db.js';
 
-const prisma = new PrismaClient();
+const prisma = getPrismaClient();
 
 type SelectedUserFeatures = Pick<UserFeature, 'userDid' | 'key' | 'value'>;
 

@@ -5,8 +5,9 @@ import {
 } from '../generated/prisma-client/index.js';
 import { NotFoundError } from '@speakeasy-services/common';
 import { Queue, JOB_NAMES } from '@speakeasy-services/queue';
+import { getPrismaClient } from '../db.js';
 
-const prisma = new PrismaClient();
+const prisma = getPrismaClient();
 
 export class TrustService {
   /**

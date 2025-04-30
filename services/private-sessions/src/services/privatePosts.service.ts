@@ -14,8 +14,9 @@ import {
   fetchFollowingDids,
   safeAtob,
 } from '@speakeasy-services/common';
+import { getPrismaClient } from '../db.js';
 
-const prisma = new PrismaClient();
+const prisma = getPrismaClient();
 
 interface GetPostsOptions {
   limit?: number;

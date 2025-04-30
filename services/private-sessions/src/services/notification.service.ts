@@ -3,8 +3,9 @@ import {
   createCursorWhereClause,
   encodeCursor,
 } from '@speakeasy-services/common';
+import { getPrismaClient } from '../db.js';
 
-const prisma = new PrismaClient();
+const prisma = getPrismaClient();
 
 export class NotificationService {
   /**

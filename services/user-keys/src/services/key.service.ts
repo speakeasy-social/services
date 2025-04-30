@@ -7,6 +7,7 @@ import {
 } from '@speakeasy-services/common';
 import { Queue, JOB_NAMES } from '@speakeasy-services/queue';
 import { MlKem768 } from 'crystals-kyber-js';
+import { getPrismaClient } from '../db.js';
 
 const keySchema = z.object({
   id: z.string(),
@@ -39,7 +40,7 @@ export class KeyService {
   private prisma: PrismaClient;
 
   constructor() {
-    this.prisma = new PrismaClient();
+    this.prisma = getPrismaClient();
   }
 
   /**
