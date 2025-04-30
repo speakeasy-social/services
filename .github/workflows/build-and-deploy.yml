@@ -111,7 +111,15 @@ jobs:
             # Keep only the 3 most recent versions plus 'latest' tag
             docker images "speakeasy-services-image:*" --format "{{.Tag}}" | \
               grep -v "latest" | sort -r | tail -n +4 | \
-              xargs -r -I {} docker rmi speakeasy-services-image:{}
+              while read -r tag; do
+                # Check if any containers are using this image
+                if ! docker ps -a --filter ancestor=speakeasy-services-image:$tag -q | grep -q .; then
+                  # Only remove if no containers are using it
+                  docker rmi speakeasy-services-image:$tag
+                else
+                  echo "Skipping removal of speakeasy-services-image:$tag - image is in use"
+                fi
+              done
 
   deploy-private-sessions:
     runs-on: ubuntu-latest
