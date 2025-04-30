@@ -1,3 +1,5 @@
+import fs from 'fs';
+
 import PgBoss, { SendOptions } from 'pg-boss';
 import { z } from 'zod';
 import { ValidationError } from '@speakeasy-services/common';
@@ -12,6 +14,15 @@ export const JOB_NAMES = {
 const queueConfigSchema = z.object({
   connectionString: z.string(),
   schema: z.string().default('pgboss'),
+  ssl: z
+    .union([
+      z.string(),
+      z.object({
+        rejectUnauthorized: z.boolean(),
+        ca: z.string(),
+      }),
+    ])
+    .optional(),
 });
 
 export const DEFAULT_RETRY_CONFIG = {
@@ -42,6 +53,13 @@ export class Queue {
           ? 'require'
           : undefined,
       });
+
+      if (process.env.DATABASE_CERT) {
+        parsedConfig.ssl = {
+          rejectUnauthorized: false,
+          ca: fs.readFileSync(process.env.DATABASE_CERT).toString(),
+        };
+      }
 
       Queue.instance = new PgBoss(parsedConfig);
     }
