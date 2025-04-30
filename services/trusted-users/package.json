@@ -8,7 +8,7 @@
   "types": "./dist/index.d.ts",
   "scripts": {
     "prebuild": "prisma generate",
-    "build": "prisma generate && tsc --build",
+    "build": "prisma generate && tsc --build && cp -r src/generated dist",
     "typecheck": "tsc --noEmit",
     "dev": "tsx watch src/api.ts",
     "dev:prisma": "prisma generate --watch",
