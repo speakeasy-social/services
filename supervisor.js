@@ -21,6 +21,13 @@ if (cluster.isMaster) {
   });
 } else {
   const serviceName = process.env.SERVICE_NAME;
-  require(`./services/${serviceName}/dist/api.js`);
-  console.log(`Process ${process.pid} started for service ${serviceName}`);
+  const processType = process.env.PROCESS_TYPE || 'api'; // Default to 'api' if not specified
+
+  if (processType === 'worker') {
+    require(`./services/${serviceName}/dist/worker.js`);
+    console.log(`Worker process ${process.pid} started for service ${serviceName}`);
+  } else {
+    require(`./services/${serviceName}/dist/api.js`);
+    console.log(`API process ${process.pid} started for service ${serviceName}`);
+  }
 } 
