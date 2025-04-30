@@ -24,7 +24,7 @@ interface UpdateSessionKeysJob {
 const worker = new Worker({
   name: 'ptivate-sessions-worker',
   healthCheck,
-  port: parseInt(process.env.PORT || '4003'),
+  port: 4001,
 });
 const prisma = new PrismaClient();
 

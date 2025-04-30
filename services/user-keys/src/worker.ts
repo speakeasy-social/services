@@ -12,7 +12,7 @@ interface UpdateUserKeysJob {
 const worker = new Worker({
   name: 'user-keys-worker',
   healthCheck,
-  port: parseInt(process.env.PORT || '4001'),
+  port: 4000,
 });
 const prisma = new PrismaClient();
 
