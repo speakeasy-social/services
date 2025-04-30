@@ -341,7 +341,7 @@ jobs:
           passphrase: ${{ secrets.SSH_PASSPHRASE }}
           script: |
             # Start new worker
-            docker compose -f /home/speakeasy/app/docker-compose.yaml up -d user-keys-worker
+            docker compose -f /home/speakeasy/app/docker-compose.yaml up -d speakeasy-user-keys-worker
 
             # Wait for container to be running and healthy
             echo "Waiting for container to be healthy..."
