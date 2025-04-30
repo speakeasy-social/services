@@ -38,6 +38,9 @@ export class Queue {
       const parsedConfig = queueConfigSchema.parse({
         connectionString: config?.connectionString || process.env.DATABASE_URL,
         schema: config?.schema || process.env.PGBOSS_SCHEMA || 'pgboss',
+        ssl: process.env.DATABASE_URL?.includes('sslmode=require')
+          ? 'require'
+          : undefined,
       });
 
       Queue.instance = new PgBoss(parsedConfig);
