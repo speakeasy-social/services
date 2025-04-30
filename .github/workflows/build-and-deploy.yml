@@ -142,32 +142,20 @@ jobs:
           script: |
             docker compose -f /home/speakeasy/app/docker-compose.yaml up -d private-sessions
 
-            # Wait for container to be running
-            echo "Waiting for container to start..."
+            # Wait for container to be running and healthy
+            echo "Waiting for container to be healthy..."
             for i in {1..30}; do
-              if docker ps --filter "name=private-sessions" --format "{{.Status}}" | grep -q "Up"; then
-                echo "Container is running"
-                break
-              fi
-              if [ $i -eq 30 ]; then
-                echo "Container failed to start"
-                exit 1
-              fi
-              sleep 2
-            done
-
-            # Verify service health
-            echo "Verifying service health..."
-            for i in {1..10}; do
-              if curl -s http://localhost:3000/health > /dev/null; then
-                echo "Service is healthy"
+              HEALTH_STATUS=$(docker inspect --format='{{.State.Health.Status}}' private-sessions)
+              if [ "$HEALTH_STATUS" = "healthy" ]; then
+                echo "Container is healthy"
                 exit 0
               fi
               if [ $i -eq 10 ]; then
-                echo "Service health check failed"
+                echo "Container failed to become healthy"
+                docker logs private-sessions
                 exit 1
               fi
-              sleep 2
+              sleep 1
             done
 
   deploy-trusted-users:
@@ -200,32 +188,20 @@ jobs:
           script: |
             docker compose -f /home/speakeasy/app/docker-compose.yaml up -d trusted-users
 
-            # Wait for container to be running
-            echo "Waiting for container to start..."
+            # Wait for container to be running and healthy
+            echo "Waiting for container to be healthy..."
             for i in {1..30}; do
-              if docker ps --filter "name=trusted-users" --format "{{.Status}}" | grep -q "Up"; then
-                echo "Container is running"
-                break
-              fi
-              if [ $i -eq 30 ]; then
-                echo "Container failed to start"
-                exit 1
-              fi
-              sleep 2
-            done
-
-            # Verify service health
-            echo "Verifying service health..."
-            for i in {1..10}; do
-              if curl -s http://localhost:3001/health > /dev/null; then
-                echo "Service is healthy"
+              HEALTH_STATUS=$(docker inspect --format='{{.State.Health.Status}}' trusted-users)
+              if [ "$HEALTH_STATUS" = "healthy" ]; then
+                echo "Container is healthy"
                 exit 0
               fi
               if [ $i -eq 10 ]; then
-                echo "Service health check failed"
+                echo "Container failed to become healthy"
+                docker logs trusted-users
                 exit 1
               fi
-              sleep 2
+              sleep 1
             done
 
   deploy-admin:
@@ -258,32 +234,20 @@ jobs:
           script: |
             docker compose -f /home/speakeasy/app/docker-compose.yaml up -d service-admin
 
-            # Wait for container to be running
-            echo "Waiting for container to start..."
+            # Wait for container to be running and healthy
+            echo "Waiting for container to be healthy..."
             for i in {1..30}; do
-              if docker ps --filter "name=service-admin" --format "{{.Status}}" | grep -q "Up"; then
-                echo "Container is running"
-                break
-              fi
-              if [ $i -eq 30 ]; then
-                echo "Container failed to start"
-                exit 1
-              fi
-              sleep 2
-            done
-
-            # Verify service health
-            echo "Verifying service health..."
-            for i in {1..10}; do
-              if curl -s http://localhost:3002/health > /dev/null; then
-                echo "Service is healthy"
+              HEALTH_STATUS=$(docker inspect --format='{{.State.Health.Status}}' service-admin)
+              if [ "$HEALTH_STATUS" = "healthy" ]; then
+                echo "Container is healthy"
                 exit 0
               fi
               if [ $i -eq 10 ]; then
-                echo "Service health check failed"
+                echo "Container failed to become healthy"
+                docker logs service-admin
                 exit 1
               fi
-              sleep 2
+              sleep 1
             done
 
   deploy-user-keys:
@@ -317,30 +281,18 @@ jobs:
           script: |
             docker compose -f /home/speakeasy/app/docker-compose.yaml up -d user-keys
 
-            # Wait for container to be running
-            echo "Waiting for container to start..."
+            # Wait for container to be running and healthy
+            echo "Waiting for container to be healthy..."
             for i in {1..30}; do
-              if docker ps --filter "name=user-keys" --format "{{.Status}}" | grep -q "Up"; then
-                echo "Container is running"
-                break
-              fi
-              if [ $i -eq 30 ]; then
-                echo "Container failed to start"
-                exit 1
-              fi
-              sleep 2
-            done
-
-            # Verify service health
-            echo "Verifying service health..."
-            for i in {1..10}; do
-              if curl -s http://localhost:3003/health > /dev/null; then
-                echo "Service is healthy"
+              HEALTH_STATUS=$(docker inspect --format='{{.State.Health.Status}}' user-keys)
+              if [ "$HEALTH_STATUS" = "healthy" ]; then
+                echo "Container is healthy"
                 exit 0
               fi
               if [ $i -eq 10 ]; then
-                echo "Service health check failed"
+                echo "Container failed to become healthy"
+                docker logs user-keys
                 exit 1
               fi
-              sleep 2
+              sleep 1
             done
