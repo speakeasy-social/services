@@ -158,7 +158,6 @@ jobs:
               sleep 1
             done
 
-    steps:
       - name: Deploy Worker
         uses: appleboy/ssh-action@v1.0.3
         with:
