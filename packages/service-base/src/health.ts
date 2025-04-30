@@ -1,5 +1,4 @@
 import { createLogger } from '@speakeasy-services/common';
-import { PrismaClient } from '@prisma/client';
 import { Request, Response } from 'express';
 
 export function healthCheckAPI(
