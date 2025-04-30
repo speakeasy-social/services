@@ -158,11 +158,6 @@ jobs:
               sleep 1
             done
 
-  deploy-worker-private-sessions:
-    runs-on: ubuntu-latest
-    needs: push-to-production
-    environment: production
-
     steps:
       - name: Deploy Worker
         uses: appleboy/ssh-action@v1.0.3
@@ -330,12 +325,6 @@ jobs:
               sleep 1
             done
 
-  deploy-worker-user-keys:
-    runs-on: ubuntu-latest
-    needs: push-to-production
-    environment: production
-
-    steps:
       - name: Deploy Worker
         uses: appleboy/ssh-action@v1.0.3
         with:
