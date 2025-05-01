@@ -47,6 +47,7 @@ export class Worker {
         return await handler(job);
       } catch (error) {
         this.logger.error(error);
+        console.log('Error!');
         throw error;
       }
     });
