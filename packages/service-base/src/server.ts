@@ -7,10 +7,12 @@ import {
   createLogger,
   errorHandler,
   ExtendedRequest,
+  NotFoundError,
   RequestHandler,
 } from '@speakeasy-services/common';
 import { logAttributes } from '@speakeasy-services/common';
 import { healthCheckAPI } from './health.js';
+import 'express-async-errors';
 
 // Extend Express Request type to include logger
 declare global {
@@ -94,9 +96,6 @@ export class Server {
 
     app.get('/health', healthCheckAPI(this.options.healthCheck, this.logger));
 
-    // Parse JSON bodies
-    app.use(express.json());
-
     // Add logger to the request for easy access
     app.use((req, res, next) => {
       req.logger = this.logger.child({
@@ -107,16 +106,14 @@ export class Server {
       next();
     });
 
-    // Add middleware
-    if (this.options.middleware) {
-      for (const middleware of this.options.middleware) {
-        app.use(middleware);
-      }
-    }
-
     // Mount XRPC routes
     app.all(
       '/xrpc/:method',
+      // Add middleware
+      ...(this.options.middleware || []),
+      // Parse JSON bodies
+      express.json(),
+
       async (request: Request, res: Response, next: NextFunction) => {
         const req = request as ExtendedRequest;
         req.startTime = Date.now();
@@ -126,20 +123,13 @@ export class Server {
           // Get the method handler
           const methodHandler = this.options.methods[method];
           if (!methodHandler) {
-            req.logger.warn(await logAttributes(req, 404), 'Method not found');
-            res.status(404).json({ error: 'Method not found' });
-            return;
+            throw new NotFoundError('Method not found');
           }
 
           // Call the method handler directly
           const output = await methodHandler.handler(req, res);
           if (!output || !('body' in output)) {
-            req.logger.error(
-              await logAttributes(req, 500),
-              'Invalid handler output',
-            );
-            res.status(500).json({ error: 'Internal server error' });
-            return;
+            throw new Error('Invalid handler output');
           }
 
           // Send the JSON response
@@ -151,6 +141,11 @@ export class Server {
         }
       },
     );
+
+    // Catch-all route handler for unmatched routes
+    app.use('*', () => {
+      throw new NotFoundError('Not Found');
+    });
 
     // Add error handling middleware
     app.use(errorHandler);
