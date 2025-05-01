@@ -59,21 +59,10 @@ jobs:
     strategy:
       matrix:
         environment: [production, keys-production]
-        include:
-          - environment: production
-            run_condition: true
-          - environment: keys-production
-            run_condition: ${{ contains(github.event.head_commit.modified, 'services/user-keys/') }}
 
     environment: ${{ matrix.environment }}
 
     steps:
-      - name: Check if environment should run
-        if: matrix.run_condition != true
-        run: |
-          echo "Skipping ${{ matrix.environment }} environment as conditions are not met"
-          exit 78  # This is a special exit code that marks the job as skipped
-
       - name: Download Docker Image Artifact
         uses: actions/download-artifact@v4
         with:
