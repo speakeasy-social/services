@@ -11,17 +11,37 @@ interface CustomError extends Error {
   details?: Record<string, any>;
 }
 
+function relevantLine(stack: string) {
+  if (!stack) return '';
+
+  const lines = stack.split('\n').slice(1);
+  for (const line of lines) {
+    const match = line.match(/\(([^)]+)\)/);
+    if (match) {
+      const path = match[1];
+      return path.match(/(?:\/packages\/|\/services\/).*/)?.[0];
+    }
+  }
+  return '';
+}
+
 export const errorHandler: ErrorRequestHandler = async (
   error: CustomError,
   request: Request,
   res: Response,
   next: NextFunction,
 ) => {
+  // If headers are already sent, let Express handle it
+  if (res.headersSent) {
+    return next(error);
+  }
+
+  let isSilent = false;
+
   const req = request as ExtendedRequest;
   let responseObject: {
     error: string;
     message: string;
-    stack?: string;
     errors?: any;
     code?: string;
   } = {
@@ -62,12 +82,13 @@ export const errorHandler: ErrorRequestHandler = async (
     responseObject = {
       error: error.name,
       message: error.message,
-      stack: error.stack,
       errors: error.errors,
     };
     errorMessage = `${error.name} occurred`;
 
     statusCode = error.statusCode || 400;
+
+    isSilent = true;
 
     if (error.name === 'NotFoundError') {
       statusCode = 404;
@@ -89,6 +110,7 @@ export const errorHandler: ErrorRequestHandler = async (
         message: `That ${prismaError.meta?.modelName} already exists`,
         code: 'AlreadyExists',
       };
+      isSilent = true;
     } else {
       responseObject = {
         error: 'InternalServerError',
@@ -97,15 +119,21 @@ export const errorHandler: ErrorRequestHandler = async (
     }
   }
 
+  console.log(error.stack);
   req.logger.error(
     {
       ...(await logAttributes(req, statusCode)),
-      error: errorLog,
+      relevantLine: relevantLine(errorLog.stack || ''),
+      // Hide simple errors like 404s in production
+      error:
+        isSilent && process.env.NODE_ENV === 'production'
+          ? undefined
+          : errorLog,
     },
     errorMessage,
   );
 
-  return res.status(statusCode).send(
+  res.status(statusCode).send(
     responseObject || {
       error: 'InternalServerError',
       message: 'An unexpected error occurred',
