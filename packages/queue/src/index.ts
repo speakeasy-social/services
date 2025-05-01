@@ -60,11 +60,6 @@ export class Queue {
           ca: fs.readFileSync(process.env.DATABASE_CERT).toString(),
         };
       }
-      console.log('cert specified?', process.env.DATABASE_CERT);
-      console.log(
-        'has ssl cert',
-        typeof parsedConfig.ssl === 'object' && !!parsedConfig.ssl?.ca,
-      );
 
       Queue.instance = new PgBoss(parsedConfig);
     }
