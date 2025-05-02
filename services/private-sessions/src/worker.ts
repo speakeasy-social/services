@@ -74,6 +74,9 @@ worker.work<AddRecipientToSessionJob>(
       );
     }
 
+    console.log('Found sessions', sessionsWithKeys.length);
+    console.log('Sessions', sessions.length);
+
     if (!sessionsWithKeys.length) {
       return;
     }
