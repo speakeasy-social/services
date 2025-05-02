@@ -43,6 +43,7 @@ export interface ServerOptions {
   healthCheck: () => Promise<void>;
   dbMetrics?: {
     getTotalQueryDuration: (requestId: string) => number;
+    getQueryDurationProfile?: (requestId: string) => string;
     cleanupQueryTracking: (requestId: string) => void;
   };
 }
@@ -150,6 +151,15 @@ export class Server {
             const dbTime =
               this.options.dbMetrics.getTotalQueryDuration(requestId);
             (logData as any).dbDuration = dbTime;
+
+            // Add query profile if the function is available
+            if (this.options.dbMetrics?.getQueryDurationProfile) {
+              const profile =
+                this.options.dbMetrics.getQueryDurationProfile(requestId);
+              if (profile) {
+                (logData as any).dbProfile = profile;
+              }
+            }
           }
 
           if (req.user && 'authDuration' in req.user) {

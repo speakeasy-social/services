@@ -13,6 +13,8 @@ const prisma = new PrismaClient(options);
 
 // Request-specific query duration tracking
 const requestDurations = new Map<string, number>();
+// Track individual query durations for each request
+const requestQueryDurations = new Map<string, number[]>();
 
 (prisma.$on as any)('query', (e: Prisma.QueryEvent) => {
   if (process.env.PRISMA_LOG) {
@@ -24,8 +26,14 @@ const requestDurations = new Map<string, number>();
   const requestId = globalRequestId.get();
 
   if (requestId) {
+    // Update total duration
     const currentDuration = requestDurations.get(requestId) || 0;
     requestDurations.set(requestId, currentDuration + e.duration);
+
+    // Store individual query duration
+    const durations = requestQueryDurations.get(requestId) || [];
+    durations.push(e.duration);
+    requestQueryDurations.set(requestId, durations);
   }
 });
 
@@ -58,6 +66,7 @@ class RequestIdHolder {
 
     // Also clean up the duration
     requestDurations.delete(requestId);
+    requestQueryDurations.delete(requestId);
   }
 }
 
@@ -73,9 +82,16 @@ export function getTotalQueryDuration(requestId: string): number {
   return duration;
 }
 
+// Get a profile string of individual query durations
+export function getQueryDurationProfile(requestId: string): string {
+  const durations = requestQueryDurations.get(requestId) || [];
+  return durations.join(',');
+}
+
 // Clean up query tracking resources for a request
 export function cleanupQueryTracking(requestId: string): void {
   requestDurations.delete(requestId);
+  requestQueryDurations.delete(requestId);
   globalRequestId.clear(requestId);
   console.log(`Cleared request ID: ${requestId}`);
 }
@@ -93,6 +109,7 @@ export function queryTrackerMiddleware(req: any, res: any, next: () => void) {
 
   // Initialize tracking for this request
   requestDurations.set(requestId, 0);
+  requestQueryDurations.set(requestId, []);
   globalRequestId.set(requestId);
 
   // Clean up when the response is finished
@@ -103,11 +120,14 @@ export function queryTrackerMiddleware(req: any, res: any, next: () => void) {
   // Store the functions on res.locals
   if (res.locals) {
     res.locals.getTotalQueryDuration = () => getTotalQueryDuration(requestId);
+    res.locals.getQueryDurationProfile = () =>
+      getQueryDurationProfile(requestId);
     res.locals.cleanupQueryTracking = () => cleanupQueryTracking(requestId);
   }
 
   // Add to middleware scope for direct access
   req.getTotalQueryDuration = () => getTotalQueryDuration(requestId);
+  req.getQueryDurationProfile = () => getQueryDurationProfile(requestId);
   req.cleanupQueryTracking = () => cleanupQueryTracking(requestId);
 
   next();

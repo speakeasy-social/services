@@ -11,6 +11,7 @@ import { healthCheck } from './health.js';
 import {
   queryTrackerMiddleware,
   getTotalQueryDuration,
+  getQueryDurationProfile,
   cleanupQueryTracking,
 } from './db.js';
 
@@ -24,6 +25,7 @@ type PrivateSessionsServerOptions = {
   healthCheck: () => Promise<void>;
   dbMetrics: {
     getTotalQueryDuration: typeof getTotalQueryDuration;
+    getQueryDurationProfile: typeof getQueryDurationProfile;
     cleanupQueryTracking: typeof cleanupQueryTracking;
   };
 };
@@ -41,6 +43,7 @@ const server = new Server({
   healthCheck,
   dbMetrics: {
     getTotalQueryDuration,
+    getQueryDurationProfile,
     cleanupQueryTracking,
   },
 } as PrivateSessionsServerOptions);
