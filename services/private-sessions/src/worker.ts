@@ -39,6 +39,8 @@ const WINDOW_FOR_NEW_TRUSTED_USER = 30 * 24 * 60 * 60 * 1000;
 worker.work<AddRecipientToSessionJob>(
   JOB_NAMES.ADD_RECIPIENT_TO_SESSION,
   async (job) => {
+    console.log('Adding recipient to session');
+    worker.logger.info('Adding recipient to session (logger)');
     // FIXME we need some aborts to handle various kinds of debouncing
     // We should about the job if
     // * User has since untrusted the recipient
