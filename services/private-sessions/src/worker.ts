@@ -71,6 +71,9 @@ worker.work<AddRecipientToSessionJob>(
       (session) => session.sessionKeys.length > 0,
     );
 
+    logToStdout(`Found sessions ${sessionsWithKeys.length}`);
+    logToStdout(`Sessions ${sessions.length}`);
+
     // User hasn't yet made any private posts, we can stop here
     if (sessionsWithKeys.length === 0) {
       return;
@@ -81,9 +84,6 @@ worker.work<AddRecipientToSessionJob>(
         `Some sessions for ${authorDid} do not have author session keys (${sessions.length} sessions, ${sessionsWithKeys.length})`,
       );
     }
-
-    logToStdout(`Found sessions ${sessionsWithKeys.length}`);
-    logToStdout(`Sessions ${sessions.length}`);
 
     if (!sessionsWithKeys.length) {
       return;
