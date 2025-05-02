@@ -24,10 +24,16 @@ interface UpdateSessionKeysJob {
 }
 
 const worker = new Worker({
-  name: 'ptivate-sessions-worker',
+  name: 'private-sessions-worker',
   healthCheck,
   port: 4001,
 });
+
+// Helper function to ensure logs are written directly to stdout
+const logToStdout = (message: string) => {
+  process.stdout.write(`${new Date().toISOString()} - ${message}\n`);
+};
+
 const prisma = getPrismaClient();
 
 // Add a new recipient to 30 days prior
@@ -39,7 +45,7 @@ const WINDOW_FOR_NEW_TRUSTED_USER = 30 * 24 * 60 * 60 * 1000;
 worker.work<AddRecipientToSessionJob>(
   JOB_NAMES.ADD_RECIPIENT_TO_SESSION,
   async (job) => {
-    console.log('Adding recipient to session');
+    logToStdout('Adding recipient to session');
     worker.logger.info('Adding recipient to session (logger)');
     // FIXME we need some aborts to handle various kinds of debouncing
     // We should about the job if
@@ -76,8 +82,8 @@ worker.work<AddRecipientToSessionJob>(
       );
     }
 
-    console.log('Found sessions', sessionsWithKeys.length);
-    console.log('Sessions', sessions.length);
+    logToStdout(`Found sessions ${sessionsWithKeys.length}`);
+    logToStdout(`Sessions ${sessions.length}`);
 
     if (!sessionsWithKeys.length) {
       return;
@@ -228,9 +234,10 @@ worker.queue.work<UpdateSessionKeysJob>(
 worker
   .start()
   .then(() => {
-    console.log('Private sessions Worker started');
+    logToStdout('Private sessions Worker started');
   })
   .catch((error: Error) => {
+    logToStdout('Failed to start worker');
     console.error('Failed to start worker:', error);
     throw error;
   });
