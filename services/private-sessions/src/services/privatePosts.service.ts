@@ -7,6 +7,7 @@ import {
 import {
   ExtendedRequest,
   NotFoundError,
+  User,
   ValidationError,
   createCursorWhereClause,
   decodeCursor,
@@ -111,7 +112,17 @@ export class PrivatePostsService {
     const DEFAULT_LIMIT = 50;
 
     if (options.filter === 'follows') {
-      const followingDids = await fetchFollowingDids(req, recipientDid);
+      let followingDids;
+      if (req.prefetch?.followingDidsPromise) {
+        followingDids = await req.prefetch.followingDidsPromise;
+      }
+      if (!followingDids) {
+        followingDids = await fetchFollowingDids(
+          req,
+          (req.user as User).token as string,
+          recipientDid,
+        );
+      }
       // Merge options.authorDids with followingDids
       options.authorDids = [...(options.authorDids || []), ...followingDids];
     }

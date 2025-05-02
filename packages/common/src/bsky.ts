@@ -73,15 +73,15 @@ export async function fetchBlueskySession(
  */
 export async function fetchFollowingDids(
   req: ExtendedRequest,
+  token: string,
   recipientDid: string,
 ) {
-  const token = (req.user as User).token;
   if (!token) {
     throw new AuthenticationError('User not authenticated');
   }
 
   const host = getHostFromToken(token);
-  const allFollowDids: string[] = [req.user?.did!];
+  const allFollowDids: string[] = [recipientDid];
   let cursor: string | undefined;
 
   try {

@@ -49,17 +49,7 @@ function authenticateService(req: any, token: string) {
   };
 }
 
-/**
- * Middleware that authenticates incoming requests as either a user or service.
- * For users, it verifies their Bluesky session token.
- * For services, it verifies their API key.
- *
- * @param req - The Express request object
- * @param res - The Express response object
- * @param next - The Express next function
- * @throws AuthenticationError if authentication fails
- */
-export const authenticateToken = async (req: any, res: any, next: any) => {
+export function getBearerToken(req: any) {
   const authHeader = Array.isArray(req.headers.authorization)
     ? req.headers.authorization[0]
     : req.headers.authorization;
@@ -73,6 +63,22 @@ export const authenticateToken = async (req: any, res: any, next: any) => {
   if (bearer.toLowerCase() !== 'bearer') {
     throw new AuthenticationError('Invalid authorization header');
   }
+
+  return token;
+}
+
+/**
+ * Middleware that authenticates incoming requests as either a user or service.
+ * For users, it verifies their Bluesky session token.
+ * For services, it verifies their API key.
+ *
+ * @param req - The Express request object
+ * @param res - The Express response object
+ * @param next - The Express next function
+ * @throws AuthenticationError if authentication fails
+ */
+export const authenticateToken = async (req: any, res: any, next: any) => {
+  const token = getBearerToken(req);
 
   if (token.startsWith('api-key:')) {
     authenticateService(req, token);

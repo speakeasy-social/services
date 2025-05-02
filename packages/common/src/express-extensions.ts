@@ -22,6 +22,7 @@ export interface ExtendedRequest extends Request {
   abilities?: Ability[];
   logger: ReturnType<typeof createLogger>;
   startTime: number;
+  prefetch?: Record<string, any>;
 }
 
 export type RequestHandlerReturn = Promise<{ body: object }>;
