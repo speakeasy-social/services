@@ -2,7 +2,7 @@
 set -e
 
 # Create schemas for each service
-docker-compose exec -T postgres psql -v ON_ERROR_STOP=1 --username speakeasy --dbname speakeasy <<EOF
+docker compose exec -T postgres psql -v ON_ERROR_STOP=1 --username speakeasy --dbname speakeasy <<EOF
 -- Drop and create schemas for each service
 DROP SCHEMA IF EXISTS user_keys CASCADE;
 DROP SCHEMA IF EXISTS private_sessions CASCADE;
