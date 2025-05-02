@@ -11,13 +11,17 @@ if (cluster.isMaster) {
 
   // Fork processes
   for (let i = 0; i < numProcesses; i++) {
-    cluster.fork();
+    const process = cluster.fork();
+    process.process.stdout.pipe(process.stdout);
+    process.process.stderr.pipe(process.stderr);
   }
 
   cluster.on('exit', (process, code, signal) => {
     console.log(`Process ${process.process.pid} died with code: ${code}, and signal: ${signal}`);
     console.log('Starting a new process');
-    cluster.fork();
+    const newProcess = cluster.fork();
+    newProcess.process.stdout.pipe(process.stdout);
+    newProcess.process.stderr.pipe(process.stderr);
   });
 } else {
   const serviceName = process.env.SERVICE_NAME;
