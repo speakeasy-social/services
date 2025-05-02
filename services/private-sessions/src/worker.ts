@@ -223,7 +223,12 @@ worker.queue.work<UpdateSessionKeysJob>(
   },
 );
 
-worker.start().catch((error: Error) => {
-  console.error('Failed to start worker:', error);
-  throw error;
-});
+worker
+  .start()
+  .then(() => {
+    console.log('Private sessions Worker started');
+  })
+  .catch((error: Error) => {
+    console.error('Failed to start worker:', error);
+    throw error;
+  });
