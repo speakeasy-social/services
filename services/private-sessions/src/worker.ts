@@ -95,7 +95,7 @@ worker.work<AddRecipientToSessionJob>(
           fromService: 'private-sessions',
           toService: 'user-keys',
         },
-        { ids: [sessionKeyPairIds], did: authorDid },
+        { ids: sessionKeyPairIds, did: authorDid },
       ),
       // This will trigger a new key if the recipient doesn't have one
       speakeasyApiRequest(
