@@ -93,7 +93,6 @@ export function cleanupQueryTracking(requestId: string): void {
   requestDurations.delete(requestId);
   requestQueryDurations.delete(requestId);
   globalRequestId.clear(requestId);
-  console.log(`Cleared request ID: ${requestId}`);
 }
 
 // Middleware to initialize query duration tracking for a request
