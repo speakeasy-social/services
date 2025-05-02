@@ -56,6 +56,7 @@ model EncryptedPost {
 
   // Relationships
   session       Session  @relation("SessionToPosts", fields: [sessionId], references: [id])
+  mediaPosts    MediaPost[]
 
   @@index([authorDid, createdAt(sort: Desc)], name: "idx_posts_by_author_created")
   @@index([sessionId, createdAt(sort: Desc), authorDid], name: "idx_posts_by_session_created_author")
@@ -100,6 +101,31 @@ model SeenNotifications {
 
   @@index([userDid], name: "idx_seen_notifications_user_did")
   @@map("seen_notifications")
+}
+
+model Media {
+  id          String @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  userDid     String
+  mimeType    String
+  size        Int
+  createdAt   DateTime @default(now())
+
+  // Relationships
+  mediaPosts  MediaPost[]
+
+  @@map("media")
+}
+
+model MediaPost {
+  mediaId           String @db.Uuid
+  encryptedPostId   String @db.Uuid
+
+  // Relationships
+  media           Media @relation(fields: [mediaId], references: [id])
+  encryptedPost   EncryptedPost @relation(fields: [encryptedPostId], references: [id])
+
+  @@id([mediaId, encryptedPostId])
+  @@map("media_posts")
 }
 
 // Generates a broken ER diagram, see README.md if you

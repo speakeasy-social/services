@@ -26,6 +26,7 @@ export type Subject =
   | 'notification'
   | 'reaction'
   | 'invite_code'
+  | 'media'
   | 'key';
 
 export type Ability = {
@@ -63,6 +64,8 @@ const userAbilities = [
 
   can('*', 'notification', { userDid: 'did' }),
   can('*', 'reaction', { userDid: 'did' }),
+
+  can('create', 'media'),
 
   // Users can manage their own keys
   can('*', 'key', { authorDid: 'did' }),

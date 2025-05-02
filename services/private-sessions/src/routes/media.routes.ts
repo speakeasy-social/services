@@ -1,0 +1,81 @@
+import {
+  RequestHandler,
+  RequestHandlerReturn,
+  ExtendedRequest,
+  validateAgainstLexicon,
+  authorize,
+} from '@speakeasy-services/common';
+import { uploadMediaDef } from '../lexicon/types/media.js';
+import { MediaService } from '../services/media.service.js';
+import { ValidationError } from '@atproto/lexicon';
+import { Readable } from 'stream';
+
+const mediaService = new MediaService();
+const MAX_FILE_SIZE = 2_000_000; // 2MB in bytes
+
+// Define method handlers with lexicon validation
+const methodHandlers = {
+  /**
+   * Uploads a media file
+   * @param req - The request containing the file to upload
+   * @returns Promise containing the media metadata
+   */
+  'social.spkeasy.media.upload': async (
+    req: ExtendedRequest,
+  ): RequestHandlerReturn => {
+    // Validate input against lexicon
+    validateAgainstLexicon(uploadMediaDef, req.body);
+
+    authorize(req, 'create', 'media');
+
+    const mimeType = req.headers['content-type'] || 'application/octet-stream';
+
+    // Validate content length
+    const contentLength = parseInt(req.headers['content-length'] || '0');
+    if (!contentLength) {
+      throw new ValidationError('Content-Length header is required');
+    }
+    if (contentLength > MAX_FILE_SIZE) {
+      throw new ValidationError(
+        `File size must be less than ${MAX_FILE_SIZE / 1_000_000}MB`,
+      );
+    }
+
+    // Restrict mime types to images
+    const allowedImageTypes = [
+      'image/jpeg',
+      'image/png',
+      'image/gif',
+      'image/webp',
+      'image/avif',
+    ];
+
+    if (!allowedImageTypes.includes(mimeType)) {
+      throw new ValidationError(
+        'Only image files are allowed. Supported formats: JPEG, PNG, GIF, WEBP, AVIF',
+      );
+    }
+
+    const result = await mediaService.uploadMedia(
+      req.user?.did!,
+      req as unknown as Readable,
+      mimeType,
+      contentLength,
+    );
+
+    return {
+      body: {
+        media: result,
+      },
+    };
+  },
+} as const;
+
+// Define methods using XRPC lexicon
+export const methods: Record<MethodName, { handler: RequestHandler }> = {
+  'social.spkeasy.media.upload': {
+    handler: methodHandlers['social.spkeasy.media.upload'],
+  },
+};
+
+type MethodName = keyof typeof methodHandlers;
