@@ -51,14 +51,10 @@ export class TrustService {
   async removeTrusted(authorDid: string, recipientDid: string): Promise<void> {
     await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       // Try to update the relationship to mark it as deleted
-      const result = await tx.trustedUser.updateMany({
+      const result = await tx.trustedUser.deleteMany({
         where: {
           authorDid,
           recipientDid,
-          deletedAt: null,
-        },
-        data: {
-          deletedAt: new Date(),
         },
       });
 
