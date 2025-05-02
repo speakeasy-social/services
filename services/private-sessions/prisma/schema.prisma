@@ -44,7 +44,7 @@ model SessionKey {
 
 model EncryptedPost {
   id            String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  uri           String
+  uri           String   @unique
   rkey          String
   sessionId     String   @db.Uuid
   authorDid     String
@@ -118,13 +118,13 @@ model Media {
 
 model MediaPost {
   mediaId           String @db.Uuid
-  encryptedPostId   String @db.Uuid
+  encryptedPostUri  String
 
   // Relationships
   media           Media @relation(fields: [mediaId], references: [id])
-  encryptedPost   EncryptedPost @relation(fields: [encryptedPostId], references: [id])
+  encryptedPost   EncryptedPost @relation(fields: [encryptedPostUri], references: [uri])
 
-  @@id([mediaId, encryptedPostId])
+  @@id([mediaId, encryptedPostUri])
   @@map("media_posts")
 }
 
