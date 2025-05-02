@@ -80,9 +80,6 @@ async function prefetchUserFolling(
   res: Response,
   next: () => void,
 ) {
-  console.log('prefetch');
-  console.log('social.spkeasy.privatePost.getPosts');
-  console.log(req.query.filter);
   // Only prefetch for getPosts if they're filtering by follows
   if (
     req.params.method === 'social.spkeasy.privatePost.getPosts' &&
