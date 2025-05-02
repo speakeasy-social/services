@@ -376,7 +376,7 @@ jobs:
 
   deploy-user-keys:
     runs-on: ubuntu-latest
-    needs: [push-to-production, check-changes]
+    needs: [push-to-keys-production, check-changes]
     environment: keys-production
     if: needs.check-changes.outputs.user-keys == 'true'
 
