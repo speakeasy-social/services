@@ -8,6 +8,7 @@ export interface User {
   did: string;
   handle: string;
   token: string;
+  authDuration: number;
 }
 
 export interface Service {

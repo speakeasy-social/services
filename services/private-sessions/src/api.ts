@@ -8,15 +8,42 @@ import {
 import { lexicons } from './lexicon/index.js';
 import { Queue } from '@speakeasy-services/queue';
 import { healthCheck } from './health.js';
+import {
+  queryTrackerMiddleware,
+  getTotalQueryDuration,
+  cleanupQueryTracking,
+} from './db.js';
+
+// Custom type to extend ServerOptions with our dbMetrics
+type PrivateSessionsServerOptions = {
+  name: string;
+  port: number;
+  methods: Record<string, { handler: any }>;
+  middleware?: any[];
+  lexicons?: any[];
+  healthCheck: () => Promise<void>;
+  dbMetrics: {
+    getTotalQueryDuration: typeof getTotalQueryDuration;
+    cleanupQueryTracking: typeof cleanupQueryTracking;
+  };
+};
 
 const server = new Server({
   name: 'private-sessions',
   port: config.PORT,
   methods,
-  middleware: [authenticateToken, authorizationMiddleware],
+  middleware: [
+    queryTrackerMiddleware,
+    authenticateToken,
+    authorizationMiddleware,
+  ],
   lexicons,
   healthCheck,
-});
+  dbMetrics: {
+    getTotalQueryDuration,
+    cleanupQueryTracking,
+  },
+} as PrivateSessionsServerOptions);
 
 // Initialize and start the queue before starting the server
 Queue.start()

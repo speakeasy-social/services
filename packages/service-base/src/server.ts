@@ -41,6 +41,10 @@ export interface ServerOptions {
   onShutdown?: () => Promise<void>;
   lexicons?: LexiconDoc[];
   healthCheck: () => Promise<void>;
+  dbMetrics?: {
+    getTotalQueryDuration: (requestId: string) => number;
+    cleanupQueryTracking: (requestId: string) => void;
+  };
 }
 
 export class Server {
@@ -135,7 +139,24 @@ export class Server {
           // Send the JSON response
           res.status(200).json(output.body);
 
-          req.logger.info(await logAttributes(req, 200));
+          // Get base log data and extend it with DB metrics
+          const logData = {
+            ...(await logAttributes(req, 200)),
+          };
+
+          // Add DB metrics if available
+          if (this.options.dbMetrics?.getTotalQueryDuration) {
+            const requestId = req.headers['x-request-id'] as string;
+            const dbTime =
+              this.options.dbMetrics.getTotalQueryDuration(requestId);
+            (logData as any).dbDuration = dbTime;
+          }
+
+          if (req.user && 'authDuration' in req.user) {
+            (logData as any).authDuration = req.user.authDuration;
+          }
+
+          req.logger.info(logData);
         } catch (error) {
           next(error);
         }

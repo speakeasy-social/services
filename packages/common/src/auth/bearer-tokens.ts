@@ -11,8 +11,9 @@ import { fetchBlueskySession } from '../bsky.js';
  * @throws AuthenticationError if the token is invalid or verification fails
  */
 async function authenticateUser(req: any, token: string) {
-  // Check cache first
+  const startTime = Date.now();
   const session = await asyncCache(token, 300, fetchBlueskySession, [token]);
+  const authDuration = Date.now() - startTime;
 
   // Attach user info to the request object for the authorization middleware
   req.user = {
@@ -20,6 +21,7 @@ async function authenticateUser(req: any, token: string) {
     did: session.did,
     handle: session.handle,
     token: token,
+    authDuration,
   };
 }
 
