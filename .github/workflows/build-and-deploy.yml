@@ -125,7 +125,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: push-to-production
     environment: production
-    if: github.ref == 'refs/heads/main' && (contains(github.event.head_commit.modified, 'packages/') || contains(github.event.head_commit.modified, 'services/private-sessions/'))
+    # if: github.ref == 'refs/heads/main' && (contains(github.event.head_commit.modified, 'packages/') || contains(github.event.head_commit.modified, 'services/private-sessions/'))
 
     steps:
       - name: Run Database Migrations
@@ -197,8 +197,9 @@ jobs:
   deploy-trusted-users:
     runs-on: ubuntu-latest
     needs: push-to-production
-    environment: production
-       if: github.ref == 'refs/heads/main' && (contains(github.event.head_commit.modified, 'packages/') || contains(github.event.head_commit.modified, 'services/trusted-users/'))
+    environment:
+      production
+      #  if: github.ref == 'refs/heads/main' && (contains(github.event.head_commit.modified, 'packages/') || contains(github.event.head_commit.modified, 'services/trusted-users/'))
 
     steps:
       - name: Run Database Migrations
@@ -244,7 +245,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: push-to-production
     environment: production
-    if: github.ref == 'refs/heads/main' && (contains(github.event.head_commit.modified, 'packages/') || contains(github.event.head_commit.modified, 'services/service-admin/'))
+    # if: github.ref == 'refs/heads/main' && (contains(github.event.head_commit.modified, 'packages/') || contains(github.event.head_commit.modified, 'services/service-admin/'))
 
     steps:
       - name: Run Database Migrations
@@ -289,8 +290,9 @@ jobs:
   deploy-user-keys:
     runs-on: ubuntu-latest
     needs: push-to-production
-    environment: keys-production
-       if: github.ref == 'refs/heads/main' && (contains(github.event.head_commit.modified, 'packages/') || contains(github.event.head_commit.modified, 'services/user-keys/'))
+    environment:
+      keys-production
+      #  if: github.ref == 'refs/heads/main' && (contains(github.event.head_commit.modified, 'packages/') || contains(github.event.head_commit.modified, 'services/user-keys/'))
 
     steps:
       - name: Run Database Migrations
