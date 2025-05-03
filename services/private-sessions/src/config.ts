@@ -20,11 +20,11 @@ const serviceSchema = {
     .describe('Database URL with private_sessions schema for Prisma')
     .optional(), // Optional since it can be derived from DATABASE_URL
   // UpCloud S3 configuration
-  UPCLOUD_S3_ENDPOINT: z.string().describe('UpCloud S3 endpoint URL'),
-  UPCLOUD_S3_REGION: z.string().describe('UpCloud S3 region'),
-  UPCLOUD_S3_ACCESS_KEY: z.string().describe('UpCloud S3 access key'),
-  UPCLOUD_S3_SECRET_KEY: z.string().describe('UpCloud S3 secret key'),
-  UPCLOUD_S3_BUCKET: z.string().describe('UpCloud S3 bucket name'),
+  MEDIA_S3_ENDPOINT: z.string().describe('S3 endpoint URL'),
+  MEDIA_S3_REGION: z.string().describe('S3 region'),
+  MEDIA_S3_ACCESS_KEY: z.string().describe('S3 access key'),
+  MEDIA_S3_SECRET_KEY: z.string().describe('S3 secret key'),
+  MEDIA_S3_BUCKET: z.string().describe('S3 bucket name'),
 } as const;
 
 // Create and validate the config

@@ -1,25 +1,15 @@
 import { getPrismaClient } from '../db.js';
 import { v4 as uuidv4 } from 'uuid';
-import axios from 'axios';
-import config from '../config.js';
 import { Readable } from 'stream';
+
 import { ValidationError } from '@speakeasy-services/common';
+import { uploadToS3 } from '../utils/manageS3.js';
 
 const prisma = getPrismaClient();
 
-const MAX_FILE_SIZE = 2_000_000; // 2MB in bytes
 const MAX_USER_DAILY_QUOTA = 20_000_000; // 20MB in bytes
 
 export class MediaService {
-  /**
-   * Generates the URL for a media file
-   * @param id - The media ID
-   * @returns The full URL to access the media
-   */
-  generateMediaUrl(id: string): string {
-    return `https://${config.UPCLOUD_S3_BUCKET}.${config.UPCLOUD_S3_ENDPOINT}/${id}`;
-  }
-
   /**
    * Uploads a media file and stores its metadata
    * @param file - The file to upload
@@ -64,20 +54,7 @@ export class MediaService {
 
     const id = uuidv4();
 
-    // Upload to S3 using Axios with streaming
-    await axios.put(
-      `https://${config.UPCLOUD_S3_BUCKET}.${config.UPCLOUD_S3_ENDPOINT}/${id}`,
-      file,
-      {
-        headers: {
-          'Content-Type': mimeType,
-          'x-amz-acl': 'public-read',
-          'Content-Length': size.toString(),
-        },
-        maxBodyLength: MAX_FILE_SIZE,
-        maxContentLength: MAX_FILE_SIZE,
-      },
-    );
+    await uploadToS3(file, mimeType, size, id);
 
     // Store the file metadata in the database
     await prisma.media.create({

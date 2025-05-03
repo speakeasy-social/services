@@ -21,16 +21,20 @@ services:
     networks:
       - speakeasy-services
 
-  s3ninja:
-    image: scireum/s3-ninja:6
-    container_name: s3
-    restart: always
+  localstack:
+    image: localstack/localstack:latest
+    container_name: localstack
     ports:
-      - '9444:9000'
+      - '4566:4566' # LocalStack Gateway (all services)
     environment:
-      - S3NINJA_BUCKETS=speakeasy
+      - SERVICES=s3
+      - DEBUG=1
+      - AWS_ACCESS_KEY_ID=s3_test_key
+      - AWS_SECRET_ACCESS_KEY=s3_test_secret
+      - DEFAULT_REGION=us-east-1
     volumes:
-      - ./s3ninja-data:/home/sirius/data
+      - ./dev-uploads:/tmp/localstack-s3-storage
+      - /var/run/docker.sock:/var/run/docker.sock
 
 networks:
   speakeasy-services:
