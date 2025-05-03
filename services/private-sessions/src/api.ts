@@ -13,7 +13,6 @@ import {
 import { lexicons } from './lexicon/index.js';
 import { Queue } from '@speakeasy-services/queue';
 import { healthCheck } from './health.js';
-import express from 'express';
 
 import {
   queryTrackerMiddleware,
@@ -48,15 +47,6 @@ const server = new Server({
   middleware: [
     queryTrackerMiddleware,
     prefetchUserFolling,
-    express.raw({
-      type: [
-        'image/jpeg',
-        'image/png',
-        'image/gif',
-        'image/webp',
-        'image/avif',
-      ],
-    }), // Only handle image uploads as raw streams
     authenticateToken,
     authorizationMiddleware,
   ],

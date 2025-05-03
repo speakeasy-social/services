@@ -8,10 +8,9 @@ import {
 import { uploadMediaDef } from '../lexicon/types/media.js';
 import { MediaService } from '../services/media.service.js';
 import { ValidationError } from '@atproto/lexicon';
-import { Readable } from 'stream';
+import config from '../config.js';
 
 const mediaService = new MediaService();
-const MAX_FILE_SIZE = 2_000_000; // 2MB in bytes
 
 // Define method handlers with lexicon validation
 const methodHandlers = {
@@ -35,9 +34,9 @@ const methodHandlers = {
     if (!contentLength) {
       throw new ValidationError('Content-Length header is required');
     }
-    if (contentLength > MAX_FILE_SIZE) {
+    if (contentLength > config.MEDIA_SIZE_LIMIT) {
       throw new ValidationError(
-        `File size must be less than ${MAX_FILE_SIZE / 1_000_000}MB`,
+        `File size must be less than ${config.MEDIA_SIZE_LIMIT / 1_000_000}MB`,
       );
     }
 
@@ -58,7 +57,7 @@ const methodHandlers = {
 
     const result = await mediaService.uploadMedia(
       req.user?.did!,
-      req as unknown as Readable,
+      req,
       mimeType,
       contentLength,
     );
