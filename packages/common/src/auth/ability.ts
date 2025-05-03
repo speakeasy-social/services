@@ -59,6 +59,7 @@ const userAbilities = [
   can('list', 'private_post', { recipientDid: 'did' }),
   can('list', 'session_key', { recipientDid: 'did' }),
   can('list', 'feature', { userDid: 'did' }),
+  can('apply', 'invite_code', { userDid: 'did' }),
 
   can('*', 'notification', { userDid: 'did' }),
   can('*', 'reaction', { userDid: 'did' }),
