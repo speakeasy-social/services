@@ -25,6 +25,10 @@ const serviceSchema = {
   MEDIA_S3_ACCESS_KEY: z.string().describe('S3 access key'),
   MEDIA_S3_SECRET_KEY: z.string().describe('S3 secret key'),
   MEDIA_S3_BUCKET: z.string().describe('S3 bucket name'),
+  MEDIA_SIZE_LIMIT: z
+    .string()
+    .transform(Number)
+    .describe('Maximum media size limit'),
 } as const;
 
 // Create and validate the config
