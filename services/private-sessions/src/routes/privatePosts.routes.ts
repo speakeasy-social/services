@@ -92,6 +92,16 @@ const methodHandlers = {
     // const post = await sessionService.deletePost(uri);
     throw new Error('Not implemented');
   },
+  'social.spkeasy.privatePost.preAuth': async (
+    req: ExtendedRequest,
+  ): RequestHandlerReturn => {
+    // NOOP
+    // This route is called to cause the user's bluesky session
+    // to be cached so the initial request to getPorsts is faster
+    return {
+      body: { success: true },
+    };
+  },
 } as const;
 
 // Define methods using XRPC lexicon
@@ -105,6 +115,12 @@ export const methods: Record<MethodName, { handler: RequestHandler }> = {
   },
   'social.spkeasy.privatePost.deletePost': {
     handler: methodHandlers['social.spkeasy.privatePost.deletePost'],
+  },
+  'social.spkeasy.privatePost.deletePost': {
+    handler: methodHandlers['social.spkeasy.privatePost.deletePost'],
+  },
+  'social.spkeasy.privatePost.preAuth': {
+    handler: methodHandlers['social.spkeasy.privatePost.preAuth'],
   },
 };
 
