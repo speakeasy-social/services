@@ -116,9 +116,6 @@ export const methods: Record<MethodName, { handler: RequestHandler }> = {
   'social.spkeasy.privatePost.deletePost': {
     handler: methodHandlers['social.spkeasy.privatePost.deletePost'],
   },
-  'social.spkeasy.privatePost.deletePost': {
-    handler: methodHandlers['social.spkeasy.privatePost.deletePost'],
-  },
   'social.spkeasy.privatePost.preAuth': {
     handler: methodHandlers['social.spkeasy.privatePost.preAuth'],
   },
