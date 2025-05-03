@@ -9,15 +9,21 @@
   "scripts": {
     "prebuild": "prisma generate",
     "build": "prisma generate && tsc --build && cp -r src/generated dist",
+    "postbuild": "chmod +x dist/cli/addInvite.js",
     "typecheck": "tsc --noEmit",
     "dev": "tsx watch src/api.ts",
     "dev:prisma": "prisma generate --watch",
     "dev:api": "tsx watch src/api.ts",
+    "dev:setup": "tsx src/cli/addInvite.ts dev private-posts true 3",
     "clean": "rm -rf dist",
     "lint": "eslint src",
     "test": "jest",
     "prisma:migrate": "prisma migrate deploy",
-    "prisma:generate": "prisma generate"
+    "prisma:generate": "prisma generate",
+    "cli:addInvite": "node dist/cli/addInvite.js"
+  },
+  "bin": {
+    "addInvite": "./dist/cli/addInvite.js"
   },
   "dependencies": {
     "@atproto/lexicon": "^0.4.9",

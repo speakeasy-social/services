@@ -16,6 +16,14 @@ pnpm dev
 pnpm dev:private-sessions
 ```
 
+To add an invite code in prod:
+
+SSH into spkeasy_services_prod
+
+```bash
+docker exec -it <container-id> npm run invite:add -- <code> <key> [value] [totalUses]
+```
+
 If you've borked your database `pnpm dev:setup` will wipe and reinitialise it
 
 [Database ER Diagrams](DATABASE_DIAGRAMS.md)

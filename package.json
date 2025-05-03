@@ -15,6 +15,7 @@
     "dev:private-sessions": "turbo run dev:prisma dev:api dev:worker --filter=@speakeasy-services/private-sessions",
     "dev:trusted-users": "turbo run dev:prisma dev:api dev:worker --filter=@speakeasy-services/trusted-users",
     "dev:user-keys": "turbo run dev:prisma dev:api dev:worker --filter=@speakeasy-services/user-keys",
+    "invite:add": "node services/service-admin/dist/cli/addInvite.js",
     "lint": "turbo run lint",
     "test": "turbo run test",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
