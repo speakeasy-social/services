@@ -4,6 +4,7 @@ import {
   RequestHandlerReturn,
   ExtendedRequest,
   validateAgainstLexicon,
+  User,
 } from '@speakeasy-services/common';
 import { getPostsDef, createPostsDef } from '../lexicon/types/posts.js';
 import { toEncryptedPostsListView } from '../views/private-posts.views.js';

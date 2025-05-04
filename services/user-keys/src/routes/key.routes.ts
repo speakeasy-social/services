@@ -11,6 +11,7 @@ import {
   NotFoundError,
   validateAgainstLexicon,
   AuthorizationError,
+  User,
 } from '@speakeasy-services/common';
 import {
   getPublicKeyDef,
@@ -80,7 +81,7 @@ const methodHandlers = {
     validateAgainstLexicon(getPrivateKeyDef, {});
 
     // Only the owner can access their private key
-    const key = await keyService.getPrivateKey(req.user?.did!);
+    const key = await keyService.getPrivateKey((req.user as User)?.did!);
     if (!key) {
       throw new NotFoundError('Private key not found');
     }
@@ -134,10 +135,10 @@ const methodHandlers = {
 
     const { privateKey, publicKey } = req.body;
 
-    authorize(req, 'update', 'key', { authorDid: req.user?.did });
+    authorize(req, 'update', 'key', { authorDid: (req.user as User)?.did });
 
     const result = await keyService.requestRotation(
-      req.user?.did!,
+      (req.user as User)?.did!,
       privateKey,
       publicKey,
     );

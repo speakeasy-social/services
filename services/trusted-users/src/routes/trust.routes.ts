@@ -10,6 +10,7 @@ import {
   RequestHandlerReturn,
   ExtendedRequest,
   validateAgainstLexicon,
+  User,
 } from '@speakeasy-services/common';
 import {
   getTrustedDef,
@@ -56,7 +57,7 @@ const methodHandlers = {
     // Validate input against lexicon
     validateAgainstLexicon(addTrustedDef, req.body);
 
-    const authorDid = req.user?.did;
+    const authorDid = (req.user as User)?.did;
 
     // Authorize the action
     authorize(req, 'create', 'trusted_user', { authorDid });
@@ -79,11 +80,11 @@ const methodHandlers = {
     validateAgainstLexicon(removeTrustedDef, req.body);
 
     const { recipientDid } = req.body as { recipientDid: string };
-    if (!req.user?.did) {
+    if (!(req.user as User)?.did) {
       throw new ValidationError('User DID is required');
     }
 
-    const authorDid = req.user.did;
+    const authorDid = (req.user as User)?.did;
 
     // Authorize the action
     authorize(req, 'delete', 'trusted_user', { authorDid });

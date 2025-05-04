@@ -14,7 +14,6 @@ export interface User {
 export interface Service {
   type: 'service';
   name: string;
-  did?: string;
 }
 
 export interface ExtendedRequest extends Request {
