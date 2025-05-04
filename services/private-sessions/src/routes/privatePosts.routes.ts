@@ -90,6 +90,8 @@ const methodHandlers = {
     // authorize(ctx, 'delete', post);
 
     // const post = await sessionService.deletePost(uri);
+
+    // TODO ensure any media is deleted with post
     throw new Error('Not implemented');
   },
   'social.spkeasy.privatePost.preAuth': async (

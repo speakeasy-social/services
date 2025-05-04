@@ -4,6 +4,8 @@ A collection of microservices for the Speakeasy platform enabling Bluesky users 
 
 ## Quickstart
 
+You will need Docker installed
+
 ```
 # First time
 pnpm install

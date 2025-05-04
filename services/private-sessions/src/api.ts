@@ -13,6 +13,7 @@ import {
 import { lexicons } from './lexicon/index.js';
 import { Queue } from '@speakeasy-services/queue';
 import { healthCheck } from './health.js';
+
 import {
   queryTrackerMiddleware,
   getTotalQueryDuration,
