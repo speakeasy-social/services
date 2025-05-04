@@ -70,7 +70,14 @@ const methodHandlers = {
 
     authorize(req, 'create', 'private_post', { authorDid: req.user?.did });
 
-    await privatePostsService.createEncryptedPosts(req.user!.did!, req.body);
+    const user = req.user as User;
+
+    await privatePostsService.createEncryptedPosts(
+      user.did,
+      user.handle,
+      user.token,
+      req.body,
+    );
 
     return {
       body: { success: true },

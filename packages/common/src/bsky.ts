@@ -18,7 +18,12 @@ export interface BlueskyFollows {
   }[];
 }
 
-function getHostFromToken(token: string) {
+export type BlueskyFetchOptions = {
+  token?: string;
+  host?: string;
+};
+
+export function getHostFromToken(token: string) {
   let host = 'https://bsky.social';
 
   try {
@@ -37,6 +42,35 @@ function getHostFromToken(token: string) {
 
   return host;
 }
+
+export async function blueskyFetch(path: string, options: BlueskyFetchOptions) {
+  let host = options.host;
+  let token = options.token;
+
+  if (!host && !token) {
+    throw new Error('Either host or token must be provided');
+  }
+
+  if (!host) {
+    host = getHostFromToken(token!);
+  }
+
+  const headers: { Authorization?: string } = {};
+
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
+  const uri = `${host}/xrpc/${path}`;
+
+  // Make request to Bluesky API
+  const response = await fetch(uri, {
+    headers,
+  });
+
+  return await response.json();
+}
+
 /**
  * Verifies a Bluesky session token by making a request to the Bluesky API.
  * In development mode, it will use a local Bluesky instance if the token's audience is 'did:web:localhost'.
@@ -48,18 +82,23 @@ function getHostFromToken(token: string) {
 export async function fetchBlueskySession(
   token: string,
 ): Promise<BlueskySession> {
-  const host = getHostFromToken(token);
-
-  // Make request to Bluesky API
-  const response = await fetch(`${host}/xrpc/com.atproto.server.getSession`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
+  const response = await blueskyFetch('com.atproto.server.getSession', {
+    token,
   });
 
-  const session = (await response.json()) as BlueskySession;
+  const session = response as BlueskySession;
 
   return session;
+}
+
+export async function fetchBlueskyProfile(
+  did: string,
+  options: BlueskyFetchOptions,
+): Promise<{ handle: string; did: string }> {
+  return blueskyFetch(
+    `app.bsky.actor.getProfile?actor=${did}`,
+    options,
+  ) as Promise<{ handle: string; did: string }>;
 }
 
 /**

@@ -134,3 +134,10 @@ model MediaPost {
 // generator erd {
 //  provider = "prisma-erd-generator"
 // }
+
+model UserDidCache {
+  handle     String @id
+  userDid    String
+
+  @@map("user_did_cache")
+}
