@@ -40,6 +40,16 @@ const methodHandlers = {
       );
     }
 
+    if (
+      !req.headers['x-speakeasy-session-id'] ||
+      Array.isArray(req.headers['x-speakeasy-session-id'])
+    ) {
+      throw new ValidationError(
+        'X-Speakeasy-Session-Id header must be set exactly once',
+      );
+    }
+    const sessionId = req.headers['x-speakeasy-session-id'];
+
     // Restrict mime types to images
     const allowedImageTypes = [
       'image/jpeg',
@@ -58,6 +68,7 @@ const methodHandlers = {
     const result = await mediaService.uploadMedia(
       req.user?.did!,
       req,
+      sessionId,
       mimeType,
       contentLength,
     );

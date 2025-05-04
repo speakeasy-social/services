@@ -105,6 +105,7 @@ model SeenNotifications {
 
 model Media {
   id          String @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  key         String
   userDid     String
   mimeType    String
   size        Int

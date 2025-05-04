@@ -104,7 +104,7 @@ export const createPostsDef: LexiconDoc = {
     },
     encryptedPost: {
       type: 'object',
-      required: ['rkey', 'langs', 'encryptedContent'],
+      required: ['rkey', 'langs', 'encryptedContent', 'media'],
       properties: {
         rkey: { type: 'string' },
         reply: {
@@ -116,6 +116,13 @@ export const createPostsDef: LexiconDoc = {
           items: { type: 'string' },
         },
         encryptedContent: { type: 'string' },
+        media: {
+          type: 'array',
+          items: {
+            type: 'ref',
+            ref: '#media',
+          },
+        },
       },
     },
     reply: {
@@ -129,6 +136,13 @@ export const createPostsDef: LexiconDoc = {
       type: 'object',
       properties: {
         uri: { type: 'string' },
+      },
+    },
+    media: {
+      type: 'object',
+      required: ['id'],
+      properties: {
+        id: { type: 'string' },
       },
     },
   },

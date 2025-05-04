@@ -96,7 +96,7 @@ export async function uploadToS3(
   file: Readable,
   mimeType: string,
   size: number,
-  id: string,
+  path: string,
 ) {
   // Get S3 authentication headers
   const authHeaders = getSignatureV4Headers(
@@ -104,7 +104,7 @@ export async function uploadToS3(
     config.MEDIA_S3_BUCKET,
     config.MEDIA_S3_ENDPOINT,
     config.MEDIA_S3_REGION,
-    id,
+    path,
     mimeType,
     size.toString(),
   );
@@ -112,10 +112,10 @@ export async function uploadToS3(
   let url;
   if (config.MEDIA_S3_ENDPOINT.includes('localhost')) {
     // For localstack, use the direct endpoint format with port
-    url = `http://${config.MEDIA_S3_ENDPOINT}/${config.MEDIA_S3_BUCKET}/${id}`;
+    url = `http://${config.MEDIA_S3_ENDPOINT}/${config.MEDIA_S3_BUCKET}/${path}`;
   } else {
     // For production services, use virtual hosted-style access
-    url = `https://${config.MEDIA_S3_BUCKET}.${config.MEDIA_S3_ENDPOINT}/${id}`;
+    url = `https://${config.MEDIA_S3_BUCKET}.${config.MEDIA_S3_ENDPOINT}/${path}`;
   }
 
   // Upload to S3 using Axios with streaming and authentication

@@ -20,10 +20,11 @@ export class MediaService {
   async uploadMedia(
     userDid: string,
     file: Readable,
+    sessionId: string,
     mimeType: string,
     size: number,
   ): Promise<{
-    id: string;
+    key: string;
     mimeType: string;
     size: number;
   }> {
@@ -54,12 +55,17 @@ export class MediaService {
 
     const id = uuidv4();
 
-    await uploadToS3(file, mimeType, size, id);
+    // Prefix the path with the sessionId, that way we can
+    // restrict access to media by sessionId
+    const key = `${sessionId}/${id}`;
+
+    await uploadToS3(file, mimeType, size, key);
 
     // Store the file metadata in the database
     await prisma.media.create({
       data: {
         id,
+        key,
         userDid,
         mimeType,
         size,
@@ -67,7 +73,7 @@ export class MediaService {
     });
 
     return {
-      id,
+      key,
       mimeType,
       size,
     };

@@ -3,6 +3,7 @@
 CREATE TABLE "media" (
     "id" UUID NOT NULL DEFAULT uuid_generate_v4(),
     "userDid" TEXT NOT NULL,
+    "key" TEXT NOT NULL,
     "mimeType" TEXT NOT NULL,
     "size" INTEGER NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
