@@ -89,6 +89,10 @@ function getSignatureV4Headers(
     'X-Amz-Content-SHA256': 'UNSIGNED-PAYLOAD',
     Authorization: authorizationHeader,
     'x-amz-acl': 'public-read',
+    // Cache images in the browser for a week
+    // Images never change, so no need to send HEAD
+    // requests to check if they changed
+    'Cache-Control': 'private, max-age=604800, immutable',
   };
 }
 
