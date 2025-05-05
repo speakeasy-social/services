@@ -10,6 +10,7 @@ import {
   ValidationError,
   createCursorWhereClause,
   encodeCursor,
+  fetchBlueskyPosts,
   fetchBlueskyProfile,
   fetchFollowingDids,
   getHostFromToken,
@@ -255,10 +256,12 @@ export class PrivatePostsService {
       ],
     });
 
+    const sessionIds = [...new Set(posts.map((post) => post.sessionId))];
+
     // Get the associated session keys for the posts
     const sessionKeys = await prisma.sessionKey.findMany({
       where: {
-        sessionId: { in: posts.map((post) => post.sessionId) },
+        sessionId: { in: sessionIds },
         recipientDid,
       },
     });
@@ -277,6 +280,147 @@ export class PrivatePostsService {
       cursor: newCursor,
     };
   }
+
+  async getPostThread(
+    req: ExtendedRequest,
+    recipientDid: string,
+    { uri, limit }: { uri: string; limit?: number },
+  ): Promise<{
+    cursor?: string;
+    encryptedPost: EncryptedPost;
+    encryptedReplyPosts: EncryptedPost[];
+    encryptedParentPost?: EncryptedPost;
+    encryptedRootPost?: EncryptedPost;
+    encryptedSessionKeys: SessionKey[];
+  }> {
+    // Load post identified by uri
+    const [canonicalUri] = await canonicalUris(
+      [uri],
+      (req.user as User).token as string,
+      true,
+    );
+
+    const post = await loadPrivatePost(canonicalUri, recipientDid);
+
+    if (!post) {
+      throw new NotFoundError('Post not found');
+    }
+
+    // Load reply posts
+    // Load parent post
+    const promises = [];
+
+    let replyPosts: EncryptedPost[] = [];
+    let parentPost: EncryptedPost | null = null;
+    let rootParentPost: EncryptedPost | null = null;
+
+    promises.push(
+      prisma.encryptedPost
+        .findMany({
+          where: {
+            session: {
+              sessionKeys: {
+                some: {
+                  recipientDid: recipientDid,
+                },
+              },
+            },
+            OR: [{ replyRootUri: post?.uri }, { replyUri: post?.uri }],
+          },
+          take: limit,
+        })
+        .then((posts) => {
+          replyPosts = posts;
+        }),
+    );
+
+    if (
+      post?.replyUri &&
+      post?.replyUri?.includes('social.spkeasy.feed.private-post')
+    ) {
+      promises.push(
+        loadPrivatePost(post?.replyUri, recipientDid).then((post) => {
+          parentPost = post;
+        }),
+      );
+    }
+
+    if (
+      post?.replyRootUri &&
+      post?.replyRootUri?.includes('social.spkeasy.feed.private-post')
+    ) {
+      promises.push(
+        loadPrivatePost(post?.replyRootUri, recipientDid).then((post) => {
+          rootParentPost = post;
+        }),
+      );
+    }
+
+    await Promise.all(promises);
+
+    const allSessionIds = [
+      post?.sessionId,
+      ...replyPosts.map((post) => post.sessionId),
+      parentPost ? (parentPost as EncryptedPost).sessionId : undefined,
+      rootParentPost ? (rootParentPost as EncryptedPost).sessionId : undefined,
+    ].filter((id): id is string => id !== undefined);
+
+    const sessionIds: string[] = [...new Set(allSessionIds)];
+
+    const sessionKeys = await prisma.sessionKey.findMany({
+      where: {
+        sessionId: { in: sessionIds },
+        recipientDid,
+      },
+    });
+
+    return {
+      // FIXME: Send cursor if there are more replies
+      cursor: undefined,
+      encryptedPost: post,
+      encryptedReplyPosts: replyPosts,
+      encryptedParentPost: parentPost ?? undefined,
+      encryptedRootPost: rootParentPost ?? undefined,
+      encryptedSessionKeys: sessionKeys,
+    };
+  }
+}
+
+async function loadPrivatePost(
+  cannonicalUri: string,
+  recipientDid: string,
+): Promise<EncryptedPost | null> {
+  return prisma.encryptedPost.findFirst({
+    where: {
+      session: {
+        sessionKeys: {
+          some: {
+            recipientDid: recipientDid,
+          },
+        },
+      },
+      uri: cannonicalUri,
+    },
+  });
+}
+
+async function fetchPublicOrPrivatePost(
+  req: ExtendedRequest,
+  recipientDid: string,
+  uri: string,
+) {
+  if (uri.includes('/social.spkeasy.feed.private-post/')) {
+    return {
+      encryptedPost: await loadPrivatePost(uri, recipientDid),
+    };
+  }
+
+  const post = await fetchBlueskyPosts(
+    [uri],
+    (req.user as User).token as string,
+  );
+
+  return { post };
 }
 
 /**

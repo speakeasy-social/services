@@ -6,8 +6,15 @@ import {
   validateAgainstLexicon,
   User,
 } from '@speakeasy-services/common';
-import { getPostsDef, createPostsDef } from '../lexicon/types/posts.js';
-import { toEncryptedPostsListView } from '../views/private-posts.views.js';
+import {
+  getPostsDef,
+  createPostsDef,
+  getPostThreadDef,
+} from '../lexicon/types/posts.js';
+import {
+  toEncryptedPostsListView,
+  toEncryptedPostView,
+} from '../views/private-posts.views.js';
 import { toSessionKeyListView } from '../views/private-sessions.views.js';
 import { PrivatePostsService } from '../services/privatePosts.service.js';
 const privatePostsService = new PrivatePostsService();
@@ -36,14 +43,18 @@ const methodHandlers = {
     // Convert limit to number if provided
     const limitNum = limit ? parseInt(limit, 10) : undefined;
 
-    const result = await privatePostsService.getPosts(req, req.user!.did!, {
-      authorDids: authors,
-      uris,
-      replyTo,
-      limit: limitNum,
-      cursor,
-      filter,
-    });
+    const result = await privatePostsService.getPosts(
+      req,
+      (req.user! as User).did!,
+      {
+        authorDids: authors,
+        uris,
+        replyTo,
+        limit: limitNum,
+        cursor,
+        filter,
+      },
+    );
 
     authorize(req, 'list', 'private_post', result.encryptedPosts);
     authorize(req, 'list', 'session_key', result.encryptedSessionKeys);
@@ -52,6 +63,53 @@ const methodHandlers = {
       body: {
         cursor: result.cursor,
         encryptedPosts: toEncryptedPostsListView(result.encryptedPosts),
+        encryptedSessionKeys: toSessionKeyListView(result.encryptedSessionKeys),
+      },
+    };
+  },
+
+  'social.spkeasy.privatePost.getPostThread': async (
+    req: ExtendedRequest,
+  ): RequestHandlerReturn => {
+    // Validate input against lexicon
+    const validatedQuery = validateAgainstLexicon(getPostThreadDef, req.query);
+
+    const { uri, limit } = validatedQuery;
+
+    // Convert limit to number if provided
+    const limitNum = limit ? parseInt(limit, 10) : undefined;
+
+    const result = await privatePostsService.getPostThread(
+      req,
+      (req.user as User)!.did!,
+      {
+        uri,
+        limit: limitNum,
+      },
+    );
+
+    result.encryptedPost &&
+      authorize(req, 'list', 'private_post', result.encryptedPost);
+    authorize(req, 'list', 'private_post', result.encryptedReplyPosts);
+    result.encryptedParentPost &&
+      authorize(req, 'list', 'private_post', result.encryptedParentPost);
+    authorize(req, 'list', 'session_key', result.encryptedSessionKeys);
+
+    return {
+      body: {
+        // FIXME: Send cursor if there are more replies
+        cursor: null,
+
+        encryptedPost: toEncryptedPostView(result.encryptedPost),
+        encryptedReplyPosts: toEncryptedPostsListView(
+          result.encryptedReplyPosts,
+        ),
+        encryptedParentPost:
+          result.encryptedParentPost &&
+          toEncryptedPostView(result.encryptedParentPost),
+        encryptedRootPost:
+          result.encryptedRootPost &&
+          toEncryptedPostView(result.encryptedRootPost),
         encryptedSessionKeys: toSessionKeyListView(result.encryptedSessionKeys),
       },
     };
@@ -68,7 +126,9 @@ const methodHandlers = {
     // Validate input against lexicon
     validateAgainstLexicon(createPostsDef, req.body);
 
-    authorize(req, 'create', 'private_post', { authorDid: req.user?.did });
+    authorize(req, 'create', 'private_post', {
+      authorDid: (req.user as User)?.did,
+    });
 
     const user = req.user as User;
 
@@ -119,6 +179,9 @@ export const methods: Record<MethodName, { handler: RequestHandler }> = {
   // Post management methods
   'social.spkeasy.privatePost.getPosts': {
     handler: methodHandlers['social.spkeasy.privatePost.getPosts'],
+  },
+  'social.spkeasy.privatePost.getPostThread': {
+    handler: methodHandlers['social.spkeasy.privatePost.getPostThread'],
   },
   'social.spkeasy.privatePost.createPosts': {
     handler: methodHandlers['social.spkeasy.privatePost.createPosts'],
