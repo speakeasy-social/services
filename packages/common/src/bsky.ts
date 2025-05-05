@@ -21,6 +21,7 @@ export interface BlueskyFollows {
 export type BlueskyFetchOptions = {
   token?: string;
   host?: string;
+  query?: Record<string, string | string[]>;
 };
 
 export function getHostFromToken(token: string) {
@@ -46,6 +47,19 @@ export function getHostFromToken(token: string) {
 export async function blueskyFetch(path: string, options: BlueskyFetchOptions) {
   let host = options.host;
   let token = options.token;
+
+  // If we have a query, we need to add it to the path
+  if (options.query) {
+    const searchParams = new URLSearchParams();
+    Object.entries(options.query).forEach(([key, value]) => {
+      if (Array.isArray(value)) {
+        value.forEach((v) => searchParams.append(key, v));
+      } else {
+        searchParams.append(key, value);
+      }
+    });
+    path += `?${searchParams.toString()}`;
+  }
 
   if (!host && !token) {
     throw new Error('Either host or token must be provided');
@@ -168,4 +182,22 @@ export async function fetchFollowingDids(
     // If we encounter any error, return what we have so far
     return allFollowDids;
   }
+}
+
+/**
+ * Fetches posts from the Bluesky API using their URIs.
+ *
+ * @param uris - Array of post URIs to fetch
+ * @param token - Authentication token for the Bluesky API
+ * @returns Promise that resolves to an array of post objects
+ */
+export async function fetchBlueskyPosts(uris: string[], token: string) {
+  const response = (await blueskyFetch('app.bsky.feed.getPosts', {
+    token,
+    query: {
+      uris,
+    },
+  })) as { posts: any[] };
+
+  return response.posts;
 }
