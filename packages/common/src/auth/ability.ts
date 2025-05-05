@@ -119,9 +119,9 @@ export function authorize(
     throw new AuthorizationError('Not authenticated');
   }
 
-  const isAllowed = Array.isArray(subject)
-    ? subject.every((s) =>
-        isAuthorized(req.abilities!, req.user!, action, s, record),
+  const isAllowed = Array.isArray(record)
+    ? record.every((rec) =>
+        isAuthorized(req.abilities!, req.user!, action, subject, rec),
       )
     : isAuthorized(req.abilities, req.user, action, subject, record);
 
