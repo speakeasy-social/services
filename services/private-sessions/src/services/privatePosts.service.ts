@@ -114,10 +114,7 @@ export class PrivatePostsService {
 
       await tx.encryptedPost.createMany({
         data: body.encryptedPosts.map((post) => {
-          if (
-            post.uri !==
-            `at://${authorDid}/social.spkeasy.feed.private-post/${post.rkey}`
-          ) {
+
             throw new ValidationError(`Invalid URI for post ${post.uri}`);
           }
           return {
