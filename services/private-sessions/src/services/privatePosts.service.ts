@@ -17,8 +17,8 @@ import {
   safeAtob,
 } from '@speakeasy-services/common';
 import { getPrismaClient } from '../db.js';
-import { Queue } from 'packages/queue/dist/index.js';
-import { JOB_NAMES } from 'packages/queue/dist/index.js';
+import { Queue } from '@speakeasy-services/queue';
+import { JOB_NAMES } from '@speakeasy-services/queue';
 
 const prisma = getPrismaClient();
 
