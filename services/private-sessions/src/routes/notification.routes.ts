@@ -5,6 +5,7 @@ import {
   RequestHandlerReturn,
   ExtendedRequest,
   validateAgainstLexicon,
+  User,
 } from '@speakeasy-services/common';
 import { toNotificationListView } from '../views/notification.views.js';
 import {
@@ -19,7 +20,7 @@ const methodHandlers = {
   'social.spkeasy.notification.getUnreadCount': async (
     req: ExtendedRequest,
   ): RequestHandlerReturn => {
-    const did = req.user!.did!;
+    const did = (req.user as User)!.did!;
 
     authorize(req, 'list', 'notification', { userDid: did });
 
@@ -32,7 +33,7 @@ const methodHandlers = {
   'social.spkeasy.notification.listNotifications': async (
     req: ExtendedRequest,
   ): RequestHandlerReturn => {
-    const did = req.user!.did!;
+    const did = (req.user as User)!.did!;
 
     // Validate input against lexicon
     validateAgainstLexicon(listNotificationsDef, req.query);
@@ -62,7 +63,7 @@ const methodHandlers = {
     // Validate input against lexicon
     validateAgainstLexicon(updateSeenDef, req.body);
 
-    const did = req.user!.did!;
+    const did = (req.user as User)!.did!;
 
     const { seenAt } = req.body;
 

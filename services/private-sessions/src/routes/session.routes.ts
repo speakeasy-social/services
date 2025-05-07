@@ -5,6 +5,7 @@ import {
   RequestHandlerReturn,
   ExtendedRequest,
   validateAgainstLexicon,
+  User,
 } from '@speakeasy-services/common';
 import {
   revokeSessionDef,
@@ -31,10 +32,12 @@ const methodHandlers = {
 
     const { sessionKeys, expirationHours } = req.body;
 
-    authorize(req, 'create', 'private_session', { authorDid: req.user?.did });
+    authorize(req, 'create', 'private_session', {
+      authorDid: (req.user as User)!.did!,
+    });
 
     const result = await sessionService.createSession({
-      authorDid: req.user!.did!,
+      authorDid: (req.user as User)!.did!,
       recipients: sessionKeys,
       expirationHours,
     });
@@ -72,7 +75,9 @@ const methodHandlers = {
   'social.spkeasy.privateSession.getSession': async (
     req: ExtendedRequest,
   ): RequestHandlerReturn => {
-    const sessionKey = await sessionService.getSession(req.user?.did || '');
+    const sessionKey = await sessionService.getSession(
+      (req.user as User)!.did!,
+    );
 
     authorize(req, 'revoke', 'private_session', sessionKey);
 
@@ -92,7 +97,7 @@ const methodHandlers = {
     // Validate input against lexicon
     validateAgainstLexicon(addUserDef, req.body);
 
-    const authorDid = req.user?.did!;
+    const authorDid = (req.user as User)!.did!;
 
     authorize(req, 'add_recipient', 'private_session', {
       authorDid,

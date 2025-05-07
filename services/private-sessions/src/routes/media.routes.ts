@@ -4,6 +4,7 @@ import {
   ExtendedRequest,
   validateAgainstLexicon,
   authorize,
+  User,
 } from '@speakeasy-services/common';
 import { uploadMediaDef } from '../lexicon/types/media.js';
 import { MediaService } from '../services/media.service.js';
@@ -66,7 +67,7 @@ const methodHandlers = {
     }
 
     const result = await mediaService.uploadMedia(
-      req.user?.did!,
+      (req.user as User).did!,
       req,
       sessionId,
       mimeType,
