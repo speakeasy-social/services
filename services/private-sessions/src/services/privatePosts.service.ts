@@ -114,10 +114,12 @@ export class PrivatePostsService {
 
       await tx.encryptedPost.createMany({
         data: body.encryptedPosts.map((post) => {
-          if (
-            post.uri !==
-            `at://${authorDid}/social.spkeasy.feed.private-post/${post.rkey}`
-          ) {
+          const allowedPostFormats = [
+            `at://${authorDid}/social.spkeasy.feed.privatePost/${post.rkey}`,
+            `at://${authorDid}/social.spkeasy.feed.repost/${post.rkey}`,
+          ];
+
+          if (!allowedPostFormats.includes(post.uri)) {
             throw new ValidationError(`Invalid URI for post ${post.uri}`);
           }
           return {
@@ -268,7 +270,7 @@ export class PrivatePostsService {
 
     let newCursor;
 
-    if (posts.length > (options.limit ?? DEFAULT_LIMIT)) {
+    if (posts.length === (options.limit ?? DEFAULT_LIMIT)) {
       const lastPost = posts[posts.length - 1];
       // Cursor is base64 encoded string of createdAt and rkey
       newCursor = encodeCursor(lastPost);
@@ -336,7 +338,7 @@ export class PrivatePostsService {
 
     if (
       post?.replyUri &&
-      post?.replyUri?.includes('social.spkeasy.feed.private-post')
+      post?.replyUri?.includes('social.spkeasy.feed.privatePost')
     ) {
       promises.push(
         loadPrivatePost(post?.replyUri, recipientDid).then((post) => {
@@ -347,7 +349,7 @@ export class PrivatePostsService {
 
     if (
       post?.replyRootUri &&
-      post?.replyRootUri?.includes('social.spkeasy.feed.private-post')
+      post?.replyRootUri?.includes('social.spkeasy.feed.privatePost')
     ) {
       promises.push(
         loadPrivatePost(post?.replyRootUri, recipientDid).then((post) => {
@@ -409,7 +411,7 @@ async function fetchPublicOrPrivatePost(
   recipientDid: string,
   uri: string,
 ) {
-  if (uri.includes('/social.spkeasy.feed.private-post/')) {
+  if (uri.includes('/social.spkeasy.feed.privatePost/')) {
     return {
       encryptedPost: await loadPrivatePost(uri, recipientDid),
     };
@@ -432,13 +434,13 @@ async function fetchPublicOrPrivatePost(
  * send a request to Bluesky API to resolve
  *
  * @param uris - Array of URIs to convert to canonical form. URIs can be in the format:
- *              - `at://did:plc:.../social.spkeasy.feed.private-post/rkey`
- *              - `at://handle.bsky.social/social.spkeasy.feed.private-post/rkey`
+ *              - `at://did:plc:.../social.spkeasy.feed.privatePost/rkey`
+ *              - `at://handle.bsky.social/social.spkeasy.feed.privatePost/rkey`
  * @param token - Authentication token used to fetch Bluesky profile information
  * @param failOnError - If true, throws an error when a handle cannot be resolved to a DID.
  *                     If false, silently skips unresolvable handles.
  * @returns Promise that resolves to an array of canonical URIs in the format:
- *          `at://did:plc:.../social.spkeasy.feed.private-post/rkey`
+ *          `at://did:plc:.../social.spkeasy.feed.privatePost/rkey`
  * @throws Error if failOnError is true and any handle cannot be resolved to a DID
  */
 async function canonicalUris(
@@ -487,7 +489,7 @@ async function canonicalUris(
 
   const canonicalUris = [...resolvedHandleUris, ...didUris].map(
     (uriParts) =>
-      `at://${uriParts.did}/social.spkeasy.feed.private-post/${uriParts.rkey}`,
+      `at://${uriParts.did}/social.spkeasy.feed.privatePost/${uriParts.rkey}`,
   );
 
   return canonicalUris;
