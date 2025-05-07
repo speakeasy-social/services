@@ -98,8 +98,6 @@ async function prefetchUserFolling(
 
     const cachedFollowingDids = cache.get(tokenContent.sub as string);
 
-    console.log('cachedFollowingDids', cachedFollowingDids);
-
     req.prefetch.followingDidsPromise =
       cachedFollowingDids ||
       fetchFollowingDids(req, token, tokenContent.sub as string).then(

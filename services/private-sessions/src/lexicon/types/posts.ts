@@ -65,6 +65,49 @@ export const getPostsDef: LexiconDoc = {
   },
 };
 
+export const getPostThreadDef: LexiconDoc = {
+  lexicon: 1,
+  id: 'social.spkeasy.privatePost.getPosts',
+  defs: {
+    main: {
+      type: 'query',
+      description: 'Get private posts for specified authors',
+      parameters: {
+        type: 'params',
+        required: [],
+        properties: {
+          uri: {
+            type: 'string',
+            description: 'URIs of post thread to retrieve',
+          },
+          limit: {
+            type: 'string',
+            description: 'Optional limit for pagination',
+          },
+        },
+      },
+      output: {
+        encoding: 'application/json',
+        schema: {
+          type: 'object',
+          required: ['encryptedPost', 'encryptedSessionKeys'],
+          properties: {
+            cursor: { type: 'string' },
+            encryptedPost: {
+              type: 'ref',
+              ref: '#encryptedPost',
+            },
+            encryptedSessionKeys: {
+              type: 'array',
+              items: { type: 'string' },
+            },
+          },
+        },
+      },
+    },
+  },
+};
+
 export const createPostsDef: LexiconDoc = {
   lexicon: 1,
   id: 'social.spkeasy.privatePost.createPosts',

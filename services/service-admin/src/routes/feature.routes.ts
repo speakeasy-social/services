@@ -5,6 +5,7 @@ import {
   RequestHandlerReturn,
   ExtendedRequest,
   validateAgainstLexicon,
+  User,
 } from '@speakeasy-services/common';
 import {
   getFeaturesDef,
@@ -35,7 +36,7 @@ const methodHandlers = {
   'social.spkeasy.actor.applyInviteCode': async (
     req: ExtendedRequest,
   ): RequestHandlerReturn => {
-    const did = req.user!.did!;
+    const did = (req.user! as User).did!;
     const { code } = req.body;
 
     // Validate input against lexicon

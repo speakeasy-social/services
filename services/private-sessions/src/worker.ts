@@ -1,6 +1,9 @@
 import { Worker } from '@speakeasy-services/service-base';
 import { JOB_NAMES } from '@speakeasy-services/queue';
-import { speakeasyApiRequest } from '@speakeasy-services/common';
+import {
+  fetchBlueskyProfile,
+  speakeasyApiRequest,
+} from '@speakeasy-services/common';
 import { PrismaClient } from './generated/prisma-client/index.js';
 import { recryptDEK } from '@speakeasy-services/crypto';
 import { healthCheck } from './health.js';
@@ -23,16 +26,16 @@ interface UpdateSessionKeysJob {
   newPublicKey: string;
 }
 
+interface PopulateDidCacheJob {
+  dids: string[];
+  host: string;
+}
+
 const worker = new Worker({
   name: 'private-sessions-worker',
   healthCheck,
   port: 4001,
 });
-
-// Helper function to ensure logs are written directly to stdout
-const logToStdout = (message: string) => {
-  process.stdout.write(`${new Date().toISOString()} - ${message}\n`);
-};
 
 const prisma = getPrismaClient();
 
@@ -45,7 +48,6 @@ const WINDOW_FOR_NEW_TRUSTED_USER = 30 * 24 * 60 * 60 * 1000;
 worker.work<AddRecipientToSessionJob>(
   JOB_NAMES.ADD_RECIPIENT_TO_SESSION,
   async (job) => {
-    logToStdout('Adding recipient to session');
     worker.logger.info('Adding recipient to session (logger)');
     // FIXME we need some aborts to handle various kinds of debouncing
     // We should about the job if
@@ -70,9 +72,6 @@ worker.work<AddRecipientToSessionJob>(
     const sessionsWithKeys = sessions.filter(
       (session) => session.sessionKeys.length > 0,
     );
-
-    logToStdout(`Found sessions ${sessionsWithKeys.length}`);
-    logToStdout(`Sessions ${sessions.length}`);
 
     // User hasn't yet made any private posts, we can stop here
     if (sessionsWithKeys.length === 0) {
@@ -231,13 +230,45 @@ worker.queue.work<UpdateSessionKeysJob>(
   },
 );
 
+worker.queue.work<PopulateDidCacheJob>(
+  JOB_NAMES.POPULATE_DID_CACHE,
+  async (job) => {
+    const { dids, host } = job.data;
+
+    const existingDids = (
+      await prisma.userDidCache.findMany({
+        where: {
+          userDid: {
+            in: dids,
+          },
+        },
+        select: { userDid: true },
+      })
+    ).map((did) => did.userDid);
+
+    // Remove existing dids from the did list
+    const newDids = dids.filter((did) => !existingDids.includes(did));
+
+    for (const did of newDids) {
+      const profile = await fetchBlueskyProfile(did, {
+        host,
+      });
+      prisma.userDidCache.create({
+        data: {
+          userDid: did,
+          handle: profile.handle,
+        },
+      });
+    }
+  },
+);
+
 worker
   .start()
   .then(() => {
-    logToStdout('Private sessions Worker started');
+    console.log('Private sessions Worker started');
   })
   .catch((error: Error) => {
-    logToStdout('Failed to start worker');
     console.error('Failed to start worker:', error);
     throw error;
   });

@@ -9,6 +9,7 @@ export const JOB_NAMES = {
   REVOKE_SESSION: 'revoke-session',
   UPDATE_USER_KEYS: 'update-user-keys',
   UPDATE_SESSION_KEYS: 'update-session-keys',
+  POPULATE_DID_CACHE: 'populate-did-cache',
 } as const;
 
 const queueConfigSchema = z.object({
