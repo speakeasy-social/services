@@ -1,6 +1,10 @@
 #!/usr/bin/env node
 
+// Load environment variables
+import dotenv from 'dotenv';
 import { getPrismaClient } from '../db.js';
+
+dotenv.config({ path: process.env.ENV_FILE });
 
 // Get the Prisma client
 const prisma = getPrismaClient();
