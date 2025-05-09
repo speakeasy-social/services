@@ -92,7 +92,7 @@ export class Server {
 
       // Handle preflight requests
       if (req.method === 'OPTIONS') {
-        res.sendStatus(200);
+        res.sendStatus(204);
         return;
       }
 
