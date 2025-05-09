@@ -1,7 +1,7 @@
 import { createHmac, createHash } from 'crypto';
 import { Readable } from 'stream';
 
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
 
 import config from '../config.js';
 
@@ -122,10 +122,20 @@ export async function uploadToS3(
     url = `https://${config.MEDIA_S3_BUCKET}.${config.MEDIA_S3_ENDPOINT}/${path}`;
   }
 
-  // Upload to S3 using Axios with streaming and authentication
-  return await axios.put(url, file, {
-    headers: authHeaders,
-    maxBodyLength: MAX_FILE_SIZE,
-    maxContentLength: MAX_FILE_SIZE,
-  });
+  try {
+    // Upload to S3 using Axios with streaming and authentication
+    return await axios.put(url, file, {
+      headers: authHeaders,
+      maxBodyLength: MAX_FILE_SIZE,
+      maxContentLength: MAX_FILE_SIZE,
+    });
+  } catch (err: any) {
+    if (err instanceof AxiosError && err.response?.data) {
+      (err as any).details = {
+        s3message: err.response?.data,
+      };
+    }
+    // console.error('Error uploading to S3', err);
+    throw err;
+  }
 }
