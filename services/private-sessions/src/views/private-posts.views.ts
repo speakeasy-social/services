@@ -52,6 +52,6 @@ export function toEncryptedPostView(
  * Create a list view that maps over the array
  */
 export const toEncryptedPostsListView = createListView<
-  EncryptedPost,
+  AnnotatedEncryptedPost,
   EncryptedPostView
 >(toEncryptedPostView);
