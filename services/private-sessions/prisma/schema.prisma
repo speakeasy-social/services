@@ -57,6 +57,7 @@ model EncryptedPost {
   // Relationships
   session       Session  @relation("SessionToPosts", fields: [sessionId], references: [id])
   mediaPosts    MediaPost[]
+  reactions     Reaction[]
 
   @@index([authorDid, createdAt(sort: Desc)], name: "idx_posts_by_author_created")
   @@index([sessionId, createdAt(sort: Desc), authorDid], name: "idx_posts_by_session_created_author")
@@ -73,6 +74,9 @@ model Reaction {
   createdAt    DateTime  @default(now()) 
   updatedAt    DateTime?
 
+  // Relationships
+  post         EncryptedPost @relation(fields: [uri], references: [uri])
+
   @@index([userDid, createdAt], name: "idx_reactions_user_did_created")
   @@index([uri, createdAt], name: "idx_reactions_uri_created")
   @@unique([userDid, uri], name: "idx_reactions_user_did_uri_unique")
@@ -87,10 +91,11 @@ model Notification {
   reasonSubject String
   readAt       DateTime?
   createdAt    DateTime  @default(now()) 
-  updatedAt    DateTime
+  updatedAt    DateTime?
 
   @@index([userDid, createdAt], name: "idx_notifications_user_did_created_at_index")
   @@index([userDid, readAt], name: "idx_notifications_user_did_read_at_index")
+  @@unique([authorDid, reasonSubject, reason], name: "idx_notifications_user_did_read_at_index")
   @@map("notifications")
 }
 

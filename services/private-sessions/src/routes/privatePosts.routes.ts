@@ -167,7 +167,7 @@ const methodHandlers = {
   ): RequestHandlerReturn => {
     // NOOP
     // This route is called to cause the user's bluesky session
-    // to be cached so the initial request to getPorsts is faster
+    // to be cached so the initial request to getPosts is faster
     return {
       body: { success: true },
     };

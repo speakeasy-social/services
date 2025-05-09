@@ -4,6 +4,7 @@ import {
   createListView,
   safeBtoa,
 } from '@speakeasy-services/common';
+import { AnnotatedEncryptedPost } from '../services/privatePosts.service.js';
 
 export type EncryptedPostView = {
   uri: string;
@@ -17,12 +18,17 @@ export type EncryptedPostView = {
     parent: { uri: string };
   } | null;
   langs: string[];
+  viewer: {
+    like: boolean;
+  };
 };
 
 /**
  * Create a view that picks recipientDid and createdAt, converting createdAt to ISO string
  */
-export function toEncryptedPostView(post: EncryptedPost): EncryptedPostView {
+export function toEncryptedPostView(
+  post: AnnotatedEncryptedPost,
+): EncryptedPostView {
   return {
     uri: post.uri,
     rkey: post.rkey,
@@ -38,6 +44,7 @@ export function toEncryptedPostView(post: EncryptedPost): EncryptedPostView {
         }
       : null,
     langs: post.langs,
+    viewer: post.viewer,
   };
 }
 

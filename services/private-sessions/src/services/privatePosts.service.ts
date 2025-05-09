@@ -22,6 +22,12 @@ import { JOB_NAMES } from '@speakeasy-services/queue';
 
 const prisma = getPrismaClient();
 
+export type AnnotatedEncryptedPost = EncryptedPost & {
+  viewer: {
+    like: boolean;
+  };
+};
+
 interface GetPostsOptions {
   limit?: number;
   cursor?: string;
@@ -183,7 +189,7 @@ export class PrivatePostsService {
     recipientDid: string,
     options: GetPostsOptions,
   ): Promise<{
-    encryptedPosts: EncryptedPost[];
+    encryptedPosts: AnnotatedEncryptedPost[];
     encryptedSessionKeys: SessionKey[];
     cursor?: string;
   }> {
@@ -256,6 +262,7 @@ export class PrivatePostsService {
           rkey: 'asc',
         },
       ],
+      include: postCountInclude(recipientDid),
     });
 
     const sessionIds = [...new Set(posts.map((post) => post.sessionId))];
@@ -277,7 +284,7 @@ export class PrivatePostsService {
     }
 
     return {
-      encryptedPosts: posts,
+      encryptedPosts: posts.map(annotatePost),
       encryptedSessionKeys: sessionKeys,
       cursor: newCursor,
     };
@@ -289,10 +296,10 @@ export class PrivatePostsService {
     { uri, limit }: { uri: string; limit?: number },
   ): Promise<{
     cursor?: string;
-    encryptedPost: EncryptedPost;
-    encryptedReplyPosts: EncryptedPost[];
-    encryptedParentPost?: EncryptedPost;
-    encryptedRootPost?: EncryptedPost;
+    encryptedPost: AnnotatedEncryptedPost;
+    encryptedReplyPosts: AnnotatedEncryptedPost[];
+    encryptedParentPost?: AnnotatedEncryptedPost;
+    encryptedRootPost?: AnnotatedEncryptedPost;
     encryptedSessionKeys: SessionKey[];
   }> {
     // Load post identified by uri
@@ -312,9 +319,12 @@ export class PrivatePostsService {
     // Load parent post
     const promises = [];
 
-    let replyPosts: EncryptedPost[] = [];
-    let parentPost: EncryptedPost | null = null;
-    let rootParentPost: EncryptedPost | null = null;
+    let replyPosts: (EncryptedPost & { _count: { reactions: number } })[] = [];
+    let parentPost: (EncryptedPost & { _count: { reactions: number } }) | null =
+      null;
+    let rootParentPost:
+      | (EncryptedPost & { _count: { reactions: number } })
+      | null = null;
 
     promises.push(
       prisma.encryptedPost
@@ -330,6 +340,7 @@ export class PrivatePostsService {
             OR: [{ replyRootUri: post?.uri }, { replyUri: post?.uri }],
           },
           take: limit,
+          include: postCountInclude(recipientDid),
         })
         .then((posts) => {
           replyPosts = posts;
@@ -379,10 +390,12 @@ export class PrivatePostsService {
     return {
       // FIXME: Send cursor if there are more replies
       cursor: undefined,
-      encryptedPost: post,
-      encryptedReplyPosts: replyPosts,
-      encryptedParentPost: parentPost ?? undefined,
-      encryptedRootPost: rootParentPost ?? undefined,
+      encryptedPost: annotatePost(post),
+      encryptedReplyPosts: replyPosts.map(annotatePost),
+      encryptedParentPost: parentPost ? annotatePost(parentPost) : undefined,
+      encryptedRootPost: rootParentPost
+        ? annotatePost(rootParentPost)
+        : undefined,
       encryptedSessionKeys: sessionKeys,
     };
   }
@@ -391,7 +404,7 @@ export class PrivatePostsService {
 async function loadPrivatePost(
   cannonicalUri: string,
   recipientDid: string,
-): Promise<EncryptedPost | null> {
+): Promise<(EncryptedPost & { _count: { reactions: number } }) | null> {
   return prisma.encryptedPost.findFirst({
     where: {
       session: {
@@ -403,6 +416,7 @@ async function loadPrivatePost(
       },
       uri: cannonicalUri,
     },
+    include: postCountInclude(recipientDid),
   });
 }
 
@@ -493,4 +507,21 @@ async function canonicalUris(
   );
 
   return canonicalUris;
+}
+
+function annotatePost(post: EncryptedPost & { _count: { reactions: number } }) {
+  return {
+    ...post,
+    viewer: {
+      like: post._count.reactions > 0,
+    },
+  };
+}
+
+function postCountInclude(recipientDid: string) {
+  return {
+    _count: {
+      select: { reactions: { where: { userDid: recipientDid } } },
+    },
+  };
 }
