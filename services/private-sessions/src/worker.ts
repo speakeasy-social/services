@@ -8,7 +8,7 @@ import { PrismaClient } from './generated/prisma-client/index.js';
 import { recryptDEK } from '@speakeasy-services/crypto';
 import { healthCheck } from './health.js';
 import { getPrismaClient } from './db.js';
-
+import { v4 as uuidv4 } from 'uuid';
 interface AddRecipientToSessionJob {
   authorDid: string;
   recipientDid: string;
@@ -29,6 +29,11 @@ interface UpdateSessionKeysJob {
 interface PopulateDidCacheJob {
   dids: string[];
   host: string;
+}
+
+interface NotifyReactionJob {
+  authorDid: string;
+  uri: string;
 }
 
 const worker = new Worker({
@@ -262,6 +267,33 @@ worker.queue.work<PopulateDidCacheJob>(
     }
   },
 );
+
+worker.queue.work<NotifyReactionJob>(JOB_NAMES.NOTIFY_REACTION, async (job) => {
+  const userDid = job.data.uri.split('/')[2];
+
+  if (userDid === job.data.authorDid) {
+    return;
+  }
+
+  try {
+    await prisma.notification.create({
+      data: {
+        id: uuidv4(),
+        userDid,
+        authorDid: job.data.authorDid,
+        reason: 'like',
+        reasonSubject: job.data.uri,
+        updatedAt: new Date(),
+      },
+    });
+  } catch (error) {
+    // Silently ignore unique constraint violations
+    if (error instanceof Error && 'code' in error && error.code === 'P2002') {
+      return;
+    }
+    throw error;
+  }
+});
 
 worker
   .start()

@@ -1,5 +1,9 @@
-import { PrismaClient, Reaction } from '../generated/prisma-client/index.js';
+import { Reaction } from '../generated/prisma-client/index.js';
 import { getPrismaClient } from '../db.js';
+import { v4 as uuidv4 } from 'uuid';
+
+import { Queue } from '@speakeasy-services/queue';
+import { JOB_NAMES } from '@speakeasy-services/queue';
 
 const prisma = getPrismaClient();
 
@@ -13,9 +17,15 @@ export class ReactionService {
   async createReaction(userDid: string, uri: string): Promise<Reaction> {
     const reaction = await prisma.reaction.create({
       data: {
+        id: uuidv4(),
         userDid,
         uri,
       },
+    });
+
+    await Queue.publish(JOB_NAMES.NOTIFY_REACTION, {
+      uri,
+      authorDid: userDid,
     });
 
     return reaction;
