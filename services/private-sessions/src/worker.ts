@@ -3,8 +3,8 @@ import { JOB_NAMES } from '@speakeasy-services/queue';
 import {
   fetchBlueskyProfile,
   speakeasyApiRequest,
+  fetchBlueskyPosts,
 } from '@speakeasy-services/common';
-import { PrismaClient } from './generated/prisma-client/index.js';
 import { recryptDEK } from '@speakeasy-services/crypto';
 import { healthCheck } from './health.js';
 import { getPrismaClient } from './db.js';
@@ -34,6 +34,11 @@ interface PopulateDidCacheJob {
 interface NotifyReactionJob {
   authorDid: string;
   uri: string;
+}
+
+interface NotifyReplyJob {
+  uri: string;
+  token: string;
 }
 
 const worker = new Worker({
@@ -295,6 +300,88 @@ worker.queue.work<NotifyReactionJob>(JOB_NAMES.NOTIFY_REACTION, async (job) => {
   }
 });
 
+worker.queue.work<NotifyReplyJob>(JOB_NAMES.NOTIFY_REPLY, async (job) => {
+  const { uri } = job.data;
+
+  const latestReply = await prisma.encryptedPost.findUnique({
+    where: { uri },
+  });
+
+  if (!latestReply) return { abortReason: 'Post not found' };
+
+  const authors = new Set<string>();
+  const thread = [];
+
+  // Iterate over all posts from parent to root
+  let currentPost: FetchPostResult | null = latestReply;
+
+  while (currentPost?.replyUri) {
+    currentPost = await fetchPost(
+      job.data.token,
+      currentPost.replyUri,
+      latestReply.authorDid,
+    );
+
+    if (currentPost) {
+      thread.push({
+        uri: currentPost.uri,
+        authorDid: currentPost.authorDid,
+        hasSessionKey: currentPost?.session?.sessionKeys?.length! > 0,
+      });
+    }
+  }
+
+  if (latestReply.replyRootUri) {
+    const replyRoot = await fetchPost(
+      job.data.token,
+      latestReply.replyRootUri,
+      latestReply.authorDid,
+    );
+    if (replyRoot && replyRoot.authorDid !== latestReply.authorDid) {
+      thread.push({
+        uri: replyRoot.uri,
+        authorDid: replyRoot.authorDid,
+        hasSessionKey: replyRoot.session?.sessionKeys.length! > 0,
+      });
+    }
+  }
+
+  thread.forEach((post) => {
+    // Notify everyone in the thread once (except the author of the reply)
+    if (post.authorDid !== latestReply.authorDid) {
+      // Only notify if the author of the new reply can see this
+      // post in the thread (ie its public, or they have a session key)
+      const replyAuthorCanSeePost =
+        !post.uri.includes('/social.spkeasy') || post.hasSessionKey;
+      if (replyAuthorCanSeePost) {
+        authors.add(post.authorDid);
+      }
+    }
+  });
+
+  // Filter by which authors may see the reply
+  const authorsThatMaySeeReply = await prisma.sessionKey.findMany({
+    where: {
+      recipientDid: latestReply.authorDid,
+      sessionId: latestReply.sessionId,
+    },
+    select: {
+      recipientDid: true,
+    },
+  });
+
+  await prisma.notification.createMany({
+    data: Array.from(authorsThatMaySeeReply).map((author) => ({
+      id: uuidv4(),
+      userDid: author.recipientDid,
+      authorDid: latestReply.authorDid,
+      reason: 'reply',
+      reasonSubject: uri,
+      updatedAt: new Date(),
+    })),
+  });
+});
+
 worker
   .start()
   .then(() => {
@@ -304,3 +391,51 @@ worker
     console.error('Failed to start worker:', error);
     throw error;
   });
+
+type FetchPostResult = {
+  uri: string;
+  authorDid: string;
+  replyUri: string | null | undefined;
+  replyRootUri: string | null | undefined;
+  session?: {
+    sessionKeys: {
+      encryptedDek: Uint8Array<ArrayBufferLike>;
+      userKeyPairId: string;
+    }[];
+  };
+} | null;
+
+async function fetchPost(
+  token: string,
+  uri: string,
+  recipientDid: string,
+): Promise<FetchPostResult> {
+  if (uri.includes('/social.spkeasy')) {
+    return await prisma.encryptedPost.findUnique({
+      where: { uri },
+      include: {
+        session: {
+          include: {
+            sessionKeys: {
+              where: {
+                recipientDid: recipientDid,
+              },
+              select: {
+                encryptedDek: true,
+                userKeyPairId: true,
+              },
+            },
+          },
+        },
+      },
+    });
+  }
+
+  const post = await fetchBlueskyPosts([uri], token);
+  return {
+    uri: post[0].uri,
+    authorDid: post[0].author.did,
+    replyUri: post[0].record.reply?.parent.uri,
+    replyRootUri: post[0].record.reply?.root.uri,
+  };
+}

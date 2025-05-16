@@ -11,6 +11,7 @@ export const JOB_NAMES = {
   UPDATE_SESSION_KEYS: 'update-session-keys',
   POPULATE_DID_CACHE: 'populate-did-cache',
   NOTIFY_REACTION: 'notify-reaction',
+  NOTIFY_REPLY: 'notify-reply',
 } as const;
 
 const queueConfigSchema = z.object({

@@ -152,6 +152,14 @@ export class PrivatePostsService {
       });
     });
 
+    // Process reply notifications
+    if (body.encryptedPosts[0].reply) {
+      await Queue.publish(JOB_NAMES.NOTIFY_REPLY, {
+        uri: body.encryptedPosts[0].uri,
+        token,
+      });
+    }
+
     // Cache the reply handles
     const replyUris = body.encryptedPosts
       .map((post) => post.reply?.parent?.uri ?? null)
@@ -420,8 +428,8 @@ async function loadPrivatePost(
   });
 }
 
-async function fetchPublicOrPrivatePost(
-  req: ExtendedRequest,
+export async function fetchPublicOrPrivatePost(
+  token: string,
   recipientDid: string,
   uri: string,
 ) {
@@ -431,10 +439,7 @@ async function fetchPublicOrPrivatePost(
     };
   }
 
-  const post = await fetchBlueskyPosts(
-    [uri],
-    (req.user as User).token as string,
-  );
+  const post = await fetchBlueskyPosts([uri], token);
 
   return { post };
 }
