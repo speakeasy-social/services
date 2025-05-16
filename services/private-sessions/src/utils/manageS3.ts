@@ -119,7 +119,7 @@ export async function uploadToS3(
     url = `http://${config.MEDIA_S3_ENDPOINT}/${config.MEDIA_S3_BUCKET}/${path}`;
   } else {
     // For production services, use virtual hosted-style access
-    url = `https://${config.MEDIA_S3_BUCKET}.${config.MEDIA_S3_ENDPOINT}/${path}`;
+    url = `https://${config.MEDIA_S3_ENDPOINT}.${config.MEDIA_S3_BUCKET}/${path}`;
   }
 
   try {
