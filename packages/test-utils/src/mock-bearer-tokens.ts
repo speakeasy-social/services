@@ -1,5 +1,5 @@
-import nock from "nock";
-import { cache } from "@speakeasy-services/common";
+import nock from 'nock';
+import { cache } from '@speakeasy-services/common';
 
 /**
  * Mocks the Bluesky session validation API call.
@@ -13,9 +13,9 @@ import { cache } from "@speakeasy-services/common";
  * @param options.error Whether to simulate an error response
  */
 export function mockBlueskySession({
-  did = "did:example:alex",
-  handle = "alex.bsky.social",
-  host = "https://bsky.social",
+  did = 'did:example:alex',
+  handle = 'alex.bsky.social',
+  host = 'https://bsky.social',
   status = 200,
   error = false,
 }: {
@@ -30,15 +30,15 @@ export function mockBlueskySession({
 
   if (error) {
     // Mock error response
-    nock(host).get("/xrpc/com.atproto.server.getSession").reply(status);
+    nock(host).get('/xrpc/com.atproto.server.getSession').reply(status);
   } else {
     // Mock successful response
-    nock(host).get("/xrpc/com.atproto.server.getSession").reply(status, {
+    nock(host).get('/xrpc/com.atproto.server.getSession').reply(status, {
       did,
       handle,
-      email: "alex@example.com",
-      accessJwt: "mock-access-token",
-      refreshJwt: "mock-refresh-token",
+      email: 'alex@example.com',
+      accessJwt: 'mock-access-token',
+      refreshJwt: 'mock-refresh-token',
     });
   }
 }
@@ -59,6 +59,6 @@ export function cleanupBlueskySessionMocks() {
 export function verifyBlueskySessionMocks() {
   if (!nock.isDone()) {
     const pendingMocks = nock.pendingMocks();
-    throw new Error(`Pending mocks found: ${pendingMocks.join(", ")}`);
+    throw new Error(`Pending mocks found: ${pendingMocks.join(', ')}`);
   }
 }
