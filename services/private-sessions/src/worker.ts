@@ -352,8 +352,13 @@ worker.queue.work<NotifyReplyJob>(JOB_NAMES.NOTIFY_REPLY, async (job) => {
   thread.forEach((post) => {
     // Notify everyone in the thread once (except the author of the reply)
     if (post.authorDid !== latestReply.authorDid) {
-      // Only notify if the author of the new reply can see this
-      // post in the thread (ie its public, or they have a session key)
+      // Because trust is asymetric, some posts in the thread may not be able
+      // to be seen by the author of this new post
+      // It may make people confused or worried that privacy isn't working if
+      // we notify them that someone they haven't trusted has replied
+      // to one of their posts.
+
+      // So we only notify if the author of the new reply can see their posts
       const replyAuthorCanSeePost =
         !post.uri.includes('/social.spkeasy') || post.hasSessionKey;
       if (replyAuthorCanSeePost) {
@@ -362,10 +367,10 @@ worker.queue.work<NotifyReplyJob>(JOB_NAMES.NOTIFY_REPLY, async (job) => {
     }
   });
 
-  // Filter by which authors may see the reply
+  // Only notify authors who can see the reply
   const authorsThatMaySeeReply = await prisma.sessionKey.findMany({
     where: {
-      recipientDid: latestReply.authorDid,
+      recipientDid: { in: Array.from(authors) },
       sessionId: latestReply.sessionId,
     },
     select: {
