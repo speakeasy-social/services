@@ -46,7 +46,7 @@ export class NotificationService {
     limit?: number;
     priority?: string;
   }): Promise<{
-    notifications: (Notification & { post: EncryptedPost | null })[];
+    notifications: (Notification & { post?: EncryptedPost | null })[];
     cursor: string | null;
   }> {
     const notifications = await prisma.notification.findMany({
