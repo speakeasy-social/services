@@ -23,7 +23,7 @@ import { JOB_NAMES } from '@speakeasy-services/queue';
 const prisma = getPrismaClient();
 
 export type AnnotatedEncryptedPost = EncryptedPost & {
-  viewer: {
+  viewer?: {
     like: boolean;
   };
 };

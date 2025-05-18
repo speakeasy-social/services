@@ -3,6 +3,10 @@ import {
   encodeCursor,
 } from '@speakeasy-services/common';
 import { getPrismaClient } from '../db.js';
+import {
+  Notification,
+  EncryptedPost,
+} from '../generated/prisma-client/index.js';
 
 const prisma = getPrismaClient();
 
@@ -41,12 +45,18 @@ export class NotificationService {
     cursor?: string;
     limit?: number;
     priority?: string;
-  }): Promise<{ notifications: any[]; cursor: string | null }> {
+  }): Promise<{
+    notifications: (Notification & { post: EncryptedPost | null })[];
+    cursor: string | null;
+  }> {
     const notifications = await prisma.notification.findMany({
       where: {
         userDid: did,
         ...(priority ? { priority } : {}),
         ...createCursorWhereClause(cursor),
+      },
+      include: {
+        post: true,
       },
       take: limit,
       orderBy: [

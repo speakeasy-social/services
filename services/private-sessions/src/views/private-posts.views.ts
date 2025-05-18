@@ -18,7 +18,7 @@ export type EncryptedPostView = {
     parent: { uri: string };
   } | null;
   langs: string[];
-  viewer: {
+  viewer?: {
     like: boolean;
   };
 };
