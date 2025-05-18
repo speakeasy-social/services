@@ -331,7 +331,10 @@ worker.queue.work<NotifyReplyJob>(JOB_NAMES.NOTIFY_REPLY, async (job) => {
     }
   }
 
-  if (latestReply.replyRootUri) {
+  if (
+    latestReply.replyRootUri &&
+    !thread.some((post) => post.uri === latestReply.replyRootUri)
+  ) {
     const replyRoot = await fetchPost(
       job.data.token,
       latestReply.replyRootUri,
