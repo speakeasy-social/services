@@ -55,9 +55,6 @@ export class NotificationService {
         ...(priority ? { priority } : {}),
         ...createCursorWhereClause(cursor),
       },
-      include: {
-        post: true,
-      },
       take: limit,
       orderBy: [
         { createdAt: 'desc' },
