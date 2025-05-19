@@ -270,18 +270,72 @@ export class PrivatePostsService {
           rkey: 'asc',
         },
       ],
-      include: postCountInclude(recipientDid),
-    });
-
-    const sessionIds = [...new Set(posts.map((post) => post.sessionId))];
-
-    // Get the associated session keys for the posts
-    const sessionKeys = await prisma.sessionKey.findMany({
-      where: {
-        sessionId: { in: sessionIds },
-        recipientDid,
+      include: {
+        ...postCountInclude(recipientDid),
+        // Include parent and root posts to get their session IDs
+        parent: {
+          select: {
+            sessionId: true,
+          },
+        },
+        root: {
+          select: {
+            sessionId: true,
+          },
+        },
       },
     });
+
+    const postSessionIds = posts.map((post) => post.sessionId);
+
+    // Create a map of session IDs to URIs from all posts (including parent and root)
+    const uriToSessionIds = new Map<string, string>();
+    posts.forEach((post) => {
+      if (post.parent) {
+        uriToSessionIds.set(post.replyUri!, post.parent.sessionId);
+      }
+      if (post.root) {
+        uriToSessionIds.set(post.replyRootUri!, post.root.sessionId);
+      }
+    });
+
+    const replySessionIds: string[] = [...uriToSessionIds.values()];
+    const urisToCheckAccess: string[] = [...uriToSessionIds.keys()];
+
+    const extraSessionIds = replySessionIds.filter(
+      (id) => !postSessionIds.includes(id),
+    );
+
+    // Get session keys for all relevant sessions
+    const [sessionKeys, extraSessionKeys] = await Promise.all([
+      prisma.sessionKey.findMany({
+        where: {
+          sessionId: { in: postSessionIds },
+          recipientDid,
+        },
+      }),
+      prisma.sessionKey.findMany({
+        where: {
+          sessionId: { in: extraSessionIds },
+          recipientDid,
+        },
+        select: {
+          sessionId: true,
+        },
+      }),
+    ]);
+
+    const allSessionKeys = [...sessionKeys, ...extraSessionKeys];
+
+    // Create a set of URIs that the user has access to
+    const accessibleReplyUris: Set<string> = new Set(
+      urisToCheckAccess.filter((uri) => {
+        const sessionId = uriToSessionIds.get(uri);
+        return sessionId
+          ? allSessionKeys.find((key) => key.sessionId === sessionId)
+          : false;
+      }),
+    );
 
     let newCursor;
 
@@ -292,8 +346,22 @@ export class PrivatePostsService {
     }
 
     return {
-      encryptedPosts: posts.map(annotatePost),
-      encryptedSessionKeys: sessionKeys,
+      encryptedPosts: posts.map((post) => {
+        const annotatedPost = annotatePost(post);
+        // Hide reply URIs if user doesn't have access
+        if (shouldHideReply(post.replyRootUri, accessibleReplyUris)) {
+          annotatedPost.replyRootUri = null;
+          annotatedPost.root = null;
+        }
+        if (shouldHideReply(post.replyUri, accessibleReplyUris)) {
+          annotatedPost.replyUri = null;
+          annotatedPost.parent = null;
+        }
+        return annotatedPost;
+      }),
+      encryptedSessionKeys: sessionKeys.filter((key) =>
+        postSessionIds.includes(key.sessionId),
+      ),
       cursor: newCursor,
     };
   }
@@ -347,7 +415,7 @@ export class PrivatePostsService {
             },
             OR: [{ replyRootUri: post?.uri }, { replyUri: post?.uri }],
           },
-          take: limit,
+          take: limit || 20,
           include: postCountInclude(recipientDid),
         })
         .then((posts) => {
@@ -514,7 +582,13 @@ async function canonicalUris(
   return canonicalUris;
 }
 
-function annotatePost(post: EncryptedPost & { _count: { reactions: number } }) {
+function annotatePost(
+  post: EncryptedPost & {
+    _count: { reactions: number };
+    parent?: { sessionId: string } | null;
+    root?: { sessionId: string } | null;
+  },
+) {
   return {
     ...post,
     viewer: {
@@ -529,4 +603,14 @@ function postCountInclude(recipientDid: string) {
       select: { reactions: { where: { userDid: recipientDid } } },
     },
   };
+}
+
+function shouldHideReply(
+  replyUri: string | null,
+  accessibleReplyUris: Set<string>,
+) {
+  if (!replyUri || !replyUri.includes('/social.spkeasy')) {
+    return false;
+  }
+  return !accessibleReplyUris.has(replyUri);
 }

@@ -59,6 +59,10 @@ model EncryptedPost {
   mediaPosts    MediaPost[]
   reactions     Reaction[]
   notifications Notification[]
+  parent        EncryptedPost? @relation("PostToParent", fields: [replyUri], references: [uri])
+  root          EncryptedPost? @relation("PostToRoot", fields: [replyRootUri], references: [uri])
+  replies       EncryptedPost[] @relation("PostToParent")
+  rootReplies   EncryptedPost[] @relation("PostToRoot")
 
   @@index([authorDid, createdAt(sort: Desc)], name: "idx_posts_by_author_created")
   @@index([sessionId, createdAt(sort: Desc), authorDid], name: "idx_posts_by_session_created_author")
