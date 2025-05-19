@@ -22,7 +22,7 @@ type NotificationSubset = Pick<
   Notification,
   'userDid' | 'authorDid' | 'reason' | 'reasonSubject' | 'readAt' | 'createdAt'
 > & {
-  post: (EncryptedPost & { _count: { reactions: number } }) | null;
+  post?: (EncryptedPost & { _count: { reactions: number } }) | null;
 };
 
 export function toNotificationView(
