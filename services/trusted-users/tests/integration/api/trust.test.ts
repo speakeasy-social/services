@@ -1,23 +1,26 @@
+import nock from 'nock';
+
 import server from '../../../src/server.js';
 import { PrismaClient } from '../../../src/generated/prisma-client/index.js';
 import {
   ApiTest,
-  ApiTestTransformer,
+  authorizationTransformer,
   runApiTests,
+  generateTestToken,
   mockBlueskySession,
+  nockXrpc,
   cleanupBlueskySessionMocks,
   verifyBlueskySessionMocks,
 } from '@speakeasy-services/test-utils';
-import { generateTestToken } from '@speakeasy-services/test-utils';
 
 const authorDid = 'did:example:alex-author';
 const validRecipient = 'did:example:valid-valery';
 const invalidRecipient = 'did:example:deleted-dave';
 
-describe('Trusted Users API Tests', () => {
-  let prisma: PrismaClient;
-  const validToken = generateTestToken(authorDid);
+let prisma: PrismaClient;
+const validToken = generateTestToken(authorDid);
 
+describe('Trusted Users API Tests', () => {
   beforeAll(async () => {
     // Initialize Prisma client
     prisma = new PrismaClient();
@@ -40,34 +43,11 @@ describe('Trusted Users API Tests', () => {
   });
 
   afterEach(() => {
+    nock.cleanAll();
     // Cleanup and verify mocks
     cleanupBlueskySessionMocks();
     verifyBlueskySessionMocks();
   });
-
-  // Example transformer that generates multiple test cases for different authorization scenarios
-  const authorizationTransformer: ApiTestTransformer = (test: ApiTest) => {
-    return [
-      // Original test as is
-      test,
-      // Test without token
-      {
-        ...test,
-        note: `${test.note} - without token`,
-        bearer: undefined,
-        expectedStatus: 401,
-        expectedBody: { error: 'Unauthorized' },
-      },
-      // Test with wrong user token
-      {
-        ...test,
-        note: `${test.note} - with wrong user token`,
-        bearer: 'wrong-user-token',
-        expectedStatus: 403,
-        expectedBody: { error: 'Forbidden' },
-      },
-    ];
-  };
 
   const apiTests: ApiTest[] = [
     {
@@ -113,6 +93,7 @@ describe('Trusted Users API Tests', () => {
       body: { recipientDid: validRecipient },
       bearer: validToken,
       before: async () => {
+        nockAddUserToSession();
         // Create another revipiend just to ensure we don't get confused
         await prisma.trustedUser.create({
           data: {
@@ -124,16 +105,7 @@ describe('Trusted Users API Tests', () => {
         });
       },
       expectedBody: { success: true },
-      assert: async () => {
-        const trust = await prisma.trustedUser.findFirst({
-          where: {
-            authorDid,
-            recipientDid: validRecipient,
-            deletedAt: null,
-          },
-        });
-        expect(trust).toBeTruthy();
-      },
+      describe: newTrustedUser,
     },
     {
       note: 'duplicate trust not allowed',
@@ -151,7 +123,7 @@ describe('Trusted Users API Tests', () => {
         });
       },
       expectedStatus: 400,
-      expectedBody: { error: 'User is already trusted' },
+      expectedBody: { code: 'AlreadyExists', error: 'User is already trusted' },
     },
     {
       note: 're-trusting is ok',
@@ -160,6 +132,7 @@ describe('Trusted Users API Tests', () => {
       body: { recipientDid: validRecipient },
       bearer: validToken,
       before: async () => {
+        nockAddUserToSession();
         await prisma.trustedUser.create({
           data: {
             authorDid,
@@ -179,6 +152,8 @@ describe('Trusted Users API Tests', () => {
       body: { recipientDid: validRecipient },
       bearer: validToken,
       before: async () => {
+        nockRevokeSession();
+
         await prisma.trustedUser.create({
           data: {
             authorDid,
@@ -188,16 +163,7 @@ describe('Trusted Users API Tests', () => {
         });
       },
       expectedBody: { success: true },
-      assert: async () => {
-        const trust = await prisma.trustedUser.findFirst({
-          where: {
-            authorDid,
-            recipientDid: validRecipient,
-          },
-        });
-        expect(trust).toBeTruthy();
-        expect(trust?.deletedAt).not.toBeNull();
-      },
+      describe: removeTrustedUser,
     },
     {
       note: 'non-existent user',
@@ -216,3 +182,63 @@ describe('Trusted Users API Tests', () => {
     'Trusted Users API Tests',
   );
 });
+
+let addUserNock: nock.Scope;
+let revokeSessionNock: nock.Scope;
+
+function nockAddUserToSession() {
+  addUserNock = nockXrpc(
+    process.env.PRIVATE_SESSIONS_HOST!,
+    'post',
+    'social.spkeasy.privateSession.addUser',
+    {
+      authorDid,
+      recipientDid: validRecipient,
+    },
+  );
+}
+
+function nockRevokeSession() {
+  revokeSessionNock = nockXrpc(
+    process.env.PRIVATE_SESSIONS_HOST!,
+    'post',
+    'social.spkeasy.privateSession.revokeSession',
+    {
+      authorDid,
+      recipientDid: validRecipient,
+    },
+  );
+}
+
+function newTrustedUser() {
+  it('creates new trust entry', async () => {
+    const trust = await prisma.trustedUser.findFirst({
+      where: {
+        authorDid,
+        recipientDid: validRecipient,
+        deletedAt: null,
+      },
+    });
+    expect(trust).toBeTruthy();
+  });
+
+  it('adds user to session', () => {
+    expect(addUserNock.isDone()).toBeTruthy();
+  });
+}
+
+function removeTrustedUser() {
+  it('deletes the trust entry', async () => {
+    const trust = await prisma.trustedUser.findFirst({
+      where: {
+        authorDid,
+        recipientDid: validRecipient,
+      },
+    });
+    expect(trust).toBeTruthy();
+    expect(trust?.deletedAt).not.toBeNull();
+  });
+  it('revokes session', () => {
+    expect(revokeSessionNock.isDone()).toBeTruthy();
+  });
+}
