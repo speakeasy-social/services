@@ -18,7 +18,7 @@ export type EncryptedPostView = {
     parent: { uri: string };
   } | null;
   langs: string[];
-  viewer: {
+  viewer?: {
     like: boolean;
   };
 };
@@ -37,12 +37,13 @@ export function toEncryptedPostView(
     encryptedContent: safeBtoa(post.encryptedContent),
     createdAt: post.createdAt.toISOString(),
     sessionId: post.sessionId,
-    reply: post.replyUri
-      ? {
-          root: { uri: post.replyRootUri! },
-          parent: { uri: post.replyUri! },
-        }
-      : null,
+    reply:
+      post.replyUri || post.replyRootUri
+        ? {
+            root: { uri: post.replyRootUri! },
+            parent: { uri: post.replyUri! },
+          }
+        : null,
     langs: post.langs,
     viewer: post.viewer,
   };

@@ -58,6 +58,11 @@ model EncryptedPost {
   session       Session  @relation("SessionToPosts", fields: [sessionId], references: [id])
   mediaPosts    MediaPost[]
   reactions     Reaction[]
+  notifications Notification[]
+  parent        EncryptedPost? @relation("PostToParent", fields: [replyUri], references: [uri])
+  root          EncryptedPost? @relation("PostToRoot", fields: [replyRootUri], references: [uri])
+  replies       EncryptedPost[] @relation("PostToParent")
+  rootReplies   EncryptedPost[] @relation("PostToRoot")
 
   @@index([authorDid, createdAt(sort: Desc)], name: "idx_posts_by_author_created")
   @@index([sessionId, createdAt(sort: Desc), authorDid], name: "idx_posts_by_session_created_author")
@@ -92,6 +97,9 @@ model Notification {
   readAt       DateTime?
   createdAt    DateTime  @default(now()) 
   updatedAt    DateTime?
+
+  // Relationships
+  post         EncryptedPost? @relation(fields: [reasonSubject], references: [uri])
 
   @@index([userDid, createdAt], name: "idx_notifications_user_did_created_at_index")
   @@index([userDid, readAt], name: "idx_notifications_user_did_read_at_index")

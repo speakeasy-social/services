@@ -1,5 +1,12 @@
-import { Notification } from '../generated/prisma-client/index.js';
+import {
+  Notification,
+  EncryptedPost,
+} from '../generated/prisma-client/index.js';
 import { createListView } from '@speakeasy-services/common';
+import {
+  EncryptedPostView,
+  toEncryptedPostView,
+} from './private-posts.views.js';
 
 export type NotificationView = {
   userDid: string;
@@ -8,12 +15,15 @@ export type NotificationView = {
   reasonSubject: string;
   readAt: string | null;
   createdAt: string;
+  post: EncryptedPostView | null;
 };
 
 type NotificationSubset = Pick<
   Notification,
   'userDid' | 'authorDid' | 'reason' | 'reasonSubject' | 'readAt' | 'createdAt'
->;
+> & {
+  post?: (EncryptedPost & { _count: { reactions: number } }) | null;
+};
 
 export function toNotificationView(
   notification: NotificationSubset,
@@ -25,6 +35,7 @@ export function toNotificationView(
     reasonSubject: notification.reasonSubject,
     readAt: notification.readAt?.toISOString() ?? null,
     createdAt: notification.createdAt.toISOString(),
+    post: notification.post ? toEncryptedPostView(notification.post) : null,
   };
 }
 

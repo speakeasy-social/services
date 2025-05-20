@@ -184,6 +184,46 @@ export async function fetchFollowingDids(
   }
 }
 
+export interface PostView {
+  uri: string;
+  cid: string;
+  author: any;
+  record: {
+    $type: string;
+    text: string;
+    createdAt: string;
+    langs: string[];
+    facets: any[];
+    embed: {
+      $type: string;
+      record: {
+        cid: string;
+        uri: string;
+      };
+    };
+    reply?: {
+      root: {
+        uri: string;
+        cid: string;
+      };
+      parent: {
+        uri: string;
+        cid: string;
+      };
+    };
+  };
+  embed?: any;
+  replyCount?: number;
+  repostCount?: number;
+  likeCount?: number;
+  quoteCount?: number;
+  indexedAt: string;
+  viewer?: any;
+  labels?: any;
+  threadgate?: any;
+  [k: string]: unknown;
+}
+
 /**
  * Fetches posts from the Bluesky API using their URIs.
  *
@@ -191,7 +231,10 @@ export async function fetchFollowingDids(
  * @param token - Authentication token for the Bluesky API
  * @returns Promise that resolves to an array of post objects
  */
-export async function fetchBlueskyPosts(uris: string[], token: string) {
+export async function fetchBlueskyPosts(
+  uris: string[],
+  token: string,
+): Promise<PostView[]> {
   const response = (await blueskyFetch('app.bsky.feed.getPosts', {
     token,
     query: {
