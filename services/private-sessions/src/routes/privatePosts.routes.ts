@@ -91,8 +91,8 @@ const methodHandlers = {
     result.encryptedPost &&
       authorize(req, 'list', 'private_post', result.encryptedPost);
     authorize(req, 'list', 'private_post', result.encryptedReplyPosts);
-    result.encryptedParentPost &&
-      authorize(req, 'list', 'private_post', result.encryptedParentPost);
+    result.encryptedParentPosts &&
+      authorize(req, 'list', 'private_post', result.encryptedParentPosts);
     authorize(req, 'list', 'session_key', result.encryptedSessionKeys);
 
     return {
@@ -104,12 +104,9 @@ const methodHandlers = {
         encryptedReplyPosts: toEncryptedPostsListView(
           result.encryptedReplyPosts,
         ),
-        encryptedParentPost:
-          result.encryptedParentPost &&
-          toEncryptedPostView(result.encryptedParentPost),
-        encryptedRootPost:
-          result.encryptedRootPost &&
-          toEncryptedPostView(result.encryptedRootPost),
+        encryptedParentPosts: toEncryptedPostsListView(
+          result.encryptedParentPosts,
+        ),
         encryptedSessionKeys: toSessionKeyListView(result.encryptedSessionKeys),
       },
     };

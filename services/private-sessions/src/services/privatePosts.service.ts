@@ -22,6 +22,8 @@ import { JOB_NAMES } from '@speakeasy-services/queue';
 
 const prisma = getPrismaClient();
 
+const DEFAULT_LIMIT = 40;
+
 export type AnnotatedEncryptedPost = EncryptedPost & {
   viewer?: {
     like: boolean;
@@ -201,7 +203,6 @@ export class PrivatePostsService {
     encryptedSessionKeys: SessionKey[];
     cursor?: string;
   }> {
-    const DEFAULT_LIMIT = 50;
     const token = (req.user as User).token as string;
 
     let promises: Promise<void>[] = [];
@@ -369,13 +370,12 @@ export class PrivatePostsService {
   async getPostThread(
     req: ExtendedRequest,
     recipientDid: string,
-    { uri, limit }: { uri: string; limit?: number },
+    { uri, limit = DEFAULT_LIMIT }: { uri: string; limit?: number },
   ): Promise<{
     cursor?: string;
     encryptedPost: AnnotatedEncryptedPost;
     encryptedReplyPosts: AnnotatedEncryptedPost[];
-    encryptedParentPost?: AnnotatedEncryptedPost;
-    encryptedRootPost?: AnnotatedEncryptedPost;
+    encryptedParentPosts: AnnotatedEncryptedPost[];
     encryptedSessionKeys: SessionKey[];
   }> {
     // Load post identified by uri
@@ -385,24 +385,34 @@ export class PrivatePostsService {
       true,
     );
 
-    const post = await loadPrivatePost(canonicalUri, recipientDid);
-
-    if (!post) {
-      throw new NotFoundError('Post not found');
-    }
-
     // Load reply posts
     // Load parent post
-    const promises = [];
+    const promises: [
+      Promise<EncryptedPost & { _count: { reactions: number } }>,
+      Promise<(EncryptedPost & { _count: { reactions: number } })[]>,
+      Promise<(EncryptedPost & { _count: { reactions: number } })[]>,
+    ] = [
+      prisma.encryptedPost
+        .findFirst({
+          where: {
+            session: {
+              sessionKeys: {
+                some: {
+                  recipientDid: recipientDid,
+                },
+              },
+            },
+            uri: canonicalUri,
+          },
+          include: postCountInclude(recipientDid),
+        })
+        .then((p) => {
+          if (!p) {
+            throw new NotFoundError('Post not found');
+          }
+          return p;
+        }),
 
-    let replyPosts: (EncryptedPost & { _count: { reactions: number } })[] = [];
-    let parentPost: (EncryptedPost & { _count: { reactions: number } }) | null =
-      null;
-    let rootParentPost:
-      | (EncryptedPost & { _count: { reactions: number } })
-      | null = null;
-
-    promises.push(
       prisma.encryptedPost
         .findMany({
           where: {
@@ -413,48 +423,114 @@ export class PrivatePostsService {
                 },
               },
             },
-            OR: [{ replyRootUri: post?.uri }, { replyUri: post?.uri }],
+            OR: [{ replyRootUri: canonicalUri }, { replyUri: canonicalUri }],
           },
           take: limit || 20,
           include: postCountInclude(recipientDid),
+          orderBy: {
+            createdAt: 'desc',
+          },
         })
-        .then((posts) => {
-          replyPosts = posts;
+        .then(async (replies) => {
+          if (replies.length < limit) {
+            const nestedReplies = await prisma.encryptedPost.findMany({
+              where: {
+                session: {
+                  sessionKeys: {
+                    some: {
+                      recipientDid: recipientDid,
+                    },
+                  },
+                },
+                replyUri: { in: replies.map((post) => post.uri) },
+                uri: { notIn: replies.map((post) => post.uri) },
+              },
+              take: limit - replies.length,
+              include: postCountInclude(recipientDid),
+              orderBy: {
+                createdAt: 'desc',
+              },
+            });
+            replies.push(...nestedReplies);
+          }
+          return replies;
         }),
-    );
+
+      prisma
+        .$queryRaw<
+          Array<EncryptedPost & { reaction_count: number; depth: number }>
+        >(
+          Prisma.sql`
+            WITH RECURSIVE post_chain AS (
+              -- Base case: start with the current post
+              SELECT 
+                ep.*,
+                (EXISTS (
+                  SELECT 1 FROM reactions r 
+                  WHERE r.uri = ep.uri AND r."userDid" = ${recipientDid}
+                ))::int as reaction_count,
+                1 as depth
+              FROM encrypted_posts ep
+              WHERE ep.uri = ${canonicalUri}
+              AND ep."sessionId" IN (
+                SELECT "sessionId" 
+                FROM session_keys 
+                WHERE "recipientDid" = ${recipientDid}
+              )
+              
+              UNION ALL
+              
+              -- Recursive case: join with parent posts
+              SELECT 
+                parent.*,
+                (EXISTS (
+                  SELECT 1 FROM reactions r 
+                  WHERE r.uri = parent.uri AND r."userDid" = ${recipientDid}
+                ))::int as reaction_count,
+                pc.depth + 1
+              FROM encrypted_posts parent
+              INNER JOIN post_chain pc ON parent.uri = pc."replyUri"
+              WHERE parent."sessionId" IN (
+                SELECT "sessionId" 
+                FROM session_keys 
+                WHERE "recipientDid" = ${recipientDid}
+              )
+              AND pc.depth < 30
+            )
+            SELECT * FROM post_chain
+            WHERE depth > 1
+            ORDER BY depth ASC
+          `,
+          recipientDid,
+          canonicalUri,
+        )
+        .then((posts) =>
+          posts.map((post) => ({
+            ...post,
+            _count: { reactions: post.reaction_count },
+          })),
+        ),
+    ];
+
+    const [post, replyPosts, parentPosts] = await Promise.all(promises);
 
     if (
-      post?.replyUri &&
-      post?.replyUri?.includes('social.spkeasy.feed.privatePost')
+      post.replyUri &&
+      !replyPosts.some((reply) => reply.uri === post.replyUri) &&
+      !parentPosts.some((parent) => parent.uri === post.replyUri)
     ) {
-      promises.push(
-        loadPrivatePost(post?.replyUri, recipientDid).then((post) => {
-          parentPost = post;
-        }),
-      );
+      const replyRootUri = parentPosts[0]?.replyRootUri || post.replyUri;
+      const loadedPost = await loadPrivatePost(replyRootUri, recipientDid);
+      if (loadedPost) {
+        parentPosts.push(loadedPost);
+      }
     }
 
-    if (
-      post?.replyRootUri &&
-      post?.replyRootUri?.includes('social.spkeasy.feed.privatePost')
-    ) {
-      promises.push(
-        loadPrivatePost(post?.replyRootUri, recipientDid).then((post) => {
-          rootParentPost = post;
-        }),
-      );
-    }
-
-    await Promise.all(promises);
-
-    const allSessionIds = [
-      post?.sessionId,
+    const sessionIds = [
+      post.sessionId,
       ...replyPosts.map((post) => post.sessionId),
-      parentPost ? (parentPost as EncryptedPost).sessionId : undefined,
-      rootParentPost ? (rootParentPost as EncryptedPost).sessionId : undefined,
+      ...parentPosts.map((post) => post.sessionId),
     ].filter((id): id is string => id !== undefined);
-
-    const sessionIds: string[] = [...new Set(allSessionIds)];
 
     const sessionKeys = await prisma.sessionKey.findMany({
       where: {
@@ -468,10 +544,7 @@ export class PrivatePostsService {
       cursor: undefined,
       encryptedPost: annotatePost(post),
       encryptedReplyPosts: replyPosts.map(annotatePost),
-      encryptedParentPost: parentPost ? annotatePost(parentPost) : undefined,
-      encryptedRootPost: rootParentPost
-        ? annotatePost(rootParentPost)
-        : undefined,
+      encryptedParentPosts: parentPosts.map(annotatePost),
       encryptedSessionKeys: sessionKeys,
     };
   }
