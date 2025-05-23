@@ -1,5 +1,5 @@
 import { MlKem768 } from 'mlkem';
-import { ErrorWithDetails, safeAtob } from '@speakeasy-services/common';
+import { ErrorWithLog, safeAtob } from '@speakeasy-services/common';
 
 /**
  * Encrypts a session DEK using ML-KEM
@@ -213,7 +213,7 @@ export async function recryptDEK(
   encryptionPublicKey: string,
 ): Promise<Uint8Array> {
   if (privateKey.userKeyPairId !== sessionKey.userKeyPairId) {
-    throw new ErrorWithDetails(
+    throw new ErrorWithLog(
       'InternalError',
       'Attempt to decrypt DEK with wrong private key',
       500,
