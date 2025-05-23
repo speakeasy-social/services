@@ -16,6 +16,8 @@ import {
   getTrustedDef,
   addTrustedDef,
   removeTrustedDef,
+  bulkAddTrustedDef,
+  bulkRemoveTrustedDef,
 } from '../lexicon/types/trust.js';
 import { toTrustedUsersListView } from '../views/trusted-user.view.js';
 
@@ -89,6 +91,32 @@ const methodHandlers = {
   },
 
   /**
+   * Adds a new user to the trusted list
+   */
+  'social.spkeasy.graph.bulkAddTrusted': async (
+    req: ExtendedRequest,
+  ): RequestHandlerReturn => {
+    const { recipientDids } = req.body as { recipientDids: string[] };
+    // Validate input against lexicon
+    validateAgainstLexicon(bulkAddTrustedDef, req.body);
+
+    const authorDid = (req.user as User)?.did;
+
+    // Authorize the action
+    authorize(req, 'create', 'trusted_user', { authorDid });
+
+    // Perform the action
+    const updatedRecipientDids = await trustService.bulkAddTrusted(
+      authorDid!,
+      recipientDids,
+    );
+
+    return {
+      body: { recipientDids: updatedRecipientDids },
+    };
+  },
+
+  /**
    * Removes a user from the trusted list
    */
   'social.spkeasy.graph.removeTrusted': async (
@@ -114,6 +142,32 @@ const methodHandlers = {
       body: { success: true },
     };
   },
+
+  /**
+   * Adds a new user to the trusted list
+   */
+  'social.spkeasy.graph.bulkRemoveTrusted': async (
+    req: ExtendedRequest,
+  ): RequestHandlerReturn => {
+    const { recipientDids } = req.body as { recipientDids: string[] };
+    // Validate input against lexicon
+    validateAgainstLexicon(bulkRemoveTrustedDef, req.body);
+
+    const authorDid = (req.user as User)?.did;
+
+    // Authorize the action
+    authorize(req, 'create', 'trusted_user', { authorDid });
+
+    // Perform the action
+    const removedRecipientDids = await trustService.bulkRemoveTrusted(
+      authorDid!,
+      recipientDids,
+    );
+
+    return {
+      body: { recipientDids: removedRecipientDids },
+    };
+  },
 } as const;
 
 type MethodName = keyof typeof methodHandlers;
@@ -129,7 +183,13 @@ export const methods: Record<MethodName, { handler: RequestHandler }> = {
   'social.spkeasy.graph.addTrusted': {
     handler: methodHandlers['social.spkeasy.graph.addTrusted'],
   },
+  'social.spkeasy.graph.bulkAddTrusted': {
+    handler: methodHandlers['social.spkeasy.graph.bulkAddTrusted'],
+  },
   'social.spkeasy.graph.removeTrusted': {
     handler: methodHandlers['social.spkeasy.graph.removeTrusted'],
+  },
+  'social.spkeasy.graph.bulkRemoveTrusted': {
+    handler: methodHandlers['social.spkeasy.graph.bulkRemoveTrusted'],
   },
 };

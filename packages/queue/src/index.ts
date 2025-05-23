@@ -1,12 +1,13 @@
 import fs from 'fs';
 
-import PgBoss, { SendOptions } from 'pg-boss';
+import PgBoss, { SendOptions, JobInsert } from 'pg-boss';
 import { z } from 'zod';
 import { ValidationError } from '@speakeasy-services/common';
 
 export const JOB_NAMES = {
   ADD_RECIPIENT_TO_SESSION: 'add-recipient-to-session',
   REVOKE_SESSION: 'revoke-session',
+  DELETE_SESSION_KEYS: 'delete-session-keys',
   UPDATE_USER_KEYS: 'update-user-keys',
   UPDATE_SESSION_KEYS: 'update-session-keys',
   POPULATE_DID_CACHE: 'populate-did-cache',
@@ -90,5 +91,16 @@ export class Queue {
       ...DEFAULT_RETRY_CONFIG,
       ...config,
     });
+  }
+
+  static async bulkPublish(config: JobInsert, datas: any[]): Promise<void> {
+    const queue = this.getInstance();
+    await queue.insert(
+      datas.map((data) => ({
+        data,
+        ...DEFAULT_RETRY_CONFIG,
+        ...config,
+      })),
+    );
   }
 }
