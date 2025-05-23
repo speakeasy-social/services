@@ -58,7 +58,10 @@ function lexiconToZodSchema(
         zodType = z.boolean();
         break;
       case 'integer':
-        zodType = z.number().int();
+        zodType = z.union([
+          z.number().int(),
+          z.string().transform((val) => parseInt(val, 10)),
+        ]);
         break;
       case 'array':
         if (propDef.items?.type === 'ref') {

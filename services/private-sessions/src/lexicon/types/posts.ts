@@ -26,7 +26,7 @@ export const getPostsDef: LexiconDoc = {
             description: 'Optional URI of the post being replied to',
           },
           limit: {
-            type: 'string',
+            type: 'integer',
             description: 'Optional limit for pagination',
           },
           cursor: {

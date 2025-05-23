@@ -36,16 +36,19 @@ const methodHandlers = {
     const did = (req.user as User)!.did!;
 
     // Validate input against lexicon
-    validateAgainstLexicon(listNotificationsDef, req.query);
+    const validatedQuery = validateAgainstLexicon(
+      listNotificationsDef,
+      req.query,
+    );
 
-    const { cursor, limit, priority } = req.query;
+    const { cursor, limit, priority } = validatedQuery;
 
     const { notifications, cursor: newCursor } =
       await notificationService.getNotifications({
         did,
-        cursor: cursor as string,
-        limit: limit ? parseInt(limit as string) : undefined,
-        priority: priority as string,
+        cursor,
+        limit,
+        priority,
       });
 
     authorize(req, 'list', 'notification', notifications);
