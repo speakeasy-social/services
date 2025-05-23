@@ -3,6 +3,8 @@ import {
   addTrustedDef,
   removeTrustedDef,
   trustedUserDef,
+  bulkAddTrustedDef,
+  bulkRemoveTrustedDef,
 } from './types/trust.js';
 
 export const lexicons = [
@@ -10,4 +12,6 @@ export const lexicons = [
   addTrustedDef,
   removeTrustedDef,
   trustedUserDef,
+  bulkAddTrustedDef,
+  bulkRemoveTrustedDef,
 ];

@@ -131,7 +131,7 @@ export async function uploadToS3(
     });
   } catch (err: any) {
     if (err instanceof AxiosError && err.response?.data) {
-      (err as any).details = {
+      (err as any).log = {
         s3message: err.response?.data,
       };
     }

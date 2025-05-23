@@ -9,6 +9,7 @@ interface CustomError extends Error {
   errors?: any;
   code?: string;
   details?: Record<string, any>;
+  log?: Record<string, any>;
 }
 
 function relevantLine(stack: string) {
@@ -31,11 +32,6 @@ export const errorHandler: ErrorRequestHandler = async (
   res: Response,
   next: NextFunction,
 ) => {
-  // If headers are already sent, let Express handle it
-  if (res.headersSent) {
-    return next(error);
-  }
-
   let isSilent = false;
 
   const req = request as ExtendedRequest;
@@ -44,6 +40,7 @@ export const errorHandler: ErrorRequestHandler = async (
     message: string;
     errors?: any;
     code?: string;
+    details?: Record<string, any>;
   } = {
     error: 'InternalServerError',
     message: 'An unexpected error occurred',
@@ -65,7 +62,7 @@ export const errorHandler: ErrorRequestHandler = async (
     message: error.message,
     statusCode: error.statusCode,
     stack: error.stack,
-    meta: error.details,
+    meta: error.log || error.details,
   };
 
   if (
@@ -83,6 +80,7 @@ export const errorHandler: ErrorRequestHandler = async (
       error: error.name,
       message: error.message,
       errors: error.errors,
+      details: error.details,
     };
     errorMessage = `${error.name} occurred`;
 
@@ -132,6 +130,11 @@ export const errorHandler: ErrorRequestHandler = async (
     },
     errorMessage,
   );
+
+  // If headers are already sent, let Express handle it
+  if (res.headersSent) {
+    return next(error);
+  }
 
   res.status(statusCode).send(
     responseObject || {

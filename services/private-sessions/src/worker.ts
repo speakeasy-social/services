@@ -19,6 +19,11 @@ interface RotateSessionJob {
   recipientDid?: string;
 }
 
+interface DeleteSessionKeysJob {
+  authorDid: string;
+  recipientDid: string;
+}
+
 interface UpdateSessionKeysJob {
   prevKeyId: string;
   newKeyId: string;
@@ -193,6 +198,17 @@ worker.queue.work<RotateSessionJob>(JOB_NAMES.REVOKE_SESSION, async (job) => {
     });
   }
 });
+
+worker.queue.work<DeleteSessionKeysJob>(
+  JOB_NAMES.DELETE_SESSION_KEYS,
+  async (job) => {
+    const { authorDid, recipientDid } = job.data;
+
+    await prisma.sessionKey.deleteMany({
+      where: { recipientDid, session: { authorDid } },
+    });
+  },
+);
 
 /**
  * Update session keys in batches when user keys are rotated
