@@ -37,6 +37,19 @@ curl -s -X PUT "$LOCALSTACK_URL/$BUCKET_NAME" \
   -H "Authorization: AWS4-HMAC-SHA256 Credential=$ACCESS_KEY/$DATE_STAMP/$REGION/s3/aws4_request, SignedHeaders=host;x-amz-date, Signature=localstack" \
   -H "Content-Length: 0"
 
+curl -X PUT \
+  "${LOCALSTACK_URL}/${BUCKET_NAME}?cors" \
+  -H "Content-Type: application/xml" \
+  -d '<?xml version="1.0" encoding="UTF-8"?>
+<CORSConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+  <CORSRule>
+    <AllowedOrigin>http://localhost:19006</AllowedOrigin>
+    <AllowedMethod>GET</AllowedMethod>
+    <AllowedHeader>*</AllowedHeader>
+    <ExposeHeader>ETag</ExposeHeader>
+  </CORSRule>
+</CORSConfiguration>'
+
 # Check if the bucket was created successfully
 echo "Verifying bucket creation..."
 BUCKET_CHECK=$(curl -s -X GET "$LOCALSTACK_URL" \
