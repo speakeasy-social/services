@@ -30,6 +30,18 @@ export class TrustService {
   }
 
   /**
+   * Gets all trusted users for an author
+   */
+  async getTrustedCount(authorDid: string): Promise<number> {
+    return prisma.trustedUser.count({
+      where: {
+        authorDid,
+        deletedAt: null,
+      },
+    });
+  }
+
+  /**
    * Adds a new trusted user and schedules session update
    */
   async bulkAddTrusted(
@@ -154,7 +166,7 @@ export class TrustService {
     return await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       // Use raw SQL to lock records for update
       const existingRecipients = await tx.$queryRaw<TrustedUser[]>(
-        Prisma.sql`SELECT recipientDid FROM trusted_users WHERE "authorDid" = ${authorDid} AND "recipientDid" IN (${Prisma.join(recipientDids)}) FOR UPDATE`,
+        Prisma.sql`SELECT "recipientDid" FROM trusted_users WHERE "authorDid" = ${authorDid} AND "recipientDid" IN (${Prisma.join(recipientDids)}) FOR UPDATE`,
       );
 
       const existingRecipientDids = new Set(
