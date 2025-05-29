@@ -47,6 +47,24 @@ const methodHandlers = {
     };
   },
 
+  'social.spkeasy.graph.getTrustedCount': async (
+    req: ExtendedRequest,
+  ): RequestHandlerReturn => {
+    const authorDid = (req.user as User)?.did;
+
+    authorize(req, 'count', 'trusted_user', { authorDid });
+
+    // Get the data from the service
+    const trustedCount = await trustService.getTrustedCount(
+      authorDid as string,
+    );
+
+    // Transform to view
+    return {
+      body: { trustedCount },
+    };
+  },
+
   /**
    * Adds a new user to the trusted list
    */
@@ -104,6 +122,9 @@ type MethodName = keyof typeof methodHandlers;
 export const methods: Record<MethodName, { handler: RequestHandler }> = {
   'social.spkeasy.graph.getTrusted': {
     handler: methodHandlers['social.spkeasy.graph.getTrusted'],
+  },
+  'social.spkeasy.graph.getTrustedCount': {
+    handler: methodHandlers['social.spkeasy.graph.getTrustedCount'],
   },
   'social.spkeasy.graph.addTrusted': {
     handler: methodHandlers['social.spkeasy.graph.addTrusted'],

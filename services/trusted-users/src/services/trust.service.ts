@@ -27,6 +27,18 @@ export class TrustService {
   }
 
   /**
+   * Gets all trusted users for an author
+   */
+  async getTrustedCount(authorDid: string): Promise<number> {
+    return prisma.trustedUser.count({
+      where: {
+        authorDid,
+        deletedAt: null,
+      },
+    });
+  }
+
+  /**
    * Adds a new trusted user and schedules session update
    */
   async addTrusted(authorDid: string, recipientDid: string): Promise<void> {

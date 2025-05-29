@@ -7,6 +7,7 @@ export type Action =
   | 'list'
   | 'create'
   | 'delete'
+  | 'count'
   | 'revoke'
   | 'update'
   | 'apply'
