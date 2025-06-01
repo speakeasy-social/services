@@ -64,12 +64,23 @@ worker.work<AddRecipientToSessionJob>(
   JOB_NAMES.ADD_RECIPIENT_TO_SESSION,
   async (job) => {
     worker.logger.info('Adding recipient to session (logger)');
-    // FIXME we need some aborts to handle various kinds of debouncing
-    // We should about the job if
-    // * User has since untrusted the recipient
-    // * The session has already been updated
 
     const { authorDid, recipientDid } = job.data;
+
+    // Check if the recipient is still trusted
+    const trusted = await speakeasyApiRequest(
+      {
+        method: 'GET',
+        path: 'social.spkeasy.graph.getTrusted',
+        fromService: 'private-sessions',
+        toService: 'user-keys',
+      },
+      { authorDid, recipientDid },
+    );
+
+    if (!trusted.length) {
+      return { abortReason: 'Recipient no longer trusted' };
+    }
 
     const sessions = await prisma.session.findMany({
       where: {
@@ -84,26 +95,45 @@ worker.work<AddRecipientToSessionJob>(
         },
       },
     });
-    const sessionsWithKeys = sessions.filter(
+    const sessionsWithAuthorKeys = sessions.filter(
       (session) => session.sessionKeys.length > 0,
     );
 
     // User hasn't yet made any private posts, we can stop here
-    if (sessionsWithKeys.length === 0) {
+    if (sessionsWithAuthorKeys.length === 0) {
       return;
     }
 
-    if (sessions.length > sessionsWithKeys.length) {
+    // Something went wrong if there are sessions without author keys
+    if (sessions.length > sessionsWithAuthorKeys.length) {
       worker.logger.error(
-        `Some sessions for ${authorDid} do not have author session keys (${sessions.length} sessions, ${sessionsWithKeys.length})`,
+        `Some sessions for ${authorDid} do not have author session keys (${sessions.length} sessions, ${sessionsWithAuthorKeys.length})`,
       );
     }
 
-    if (!sessionsWithKeys.length) {
+    if (!sessionsWithAuthorKeys.length) {
       return;
     }
 
-    const sessionKeyPairIds = sessionsWithKeys.map(
+    // Remove from the set any existing session keys
+    const existingSessionKeys = await prisma.sessionKey.findMany({
+      where: {
+        recipientDid,
+        sessionId: { in: sessionsWithAuthorKeys.map((session) => session.id) },
+      },
+      select: {
+        sessionId: true,
+      },
+    });
+
+    const sessionKeysNeeded = sessionsWithAuthorKeys.filter(
+      (session) =>
+        !existingSessionKeys.some(
+          (existingSessionKey) => existingSessionKey.sessionId === session.id,
+        ),
+    );
+
+    const sessionKeyPairIds = sessionKeysNeeded.map(
       (session) => session.sessionKeys[0].userKeyPairId,
     );
 
@@ -143,7 +173,7 @@ worker.work<AddRecipientToSessionJob>(
 
     const newSessionKeys = (
       await Promise.all(
-        sessionsWithKeys.map(async (session) => {
+        sessionKeysNeeded.map(async (session) => {
           const privateKey = authorPrivateKeysMap.get(
             session.sessionKeys[0].userKeyPairId,
           );
@@ -203,6 +233,21 @@ worker.queue.work<DeleteSessionKeysJob>(
   JOB_NAMES.DELETE_SESSION_KEYS,
   async (job) => {
     const { authorDid, recipientDid } = job.data;
+
+    // Check if the recipient is still trusted
+    const trusted = await speakeasyApiRequest(
+      {
+        method: 'GET',
+        path: 'social.spkeasy.graph.getTrusted',
+        fromService: 'private-sessions',
+        toService: 'user-keys',
+      },
+      { authorDid, recipientDid },
+    );
+
+    if (trusted.length) {
+      return { abortReason: 'Recipient has been trusted again' };
+    }
 
     await prisma.sessionKey.deleteMany({
       where: { recipientDid, session: { authorDid } },
