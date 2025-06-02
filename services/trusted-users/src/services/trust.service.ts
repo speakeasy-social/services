@@ -9,6 +9,9 @@ import { getPrismaClient } from '../db.js';
 
 const prisma = getPrismaClient();
 
+// Wait two minutes before adding the session to go with bulk added trusted
+// users in case the user changes their mind and undoes, there's less work
+// to do
 const DEFER_BULK_ADD_TRUSTED_SECONDS = 2 * 60;
 const MAX_TRUSTED_USERS_PER_DAY = 10;
 
@@ -76,6 +79,14 @@ export class TrustService {
       const existingRecipients = await tx.$queryRaw<TrustedUser[]>(
         Prisma.sql`SELECT "recipientDid" FROM trusted_users WHERE "authorDid" = ${authorDid} AND "recipientDid" IN (${Prisma.join(recipientDids)}) FOR UPDATE`,
       );
+      const lastDayTrustsPromise = tx.trustedUser.count({
+        where: {
+          authorDid,
+          createdAt: {
+            gt: new Date(Date.now() - 1000 * 60 * 60 * 24),
+          },
+        },
+      });
 
       const existingRecipientDids = new Set(
         existingRecipients.map((r) => r.recipientDid),
@@ -89,10 +100,9 @@ export class TrustService {
         return [];
       }
 
-      if (
-        existingRecipients.length + newRecipientDids.length >
-        MAX_TRUSTED_USERS_PER_DAY
-      ) {
+      const lastDayTrusts = await lastDayTrustsPromise;
+
+      if (lastDayTrusts + newRecipientDids.length > MAX_TRUSTED_USERS_PER_DAY) {
         throw new RateLimitError('Daily trust limit exceeded', {
           max: MAX_TRUSTED_USERS_PER_DAY,
         });
@@ -148,7 +158,9 @@ export class TrustService {
       });
 
       if (existing + 1 >= MAX_TRUSTED_USERS_PER_DAY) {
-        throw new RateLimitError('You may not add more users today');
+        throw new RateLimitError('You may not add more users today', {
+          max: MAX_TRUSTED_USERS_PER_DAY,
+        });
       }
 
       await Queue.publish(JOB_NAMES.ADD_RECIPIENT_TO_SESSION, {
@@ -182,6 +194,12 @@ export class TrustService {
     });
   }
 
+  /**
+   * Removes multiple users from the trusted users list in a single transaction
+   * @param authorDid - The DID of the user removing trusted users
+   * @param recipientDids - Array of DIDs to remove from trusted users
+   * @returns Promise resolving to array of DIDs that were successfully removed
+   */
   async bulkRemoveTrusted(
     authorDid: string,
     recipientDids: string[],
@@ -189,7 +207,7 @@ export class TrustService {
     return await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       // Use raw SQL to lock records for update
       const existingRecipients = await tx.$queryRaw<TrustedUser[]>(
-        Prisma.sql`SELECT recipientDid FROM trusted_users WHERE "authorDid" = ${authorDid} AND "recipientDid" IN (${Prisma.join(recipientDids)}) FOR UPDATE`,
+        Prisma.sql`SELECT "recipientDid" FROM trusted_users WHERE "authorDid" = ${authorDid} AND "recipientDid" IN (${Prisma.join(recipientDids)}) FOR UPDATE`,
       );
 
       const existingRecipientDids = new Set(
