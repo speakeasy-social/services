@@ -63,22 +63,22 @@ const WINDOW_FOR_NEW_TRUSTED_USER = 30 * 24 * 60 * 60 * 1000;
 worker.work<AddRecipientToSessionJob>(
   JOB_NAMES.ADD_RECIPIENT_TO_SESSION,
   async (job) => {
-    worker.logger.info('Adding recipient to session (logger)');
+    worker.logger.info('Adding recipient to session');
 
     const { authorDid, recipientDid } = job.data;
 
     // Check if the recipient is still trusted
-    const trusted = await speakeasyApiRequest(
+    const trustedResult = await speakeasyApiRequest(
       {
         method: 'GET',
         path: 'social.spkeasy.graph.getTrusted',
         fromService: 'private-sessions',
-        toService: 'user-keys',
+        toService: 'trusted-users',
       },
       { authorDid, recipientDid },
     );
 
-    if (!trusted.length) {
+    if (!trustedResult.trusted.length) {
       return { abortReason: 'Recipient no longer trusted' };
     }
 
@@ -235,17 +235,17 @@ worker.queue.work<DeleteSessionKeysJob>(
     const { authorDid, recipientDid } = job.data;
 
     // Check if the recipient is still trusted
-    const trusted = await speakeasyApiRequest(
+    const trustedResult = await speakeasyApiRequest(
       {
         method: 'GET',
         path: 'social.spkeasy.graph.getTrusted',
         fromService: 'private-sessions',
-        toService: 'user-keys',
+        toService: 'trusted-users',
       },
       { authorDid, recipientDid },
     );
 
-    if (trusted.length) {
+    if (trustedResult.trusted.length) {
       return { abortReason: 'Recipient has been trusted again' };
     }
 
