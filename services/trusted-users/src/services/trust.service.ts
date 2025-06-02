@@ -42,6 +42,29 @@ export class TrustService {
   }
 
   /**
+   * Gets all trusted users for an author
+   */
+  async getTrustedQuota(authorDid: string): Promise<{
+    maxDaily: number;
+    remaining: number;
+  }> {
+    const existing = await prisma.trustedUser.count({
+      where: {
+        authorDid,
+        createdAt: {
+          // 24 hours ago
+          gt: new Date(Date.now() - 1000 * 60 * 60 * 24),
+        },
+      },
+    });
+
+    return {
+      maxDaily: MAX_TRUSTED_USERS_PER_DAY,
+      remaining: MAX_TRUSTED_USERS_PER_DAY - existing,
+    };
+  }
+
+  /**
    * Adds a new trusted user and schedules session update
    */
   async bulkAddTrusted(

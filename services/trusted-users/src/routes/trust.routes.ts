@@ -49,6 +49,9 @@ const methodHandlers = {
     };
   },
 
+  /**
+   * Gets the count of trusted users for the current user
+   */
   'social.spkeasy.graph.getTrustedCount': async (
     req: ExtendedRequest,
   ): RequestHandlerReturn => {
@@ -64,6 +67,27 @@ const methodHandlers = {
     // Transform to view
     return {
       body: { trustedCount },
+    };
+  },
+
+  /**
+   * Gets the daily trusted user quota and remaining count for the current user
+   */
+  'social.spkeasy.graph.getDailyTrustedQuota': async (
+    req: ExtendedRequest,
+  ): RequestHandlerReturn => {
+    const authorDid = (req.user as User)?.did;
+
+    authorize(req, 'count', 'trusted_user', { authorDid });
+
+    // Get the data from the service
+    const { maxDaily, remaining } = await trustService.getTrustedQuota(
+      authorDid as string,
+    );
+
+    // Transform to view
+    return {
+      body: { maxDaily, remaining },
     };
   },
 
@@ -179,6 +203,9 @@ export const methods: Record<MethodName, { handler: RequestHandler }> = {
   },
   'social.spkeasy.graph.getTrustedCount': {
     handler: methodHandlers['social.spkeasy.graph.getTrustedCount'],
+  },
+  'social.spkeasy.graph.getDailyTrustedQuota': {
+    handler: methodHandlers['social.spkeasy.graph.getDailyTrustedQuota'],
   },
   'social.spkeasy.graph.addTrusted': {
     handler: methodHandlers['social.spkeasy.graph.addTrusted'],
