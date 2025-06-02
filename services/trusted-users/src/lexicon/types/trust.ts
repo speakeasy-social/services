@@ -120,6 +120,9 @@ export const bulkAddTrustedDef: LexiconDoc = {
           recipientDids: {
             type: 'array',
             items: { type: 'string' },
+            minLength: 1,
+            maxLength: 1000,
+            description: 'List of DIDs to add to trusted users (1-1000 items)',
           },
         },
       },
@@ -151,6 +154,10 @@ export const bulkRemoveTrustedDef: LexiconDoc = {
           recipientDids: {
             type: 'array',
             items: { type: 'string' },
+            minLength: 1,
+            maxLength: 1000,
+            description:
+              'List of DIDs to remove from trusted users (1-1000 items)',
           },
         },
       },
