@@ -16,6 +16,8 @@ import {
   getTrustedDef,
   addTrustedDef,
   removeTrustedDef,
+  bulkAddTrustedDef,
+  bulkRemoveTrustedDef,
 } from '../lexicon/types/trust.js';
 import { toTrustedUsersListView } from '../views/trusted-user.view.js';
 
@@ -47,6 +49,9 @@ const methodHandlers = {
     };
   },
 
+  /**
+   * Gets the count of trusted users for the current user
+   */
   'social.spkeasy.graph.getTrustedCount': async (
     req: ExtendedRequest,
   ): RequestHandlerReturn => {
@@ -62,6 +67,27 @@ const methodHandlers = {
     // Transform to view
     return {
       body: { trustedCount },
+    };
+  },
+
+  /**
+   * Gets the daily trusted user quota and remaining count for the current user
+   */
+  'social.spkeasy.graph.getDailyTrustedQuota': async (
+    req: ExtendedRequest,
+  ): RequestHandlerReturn => {
+    const authorDid = (req.user as User)?.did;
+
+    authorize(req, 'count', 'trusted_user', { authorDid });
+
+    // Get the data from the service
+    const { maxDaily, remaining } = await trustService.getTrustedQuota(
+      authorDid as string,
+    );
+
+    // Transform to view
+    return {
+      body: { maxDaily, remaining },
     };
   },
 
@@ -85,6 +111,32 @@ const methodHandlers = {
 
     return {
       body: { success: true },
+    };
+  },
+
+  /**
+   * Adds a new user to the trusted list
+   */
+  'social.spkeasy.graph.bulkAddTrusted': async (
+    req: ExtendedRequest,
+  ): RequestHandlerReturn => {
+    const { recipientDids } = req.body as { recipientDids: string[] };
+    // Validate input against lexicon
+    validateAgainstLexicon(bulkAddTrustedDef, req.body);
+
+    const authorDid = (req.user as User)?.did;
+
+    // Authorize the action
+    authorize(req, 'create', 'trusted_user', { authorDid });
+
+    // Perform the action
+    const updatedRecipientDids = await trustService.bulkAddTrusted(
+      authorDid!,
+      recipientDids,
+    );
+
+    return {
+      body: { recipientDids: updatedRecipientDids },
     };
   },
 
@@ -114,6 +166,32 @@ const methodHandlers = {
       body: { success: true },
     };
   },
+
+  /**
+   * Adds a new user to the trusted list
+   */
+  'social.spkeasy.graph.bulkRemoveTrusted': async (
+    req: ExtendedRequest,
+  ): RequestHandlerReturn => {
+    const { recipientDids } = req.body as { recipientDids: string[] };
+    // Validate input against lexicon
+    validateAgainstLexicon(bulkRemoveTrustedDef, req.body);
+
+    const authorDid = (req.user as User)?.did;
+
+    // Authorize the action
+    authorize(req, 'create', 'trusted_user', { authorDid });
+
+    // Perform the action
+    const removedRecipientDids = await trustService.bulkRemoveTrusted(
+      authorDid!,
+      recipientDids,
+    );
+
+    return {
+      body: { recipientDids: removedRecipientDids },
+    };
+  },
 } as const;
 
 type MethodName = keyof typeof methodHandlers;
@@ -126,10 +204,19 @@ export const methods: Record<MethodName, { handler: RequestHandler }> = {
   'social.spkeasy.graph.getTrustedCount': {
     handler: methodHandlers['social.spkeasy.graph.getTrustedCount'],
   },
+  'social.spkeasy.graph.getDailyTrustedQuota': {
+    handler: methodHandlers['social.spkeasy.graph.getDailyTrustedQuota'],
+  },
   'social.spkeasy.graph.addTrusted': {
     handler: methodHandlers['social.spkeasy.graph.addTrusted'],
   },
+  'social.spkeasy.graph.bulkAddTrusted': {
+    handler: methodHandlers['social.spkeasy.graph.bulkAddTrusted'],
+  },
   'social.spkeasy.graph.removeTrusted': {
     handler: methodHandlers['social.spkeasy.graph.removeTrusted'],
+  },
+  'social.spkeasy.graph.bulkRemoveTrusted': {
+    handler: methodHandlers['social.spkeasy.graph.bulkRemoveTrusted'],
   },
 };

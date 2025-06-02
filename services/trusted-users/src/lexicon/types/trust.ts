@@ -105,3 +105,72 @@ export const removeTrustedDef: LexiconDoc = {
     },
   },
 };
+
+export const bulkAddTrustedDef: LexiconDoc = {
+  lexicon: 1,
+  id: 'social.spkeasy.graph.bulkAddTrusted',
+  defs: {
+    main: {
+      type: 'procedure',
+      description: 'Add multiple users to the trusted users list',
+      parameters: {
+        type: 'params',
+        required: ['recipientDids'],
+        properties: {
+          recipientDids: {
+            type: 'array',
+            items: { type: 'string' },
+            minLength: 1,
+            maxLength: 1000,
+            description: 'List of DIDs to add to trusted users (1-1000 items)',
+          },
+        },
+      },
+      output: {
+        encoding: 'application/json',
+        schema: {
+          type: 'object',
+          required: ['success'],
+          properties: {
+            success: { type: 'boolean' },
+          },
+        },
+      },
+    },
+  },
+};
+
+export const bulkRemoveTrustedDef: LexiconDoc = {
+  lexicon: 1,
+  id: 'social.spkeasy.graph.bulkRemoveTrusted',
+  defs: {
+    main: {
+      type: 'procedure',
+      description: 'Remove multiple users from the trusted users list',
+      parameters: {
+        type: 'params',
+        required: ['recipientDids'],
+        properties: {
+          recipientDids: {
+            type: 'array',
+            items: { type: 'string' },
+            minLength: 1,
+            maxLength: 1000,
+            description:
+              'List of DIDs to remove from trusted users (1-1000 items)',
+          },
+        },
+      },
+      output: {
+        encoding: 'application/json',
+        schema: {
+          type: 'object',
+          required: ['success'],
+          properties: {
+            success: { type: 'boolean' },
+          },
+        },
+      },
+    },
+  },
+};

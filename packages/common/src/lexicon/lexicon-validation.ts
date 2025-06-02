@@ -23,6 +23,9 @@ type LexiconDefinition = {
 
 /**
  * Converts an AT Protocol lexicon schema to a Zod schema
+ * @param lexicon - The AT Protocol lexicon document to convert
+ * @param defName - The name of the definition to convert (defaults to 'main')
+ * @returns A Zod schema that validates against the lexicon definition
  */
 function lexiconToZodSchema(
   lexicon: LexiconDoc,
@@ -64,14 +67,26 @@ function lexiconToZodSchema(
         ]);
         break;
       case 'array':
+        let arraySchema: z.ZodArray<any>;
         if (propDef.items?.type === 'ref') {
           const refDef = propDef.items.ref.split('#')[1];
-          zodType = z.array(lexiconToZodSchema(lexicon, refDef));
+          arraySchema = z.array(lexiconToZodSchema(lexicon, refDef));
         } else {
+          arraySchema = z.array(z.string());
+        }
+        if (typeof propDef.minLength === 'number') {
+          arraySchema = arraySchema.min(propDef.minLength);
+        }
+        if (typeof propDef.maxLength === 'number') {
+          arraySchema = arraySchema.max(propDef.maxLength);
+        }
+        if (propDef.items?.type !== 'ref') {
           zodType = z.union([
-            z.array(z.string()),
+            arraySchema,
             z.string().transform((val) => [val]),
           ]);
+        } else {
+          zodType = arraySchema;
         }
         break;
       case 'ref':
@@ -98,7 +113,10 @@ function lexiconToZodSchema(
 
 /**
  * Validates input against a lexicon schema using Zod
- * Returns the validated data as any since we know it matches the lexicon schema
+ * @param lexicon - The AT Protocol lexicon document to validate against
+ * @param input - The input data to validate
+ * @returns The validated data if successful
+ * @throws {ValidationError} If validation fails, with details about what failed
  */
 export function validateAgainstLexicon(
   lexicon: LexiconDoc,

@@ -64,3 +64,22 @@ export class ErrorWithDetails extends ServiceError {
     this.details = details;
   }
 }
+
+export class ErrorWithLog extends ServiceError {
+  constructor(
+    name: string,
+    message: string,
+    public statusCode: number,
+    public log: Record<string, any>,
+  ) {
+    super(message, statusCode);
+    this.name = name;
+    this.log = log;
+  }
+}
+
+export class RateLimitError extends ErrorWithDetails {
+  constructor(message: string, details?: Record<string, any>) {
+    super('RateLimitError', message, 429, details ?? {});
+  }
+}

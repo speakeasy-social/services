@@ -40,7 +40,7 @@ export class Worker {
 
   async work<T>(
     jobName: string,
-    handler: (job: Job<T>) => Promise<void>,
+    handler: (job: Job<T>) => Promise<object | void>,
   ): Promise<void> {
     await this.queue.work(jobName, async (job: Job<T>) => {
       try {
