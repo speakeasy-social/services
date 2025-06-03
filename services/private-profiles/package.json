@@ -1,5 +1,5 @@
 {
-  "name": "@speakeasy-services/private-sessions",
+  "name": "@speakeasy-services/private-profiles",
   "version": "0.1.0",
   "private": true,
   "type": "module",
