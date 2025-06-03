@@ -1,6 +1,10 @@
-export * from './session.service.js';
-export * from './worker.js';
-export * from './handlers.js';
-export * from './lexicon/session.js';
-export * from './routes/session.routes.js';
-export * from './views/session.views.js';
+export { SessionService } from './session.service.js';
+export type {
+  CreateSessionParams,
+  AddRecipientParams,
+  UpdateSessionKeysParams,
+} from './session.service.js';
+export { toSessionKeyView } from './views/session.views.js';
+export { createSessionRoutes } from './routes/session.routes.js';
+export type { SessionRouteConfig } from './routes/session.routes.js';
+export { createSessionLexicons } from './lexicon/session.js';
