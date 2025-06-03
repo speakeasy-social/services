@@ -28,6 +28,11 @@ echo "your_trusted_users_db_name" | docker secret create trusted_users_postgres_
 echo "your_user_keys_db_user" | docker secret create user_keys_postgres_user -
 echo "your_user_keys_db_password" | docker secret create user_keys_postgres_password -
 echo "your_user_keys_db_name" | docker secret create user_keys_postgres_db -
+
+# Media Service
+echo "your_media_keys_db_user" | docker secret create user_keys_postgres_user -
+echo "your_user_keys_db_password" | docker secret create user_keys_postgres_password -
+echo "your_user_keys_db_name" | docker secret create user_keys_postgres_db -
 ```
 
 2. Set up non-sensitive environment variables:

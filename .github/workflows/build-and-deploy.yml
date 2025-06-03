@@ -16,6 +16,7 @@ jobs:
       private-sessions: ${{ steps.filter.outputs.private-sessions }}
       admin: ${{ steps.filter.outputs.admin }}
       user-keys: ${{ steps.filter.outputs.user-keys }}
+      media: ${{ steps.filter.outputs.media }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -35,6 +36,9 @@ jobs:
               - 'packages/**'
             user-keys:
               - 'services/user-keys/**'
+              - 'packages/**'
+            media:
+              - 'services/media/**'
               - 'packages/**'
 
   build:
@@ -83,7 +87,7 @@ jobs:
   push-to-production:
     runs-on: ubuntu-latest
     needs: [check-changes, build]
-    if: needs.check-changes.outputs.admin == 'true' || needs.check-changes.outputs.trusted-users == 'true' || needs.check-changes.outputs.private-sessions == 'true'
+    if: needs.check-changes.outputs.admin == 'true' || needs.check-changes.outputs.trusted-users == 'true' || needs.check-changes.outputs.private-sessions == 'true' || needs.check-changes.outputs.media == 'true'
     environment: production
 
     steps:
@@ -448,14 +452,67 @@ jobs:
               sleep 1
             done
 
+  deploy-media:
+    runs-on: ubuntu-latest
+    needs: [push-to-production]
+    environment: production
+    if: needs.check-changes.outputs.media == 'true'
+
+    steps:
+      - name: Run Database Migrations
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          passphrase: ${{ secrets.SSH_PASSPHRASE }}
+          script: |
+            docker run --rm \
+              -e MEDIA_DATABASE_URL="${{ secrets.MEDIA_MIGRATION_DATABASE_URL }}" \
+              speakeasy-services-image:latest \
+              pnpm --filter @speakeasy-services/media prisma:migrate
+
+      - name: Deploy Service
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          passphrase: ${{ secrets.SSH_PASSPHRASE }}
+          script: |
+            docker compose -f /home/speakeasy/app/docker-compose.yaml up -d speakeasy-media
+
+            # Wait for container to be running and healthy
+            echo "Waiting for container to be healthy..."
+            for i in {1..30}; do
+              HEALTH_STATUS=$(docker inspect --format='{{.State.Health.Status}}' speakeasy-media)
+              if [ "$HEALTH_STATUS" = "healthy" ]; then
+                echo "Container is healthy"
+                exit 0
+              fi
+              if [ $i -eq 10 ]; then
+                echo "Container failed to become healthy"
+                docker logs speakeasy-media
+                exit 1
+              fi
+              sleep 1
+            done
+
   cleanup-services-docker-images:
     runs-on: ubuntu-latest
-    needs: [deploy-private-sessions, deploy-trusted-users, deploy-admin]
+    needs:
+      [
+        deploy-private-sessions,
+        deploy-trusted-users,
+        deploy-admin,
+        deploy-media,
+      ]
     if: |
       always() && (
         (needs.deploy-private-sessions.result == 'success' && needs.check-changes.outputs.private-sessions == 'true') ||
         (needs.deploy-trusted-users.result == 'success' && needs.check-changes.outputs.trusted-users == 'true') ||
-        (needs.deploy-admin.result == 'success' && needs.check-changes.outputs.admin == 'true')
+        (needs.deploy-admin.result == 'success' && needs.check-changes.outputs.admin == 'true') ||
+        (needs.deploy-media.result == 'success' && needs.check-changes.outputs.media == 'true')
       )
     environment: production
     steps:

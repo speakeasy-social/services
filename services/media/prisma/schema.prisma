@@ -1,0 +1,25 @@
+generator client {
+  provider = "prisma-client-js"
+  output = "../src/generated/prisma-client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("MEDIA_DATABASE_URL")
+}
+
+model Media {
+  key         String @unique
+  userDid     String
+  mimeType    String
+  size        Int
+  createdAt   DateTime @default(now())
+
+  @@map("media")
+} 
+
+// Generates a broken ER diagram, see README.md if you
+// need to update the diagram
+// generator erd {
+//   provider = "prisma-erd-generator"
+// }
