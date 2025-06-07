@@ -1,0 +1,38 @@
+{
+  "name": "@speakeasy-services/media",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "prebuild": "prisma generate",
+    "build": "prisma generate && tsc --build && cp -r src/generated dist",
+    "typecheck": "tsc --noEmit",
+    "dev": "tsx watch src/api.ts",
+    "dev:prisma": "prisma generate --watch",
+    "dev:api": "tsx watch src/api.ts",
+    "clean": "rm -rf dist",
+    "lint": "eslint src",
+    "test": "jest",
+    "prisma:migrate": "prisma migrate deploy",
+    "prisma:generate": "prisma generate"
+  },
+  "dependencies": {
+    "@atproto/lexicon": "^0.3.0",
+    "@aws-sdk/client-s3": "^3.0.0",
+    "@prisma/client": "^5.0.0",
+    "@speakeasy-services/common": "workspace:*",
+    "@speakeasy-services/service-base": "workspace:*",
+    "axios": "^1.9.0",
+    "tsup": "^8.4.0",
+    "tsx": "^4.19.3",
+    "uuid": "^9.0.0",
+    "zod": "^3.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/uuid": "^9.0.0",
+    "eslint": "^8.56.0",
+    "prisma": "^5.0.0",
+    "prisma-erd-generator": "^2.0.4",
+    "typescript": "^5.0.0"
+  }
+} 

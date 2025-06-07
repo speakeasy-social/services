@@ -79,6 +79,7 @@ export async function speakeasyApiRequest(
     'trusted-users': process.env.TRUSTED_USERS_HOST,
     'user-keys': process.env.USER_KEYS_HOST,
     'service-admin': process.env.SERVICE_ADMIN_HOST,
+    media: process.env.MEDIA_HOST,
   }[options.toService];
 
   if (options.path.includes('?')) {

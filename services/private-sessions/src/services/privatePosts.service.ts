@@ -80,38 +80,11 @@ export class PrivatePostsService {
         };
         langs: string[];
         encryptedContent: string;
-        media: { id: string }[];
+        media: { key: string }[];
       }[];
       sessionId: string;
     },
   ): Promise<void> {
-    // Collect all requested media IDs
-    const requestedMediaIds = body.encryptedPosts.flatMap((post) =>
-      post.media.map((m) => m.id),
-    );
-
-    const media = await prisma.media.findMany({
-      where: {
-        id: {
-          in: requestedMediaIds,
-        },
-      },
-    });
-
-    // Get the IDs of the media that were found
-    const foundMediaIds = media.map((m) => m.id);
-    // Find missing media IDs
-    const missingMediaIds = requestedMediaIds.filter(
-      (id) => !foundMediaIds.includes(id),
-    );
-
-    // Ensure all the media ids exist
-    if (missingMediaIds.length > 0) {
-      throw new ValidationError(`Some media for the post was not uploaded`, {
-        details: { missingMediaIds },
-      });
-    }
-
     await prisma.$transaction(async (tx) => {
       // Cache the author handle
       await tx.userDidCache.upsert({
@@ -147,7 +120,7 @@ export class PrivatePostsService {
       await prisma.mediaPost.createMany({
         data: body.encryptedPosts.flatMap((post) =>
           post.media.map((m) => ({
-            mediaId: m.id,
+            mediaKey: m.key,
             encryptedPostUri: post.uri,
           })),
         ),

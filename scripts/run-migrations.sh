@@ -13,3 +13,6 @@ pnpm --filter @speakeasy-services/private-sessions prisma:migrate
 
 echo "Running migrations for service-admin service..."
 pnpm --filter @speakeasy-services/service-admin prisma:migrate 
+
+echo "Running migrations for media service..."
+pnpm --filter @speakeasy-services/media prisma:migrate 

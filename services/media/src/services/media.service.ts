@@ -64,7 +64,6 @@ export class MediaService {
     // Store the file metadata in the database
     await prisma.media.create({
       data: {
-        id,
         key,
         userDid,
         mimeType,

@@ -183,9 +183,9 @@ export const createPostsDef: LexiconDoc = {
     },
     media: {
       type: 'object',
-      required: ['id'],
+      required: ['key'],
       properties: {
-        id: { type: 'string' },
+        key: { type: 'string' },
       },
     },
   },

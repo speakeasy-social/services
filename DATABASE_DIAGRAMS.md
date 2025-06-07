@@ -18,9 +18,13 @@ See below for instructions on updating the diagrams without extra relationship l
 
 ![Admin](services/service-admin/prisma/ERD.svg)
 
+# Media
+
+![Media](services/media/prisma/ERD.svg)
+
 ### Updating the diagrams
 
-Autogeneration is disabled because it generates additional lines.
+Autogeneration is disabled because it generates additional relation lines.
 
 If you need to update the diagrams, here's how you can do it:
 
