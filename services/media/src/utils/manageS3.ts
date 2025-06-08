@@ -27,10 +27,9 @@ function generateMediaUrl(id: string): string {
  */
 function getSignatureV4Headers(
   method: string,
-  bucket: string,
   endpoint: string,
   region: string,
-  objectKey: string,
+  fullPath: string,
   contentType: string,
   contentLength: string,
 ) {
@@ -42,12 +41,12 @@ function getSignatureV4Headers(
   const dateStamp = amzDate.substring(0, 8);
 
   // Create canonical request
-  const canonicalUri = `/${objectKey}`;
+  const canonicalUri = fullPath;
   const canonicalQueryString = '';
   const canonicalHeaders =
     `content-length:${contentLength}\n` +
     `content-type:${contentType}\n` +
-    `host:${bucket}.${endpoint}\n` +
+    `host:${endpoint}\n` +
     `x-amz-content-sha256:UNSIGNED-PAYLOAD\n` +
     `x-amz-date:${amzDate}\n`;
 
@@ -102,13 +101,14 @@ export async function uploadToS3(
   size: number,
   path: string,
 ) {
+  const fullPath = `/${config.MEDIA_S3_BUCKET}/${path}`;
+
   // Get S3 authentication headers
   const authHeaders = getSignatureV4Headers(
     'PUT',
-    config.MEDIA_S3_BUCKET,
     config.MEDIA_S3_ENDPOINT,
     config.MEDIA_S3_REGION,
-    path,
+    fullPath,
     mimeType,
     size.toString(),
   );
@@ -116,10 +116,10 @@ export async function uploadToS3(
   let url;
   if (config.MEDIA_S3_ENDPOINT.includes('localhost')) {
     // For localstack, use the direct endpoint format with port
-    url = `http://${config.MEDIA_S3_ENDPOINT}/${config.MEDIA_S3_BUCKET}/${path}`;
+    url = `http://${config.MEDIA_S3_ENDPOINT}${fullPath}`;
   } else {
     // For production services, use virtual hosted-style access
-    url = `https://${config.MEDIA_S3_ENDPOINT}/${config.MEDIA_S3_BUCKET}/${path}`;
+    url = `https://${config.MEDIA_S3_ENDPOINT}${fullPath}`;
   }
 
   try {
