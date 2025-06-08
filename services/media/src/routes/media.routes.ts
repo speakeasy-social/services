@@ -16,9 +16,28 @@ const mediaService = new MediaService();
 // Define method handlers with lexicon validation
 const methodHandlers = {
   /**
-   * Uploads a media file
-   * @param req - The request containing the file to upload
-   * @returns Promise containing the media metadata
+   * Handles media file uploads with validation and processing
+   *
+   * This endpoint allows authenticated users to upload image files. It performs several validations:
+   * - Validates the request against the lexicon definition
+   * - Checks user authorization
+   * - Validates content length and file size limits
+   * - Ensures required session ID header is present
+   * - Validates allowed image MIME types (JPEG, PNG, GIF, WEBP, AVIF)
+   *
+   * @param req - The extended request object containing:
+   *   - body: The request body to validate against lexicon
+   *   - headers: Request headers including content-type, content-length, and x-speakeasy-session-id
+   *   - user: The authenticated user object containing the user's DID
+   *
+   * @throws {ValidationError} When:
+   *   - Content-Length header is missing
+   *   - File size exceeds MEDIA_SIZE_LIMIT
+   *   - X-Speakeasy-Session-Id header is missing or invalid
+   *   - File type is not an allowed image format
+   *
+   * @returns {Promise<RequestHandlerReturn>} Object containing:
+   *   - body: { media: MediaMetadata } The uploaded media metadata
    */
   'social.spkeasy.media.upload': async (
     req: ExtendedRequest,
