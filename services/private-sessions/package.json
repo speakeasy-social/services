@@ -25,6 +25,7 @@
     "@atproto/xrpc-server": "^0.7.13",
     "@prisma/client": "^6.5.0",
     "@speakeasy-services/crypto": "workspace:*",
+    "@speakeasy-services/common": "workspace:^",
     "@speakeasy-services/queue": "workspace:*",
     "@speakeasy-services/service-base": "workspace:*",
     "@types/express": "^4.17.21",
@@ -41,7 +42,6 @@
   },
   "devDependencies": {
     "@mermaid-js/mermaid-cli": "^11.4.2",
-    "@speakeasy-services/common": "workspace:^",
     "@types/node": "^22.13.11",
     "@typescript-eslint/eslint-plugin": "^7.0.1",
     "@typescript-eslint/parser": "^7.0.1",

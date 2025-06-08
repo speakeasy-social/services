@@ -1,7 +1,11 @@
 {
   "name": "@speakeasy-services/media",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "private": true,
   "scripts": {
     "prebuild": "prisma generate",
     "build": "prisma generate && tsc --build && cp -r src/generated dist",
@@ -16,23 +20,25 @@
     "prisma:generate": "prisma generate"
   },
   "dependencies": {
-    "@atproto/lexicon": "^0.3.0",
-    "@aws-sdk/client-s3": "^3.0.0",
-    "@prisma/client": "^5.0.0",
+    "@atproto/lexicon": "^0.4.9",
+    "@prisma/client": "^6.5.0",
     "@speakeasy-services/common": "workspace:*",
     "@speakeasy-services/service-base": "workspace:*",
     "axios": "^1.9.0",
+    "dotenv": "^16.4.7",
     "tsup": "^8.4.0",
-    "tsx": "^4.19.3",
-    "uuid": "^9.0.0",
-    "zod": "^3.0.0"
+    "uuid": "^11.1.0",
+    "zod": "^3.24.2"
   },
   "devDependencies": {
-    "@types/node": "^20.0.0",
-    "@types/uuid": "^9.0.0",
+    "@mermaid-js/mermaid-cli": "^11.4.2",
+    "@types/node": "^22.13.11",
+    "@typescript-eslint/eslint-plugin": "^7.0.1",
+    "@typescript-eslint/parser": "^7.0.1",
     "eslint": "^8.56.0",
-    "prisma": "^5.0.0",
+    "prisma": "^6.5.0",
     "prisma-erd-generator": "^2.0.4",
+    "tsx": "^4.19.3",
     "typescript": "^5.0.0"
   }
 } 
