@@ -229,7 +229,7 @@ jobs:
           passphrase: ${{ secrets.SSH_PASSPHRASE }}
           script: |
             docker run --rm \
-              -e PRIVATE_SESSIONS_DATABASE_URL="${{ secrets.PRIVATE_SESSIONS_MIGRATION_DATABASE_URL }}" \
+              -e PRIVATE_SESSIONS_DATABASE_URL="postgres://svc_migration:${{ secrets.MIGRATION_PASSWORD }}@spkeasy-prod-cecmqzqsiasy.db.upclouddatabases.com:11569/speakeasy?schema=private_sessions&sslmode=require&sslcert=/run/secrets/database_cert" \
               speakeasy-services-image:latest \
               pnpm --filter @speakeasy-services/private-sessions prisma:migrate
 
@@ -302,7 +302,7 @@ jobs:
           passphrase: ${{ secrets.SSH_PASSPHRASE }}
           script: |
             docker run --rm \
-              -e TRUSTED_USERS_DATABASE_URL="${{ secrets.TRUSTED_USERS_MIGRATION_DATABASE_URL }}" \
+              -e TRUSTED_USERS_DATABASE_URL="postgres://svc_migration:${{ secrets.MIGRATION_PASSWORD }}@spkeasy-prod-cecmqzqsiasy.db.upclouddatabases.com:11569/speakeasy?schema=trusted_users&sslmode=require&sslcert=/run/secrets/database_cert" \
               speakeasy-services-image:latest \
               pnpm --filter @speakeasy-services/trusted-users prisma:migrate
 
@@ -348,7 +348,7 @@ jobs:
           passphrase: ${{ secrets.SSH_PASSPHRASE }}
           script: |
             docker run --rm \
-              -e SERVICE_ADMIN_DATABASE_URL="${{ secrets.SERVICE_ADMIN_MIGRATION_DATABASE_URL }}" \
+              -e SERVICE_ADMIN_DATABASE_URL="postgres://svc_migration:${{ secrets.MIGRATION_PASSWORD }}@spkeasy-prod-cecmqzqsiasy.db.upclouddatabases.com:11569/speakeasy?schema=service_admin&sslmode=require&sslcert=/run/secrets/database_cert" \
               speakeasy-services-image:latest \
               pnpm --filter @speakeasy-services/service-admin prisma:migrate
 
@@ -468,7 +468,7 @@ jobs:
           passphrase: ${{ secrets.SSH_PASSPHRASE }}
           script: |
             docker run --rm \
-              -e MEDIA_DATABASE_URL="${{ secrets.MEDIA_MIGRATION_DATABASE_URL }}" \
+              -e MEDIA_DATABASE_URL="postgres://svc_migration:${{ secrets.MIGRATION_PASSWORD }}@spkeasy-prod-cecmqzqsiasy.db.upclouddatabases.com:11569/speakeasy?schema=media&sslmode=require&sslcert=/run/secrets/database_cert" \
               speakeasy-services-image:latest \
               pnpm --filter @speakeasy-services/media prisma:migrate
 
