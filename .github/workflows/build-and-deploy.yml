@@ -5,7 +5,6 @@ on:
   push:
     branches:
       - main
-      - feature/deploy
 
 jobs:
   # Check which services have changed so we only deploy the changed services
@@ -28,18 +27,23 @@ jobs:
             trusted-users:
               - 'services/trusted-users/**'
               - 'packages/**'
+              - '.github/workflows/build-and-deploy.yml'
             private-sessions:
               - 'services/private-sessions/**'
               - 'packages/**'
+              - '.github/workflows/build-and-deploy.yml'
             admin:
               - 'services/admin/**'
               - 'packages/**'
+              - '.github/workflows/build-and-deploy.yml'
             user-keys:
               - 'services/user-keys/**'
               - 'packages/**'
+              - '.github/workflows/build-and-deploy.yml'
             media:
               - 'services/media/**'
               - 'packages/**'
+              - '.github/workflows/build-and-deploy.yml'
 
   build:
     runs-on: ubuntu-latest
@@ -229,6 +233,7 @@ jobs:
           passphrase: ${{ secrets.SSH_PASSPHRASE }}
           script: |
             docker run --rm \
+              -v /srv/secrets/private_sessions:/run/secrets:ro \
               -e PRIVATE_SESSIONS_DATABASE_URL="postgres://svc_migration:${{ secrets.MIGRATION_PASSWORD }}@spkeasy-prod-cecmqzqsiasy.db.upclouddatabases.com:11569/speakeasy?schema=private_sessions&sslmode=require&sslcert=/run/secrets/database_cert" \
               speakeasy-services-image:latest \
               pnpm --filter @speakeasy-services/private-sessions prisma:migrate
@@ -302,6 +307,7 @@ jobs:
           passphrase: ${{ secrets.SSH_PASSPHRASE }}
           script: |
             docker run --rm \
+              -v /srv/secrets/trusted_users:/run/secrets:ro \
               -e TRUSTED_USERS_DATABASE_URL="postgres://svc_migration:${{ secrets.MIGRATION_PASSWORD }}@spkeasy-prod-cecmqzqsiasy.db.upclouddatabases.com:11569/speakeasy?schema=trusted_users&sslmode=require&sslcert=/run/secrets/database_cert" \
               speakeasy-services-image:latest \
               pnpm --filter @speakeasy-services/trusted-users prisma:migrate
@@ -348,6 +354,7 @@ jobs:
           passphrase: ${{ secrets.SSH_PASSPHRASE }}
           script: |
             docker run --rm \
+              -v /srv/secrets/service_admin:/run/secrets:ro \
               -e SERVICE_ADMIN_DATABASE_URL="postgres://svc_migration:${{ secrets.MIGRATION_PASSWORD }}@spkeasy-prod-cecmqzqsiasy.db.upclouddatabases.com:11569/speakeasy?schema=service_admin&sslmode=require&sslcert=/run/secrets/database_cert" \
               speakeasy-services-image:latest \
               pnpm --filter @speakeasy-services/service-admin prisma:migrate
@@ -468,6 +475,7 @@ jobs:
           passphrase: ${{ secrets.SSH_PASSPHRASE }}
           script: |
             docker run --rm \
+              -v /srv/secrets/media:/run/secrets:ro \
               -e MEDIA_DATABASE_URL="postgres://svc_migration:${{ secrets.MIGRATION_PASSWORD }}@spkeasy-prod-cecmqzqsiasy.db.upclouddatabases.com:11569/speakeasy?schema=media&sslmode=require&sslcert=/run/secrets/database_cert" \
               speakeasy-services-image:latest \
               pnpm --filter @speakeasy-services/media prisma:migrate
