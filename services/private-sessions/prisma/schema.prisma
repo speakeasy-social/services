@@ -116,29 +116,14 @@ model SeenNotifications {
   @@map("seen_notifications")
 }
 
-model Media {
-  id          String @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  key         String
-  userDid     String
-  mimeType    String
-  size        Int
-  createdAt   DateTime @default(now())
-
-  // Relationships
-  mediaPosts  MediaPost[]
-
-  @@map("media")
-}
-
 model MediaPost {
-  mediaId           String @db.Uuid
+  mediaKey          String
   encryptedPostUri  String
 
   // Relationships
-  media           Media @relation(fields: [mediaId], references: [id])
   encryptedPost   EncryptedPost @relation(fields: [encryptedPostUri], references: [uri])
 
-  @@id([mediaId, encryptedPostUri])
+  @@id([mediaKey, encryptedPostUri])
   @@map("media_posts")
 }
 
