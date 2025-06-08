@@ -18,7 +18,7 @@ function generateMediaUrl(id: string): string {
     return `http://${config.MEDIA_S3_ENDPOINT}/${config.MEDIA_S3_BUCKET}/${id}`;
   } else {
     // For production services, use virtual hosted-style access
-    return `https://${config.MEDIA_S3_BUCKET}.${config.MEDIA_S3_ENDPOINT}/${id}`;
+    return `https://${config.MEDIA_S3_ENDPOINT}.${config.MEDIA_S3_BUCKET}/${id}`;
   }
 }
 
