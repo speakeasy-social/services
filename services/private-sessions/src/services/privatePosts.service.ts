@@ -521,6 +521,68 @@ export class PrivatePostsService {
       encryptedSessionKeys: sessionKeys,
     };
   }
+
+  async deletePost(uri: string) {
+    const authorDid = getDIDFromUri(uri);
+
+    await prisma.$transaction(async (tx) => {
+      const post = await tx.encryptedPost.findFirst({
+        where: {
+          uri,
+        },
+        include: {
+          mediaPosts: true,
+          session: true,
+        },
+      });
+
+      if (!post) {
+        throw new NotFoundError('Post not found');
+      }
+
+      post.mediaPosts.forEach((mediaPost) => {
+        Queue.publish(JOB_NAMES.DELETE_MEDIA, {
+          key: mediaPost.mediaKey,
+        });
+      });
+
+      await tx.mediaPost.deleteMany({
+        where: {
+          encryptedPostUri: post.uri,
+        },
+      });
+
+      await tx.encryptedPost.delete({
+        where: {
+          uri,
+        },
+      });
+
+      // If the session has been closed, and there's no
+      // other posts in the session, may as well clean up the
+      // session
+      if (post.session.revokedAt) {
+        const otherPost = await tx.encryptedPost.findFirst({
+          where: {
+            sessionId: post.sessionId,
+          },
+        });
+
+        if (!otherPost) {
+          await tx.sessionKey.deleteMany({
+            where: {
+              sessionId: post.sessionId,
+            },
+          });
+          await tx.session.delete({
+            where: {
+              id: post.sessionId,
+            },
+          });
+        }
+      }
+    });
+  }
 }
 
 async function loadPrivatePost(
@@ -626,6 +688,11 @@ async function canonicalUris(
   );
 
   return canonicalUris;
+}
+
+export function getDIDFromUri(uri: string) {
+  const parts = uri.split('/');
+  return parts[2];
 }
 
 function annotatePost(

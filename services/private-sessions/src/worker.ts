@@ -46,6 +46,10 @@ interface NotifyReplyJob {
   token: string;
 }
 
+interface DeleteMediaJob {
+  key: string;
+}
+
 const worker = new Worker({
   name: 'private-sessions-worker',
   healthCheck,
@@ -359,6 +363,20 @@ worker.queue.work<NotifyReactionJob>(JOB_NAMES.NOTIFY_REACTION, async (job) => {
     }
     throw error;
   }
+});
+
+worker.queue.work<DeleteMediaJob>(JOB_NAMES.DELETE_MEDIA, async (job) => {
+  const { key } = job.data;
+
+  await speakeasyApiRequest(
+    {
+      method: 'POST',
+      path: 'social.spkeasy.media.delete',
+      fromService: 'private-sessions',
+      toService: 'media',
+    },
+    { key },
+  );
 });
 
 worker.queue.work<NotifyReplyJob>(JOB_NAMES.NOTIFY_REPLY, async (job) => {
