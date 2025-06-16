@@ -3,7 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { Readable } from 'stream';
 
 import { ValidationError } from '@speakeasy-services/common';
-import { uploadToS3 } from '../utils/manageS3.js';
+import { deleteFromS3, uploadToS3 } from '../utils/manageS3.js';
 
 const prisma = getPrismaClient();
 
@@ -76,5 +76,14 @@ export class MediaService {
       mimeType,
       size,
     };
+  }
+
+  async deleteMedia(key: string): Promise<void> {
+    await deleteFromS3(key);
+
+    // Delete from database
+    await prisma.media.delete({
+      where: { key },
+    });
   }
 }

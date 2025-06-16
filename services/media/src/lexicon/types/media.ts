@@ -47,3 +47,37 @@ export const uploadMediaDef: LexiconDoc = {
     },
   },
 };
+
+export const deleteMediaDef: LexiconDoc = {
+  lexicon: 1,
+  id: 'social.spkeasy.media.delete',
+  defs: {
+    main: {
+      type: 'procedure',
+      description: 'Delete a media file',
+      input: {
+        encoding: 'application/json',
+        schema: {
+          type: 'object',
+          required: ['key'],
+          properties: {
+            key: {
+              type: 'string',
+              description: 'The key of the media file to delete',
+            },
+          },
+        },
+      },
+      output: {
+        encoding: 'application/json',
+        schema: {
+          type: 'object',
+          required: ['success'],
+          properties: {
+            success: { type: 'boolean' },
+          },
+        },
+      },
+    },
+  },
+};

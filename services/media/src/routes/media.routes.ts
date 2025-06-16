@@ -6,7 +6,7 @@ import {
   authorize,
   User,
 } from '@speakeasy-services/common';
-import { uploadMediaDef } from '../lexicon/types/media.js';
+import { uploadMediaDef, deleteMediaDef } from '../lexicon/types/media.js';
 import { MediaService } from '../services/media.service.js';
 import { ValidationError } from '@atproto/lexicon';
 import config from '../config.js';
@@ -99,12 +99,33 @@ const methodHandlers = {
       },
     };
   },
+
+  'social.spkeasy.media.delete': async (
+    req: ExtendedRequest,
+  ): RequestHandlerReturn => {
+    validateAgainstLexicon(deleteMediaDef, req.body);
+
+    authorize(req, 'delete', 'media', {
+      key: req.body.key,
+    });
+
+    await mediaService.deleteMedia(req.body.key);
+
+    return {
+      body: {
+        success: true,
+      },
+    };
+  },
 } as const;
 
 // Define methods using XRPC lexicon
 export const methods: Record<MethodName, { handler: RequestHandler }> = {
   'social.spkeasy.media.upload': {
     handler: methodHandlers['social.spkeasy.media.upload'],
+  },
+  'social.spkeasy.media.delete': {
+    handler: methodHandlers['social.spkeasy.media.delete'],
   },
 };
 

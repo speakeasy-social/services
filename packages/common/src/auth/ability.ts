@@ -83,6 +83,7 @@ const serviceAbilities = [
   can('list_private', 'key', { name: '=private-sessions' }),
   can('list', 'trusted_user', { name: '=private-sessions' }),
   can('update', 'private_session', { name: '=user-keys' }),
+  can('delete', 'media', { name: '=private-sessions' }),
 ];
 
 /**

@@ -10,13 +10,17 @@ import {
   getPostsDef,
   createPostsDef,
   getPostThreadDef,
+  deletePostDef,
 } from '../lexicon/types/posts.js';
 import {
   toEncryptedPostsListView,
   toEncryptedPostView,
 } from '../views/private-posts.views.js';
 import { toSessionKeyListView } from '../views/private-sessions.views.js';
-import { PrivatePostsService } from '../services/privatePosts.service.js';
+import {
+  getDIDFromUri,
+  PrivatePostsService,
+} from '../services/privatePosts.service.js';
 const privatePostsService = new PrivatePostsService();
 
 // Define method handlers with lexicon validation
@@ -150,14 +154,19 @@ const methodHandlers = {
     req: ExtendedRequest,
   ): RequestHandlerReturn => {
     // Validate input against lexicon
-    // validateAgainstLexicon(lexicon, { uri });
+    const validatedBody = validateAgainstLexicon(deletePostDef, req.body);
 
-    // authorize(ctx, 'delete', post);
+    const authorDid = getDIDFromUri(validatedBody.uri);
 
-    // const post = await sessionService.deletePost(uri);
+    authorize(req, 'delete', 'private_post', {
+      authorDid,
+    });
 
-    // TODO ensure any media is deleted with post
-    throw new Error('Not implemented');
+    await privatePostsService.deletePost(validatedBody.uri);
+
+    return {
+      body: { success: true },
+    };
   },
   'social.spkeasy.privatePost.preAuth': async (
     req: ExtendedRequest,

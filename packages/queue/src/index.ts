@@ -6,6 +6,7 @@ import { ValidationError } from '@speakeasy-services/common';
 
 export const JOB_NAMES = {
   ADD_RECIPIENT_TO_SESSION: 'add-recipient-to-session',
+  DELETE_MEDIA: 'delete-media',
   REVOKE_SESSION: 'revoke-session',
   DELETE_SESSION_KEYS: 'delete-session-keys',
   UPDATE_USER_KEYS: 'update-user-keys',

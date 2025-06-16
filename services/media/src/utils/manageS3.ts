@@ -139,3 +139,36 @@ export async function uploadToS3(
     throw err;
   }
 }
+
+export async function deleteFromS3(path: string) {
+  // Delete from S3
+  const fullPath = `/${config.MEDIA_S3_BUCKET}/${path}`;
+  const authHeaders = getSignatureV4Headers(
+    'DELETE',
+    config.MEDIA_S3_ENDPOINT,
+    config.MEDIA_S3_REGION,
+    fullPath,
+    '',
+    '0',
+  );
+
+  let url;
+  if (config.MEDIA_S3_ENDPOINT.includes('localhost')) {
+    url = `http://${config.MEDIA_S3_ENDPOINT}${fullPath}`;
+  } else {
+    url = `https://${config.MEDIA_S3_ENDPOINT}${fullPath}`;
+  }
+
+  try {
+    await axios.delete(url, {
+      headers: authHeaders,
+    });
+  } catch (err: any) {
+    if (err instanceof AxiosError && err.response?.data) {
+      (err as any).log = {
+        s3message: err.response?.data,
+      };
+    }
+    throw err;
+  }
+}
