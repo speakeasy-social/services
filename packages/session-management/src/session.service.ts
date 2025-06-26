@@ -1,5 +1,62 @@
-import { PrismaClient } from '@prisma/client';
-import { SessionKey } from '@speakeasy-services/common';
+import { NotFoundError, ValidationError } from '@speakeasy-services/common';
+import { safeAtob } from '@speakeasy-services/common';
+import { Queue, getServiceJobName, JOB_NAMES } from '@speakeasy-services/queue';
+
+const DEFAULT_EXPIRATION_HOURS = 24 * 7;
+
+// Define the shape of session models
+export interface SessionModel {
+  id: string;
+  authorDid: string;
+  createdAt: Date;
+  expiresAt: Date;
+  revokedAt?: Date | null;
+}
+
+export interface SessionKeyModel {
+  sessionId: string;
+  userKeyPairId: string;
+  recipientDid: string;
+  encryptedDek: Buffer;
+  createdAt: Date;
+}
+
+// Define the minimum interface required for session operations
+export interface SessionPrismaClient<
+  T extends SessionModel = SessionModel,
+  K extends SessionKeyModel = SessionKeyModel,
+> {
+  session: {
+    create: (args: { data: any }) => Promise<T>;
+    updateMany: (args: { where: any; data: any }) => Promise<any>;
+    findFirst: (args: {
+      where: any;
+      orderBy?: any;
+      select?: any;
+    }) => Promise<T | null>;
+    deleteMany: (args: { where: any }) => Promise<any>;
+  };
+  sessionKey: {
+    findFirst: (args: {
+      where: any;
+      include?: any;
+    }) => Promise<(K & { session?: T }) | null>;
+    create: (args: { data: any }) => Promise<K>;
+    createMany: (args: { data: any[] }) => Promise<any>;
+    deleteMany: (args: { where: any }) => Promise<any>;
+  };
+  $transaction: <R>(
+    fn: (tx: SessionPrismaClient<T, K>) => Promise<R>,
+  ) => Promise<R>;
+  $queryRaw: <R>(query: any) => Promise<R[]>;
+}
+
+// Define the SessionKey type for the shared service
+export interface SessionKey {
+  recipientDid: string;
+  userKeyPairId: string;
+  encryptedDek: string;
+}
 
 export interface CreateSessionParams {
   authorDid: string;
@@ -14,15 +71,22 @@ export interface AddRecipientParams {
 }
 
 export interface UpdateSessionKeysParams {
-  authorDid: string;
-  recipients: SessionKey[];
+  prevKeyId: string;
+  newKeyId: string;
+  prevPrivateKey: string;
+  newPublicKey: string;
 }
 
-export class SessionService {
-  private prisma: PrismaClient;
+export class SessionService<
+  T extends SessionModel = SessionModel,
+  K extends SessionKeyModel = SessionKeyModel,
+> {
+  private prisma: SessionPrismaClient<T, K>;
+  private serviceName: string;
 
-  constructor(prisma: PrismaClient) {
+  constructor(prisma: SessionPrismaClient<T, K>, serviceName: string) {
     this.prisma = prisma;
+    this.serviceName = serviceName;
   }
 
   /**
@@ -31,26 +95,62 @@ export class SessionService {
    * @returns The created session
    */
   async createSession(params: CreateSessionParams) {
-    const { authorDid, recipients, expirationHours = 24 } = params;
+    const {
+      authorDid,
+      recipients,
+      expirationHours = DEFAULT_EXPIRATION_HOURS,
+    } = params;
 
-    // Create the session
-    const session = await this.prisma.session.create({
-      data: {
-        authorDid,
-        expirationHours,
-        sessionKeys: {
-          create: recipients.map((recipient) => ({
-            recipientDid: recipient.recipientDid,
-            encryptedSessionKey: recipient.encryptedSessionKey,
-          })),
+    const ownSessionKey = recipients.find(
+      (recipient) => recipient.recipientDid === authorDid,
+    );
+    if (!ownSessionKey) {
+      throw new ValidationError(
+        `Session author must be among recipients or they won't be able to read their own posts!`,
+      );
+    }
+
+    // open transaction
+    const session = await this.prisma.$transaction(async (tx) => {
+      const previousSessions = await tx.$queryRaw<T[]>(
+        `SELECT * FROM sessions WHERE "authorDid" = ${authorDid} AND "revokedAt" IS NULL FOR UPDATE`,
+      );
+
+      const previousSession = previousSessions[0];
+
+      if (previousSession) {
+        // revoke session if one already exists
+        await tx.session.updateMany({
+          where: {
+            authorDid,
+            revokedAt: null,
+          },
+          data: {
+            revokedAt: new Date(),
+          },
+        });
+      }
+
+      // Create new session
+      const session = await tx.session.create({
+        data: {
+          authorDid,
+          expiresAt: new Date(Date.now() + expirationHours * 60 * 60 * 1000),
+
+          sessionKeys: {
+            create: recipients.map((recipient) => ({
+              userKeyPairId: recipient.userKeyPairId,
+              recipientDid: recipient.recipientDid,
+              encryptedDek: safeAtob(recipient.encryptedDek),
+            })),
+          },
         },
-      },
-      include: {
-        sessionKeys: true,
-      },
+      });
+
+      return session;
     });
 
-    return session;
+    return { sessionId: session.id };
   }
 
   /**
@@ -58,11 +158,12 @@ export class SessionService {
    * @param authorDid - The DID of the author whose session to revoke
    */
   async revokeSession(authorDid: string) {
-    await this.prisma.session.deleteMany({
-      where: {
-        authorDid,
-      },
+    await this.prisma.session.updateMany({
+      where: { authorDid, revokedAt: null },
+      data: { revokedAt: new Date() },
     });
+
+    return { success: true };
   }
 
   /**
@@ -70,21 +171,22 @@ export class SessionService {
    * @param did - The DID of the user
    * @returns The current session key for the user
    */
-  async getSession(did: string) {
+  async getSession(authorDid: string) {
     const sessionKey = await this.prisma.sessionKey.findFirst({
       where: {
-        recipientDid: did,
+        recipientDid: authorDid,
         session: {
-          authorDid: did,
+          authorDid,
+          revokedAt: null,
+          expiresAt: {
+            gt: new Date(),
+          },
         },
-      },
-      include: {
-        session: true,
       },
     });
 
     if (!sessionKey) {
-      throw new Error('No session found for user');
+      throw new NotFoundError('Session not found');
     }
 
     return sessionKey;
@@ -95,68 +197,45 @@ export class SessionService {
    * @param authorDid - The DID of the session author
    * @param params - The parameters for adding a recipient
    */
-  async addRecipientToSession(authorDid: string, params: AddRecipientParams) {
-    const { recipientDid, encryptedSessionKey } = params;
-
-    // Get the most recent session for the author
+  async addRecipientToSession(
+    authorDid: string,
+    body: {
+      recipientDid: string;
+      encryptedDek: string;
+      userKeyPairId: string;
+    },
+  ): Promise<{ success: boolean }> {
     const session = await this.prisma.session.findFirst({
-      where: {
-        authorDid,
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
+      where: { authorDid, revokedAt: null },
+      select: { id: true },
     });
 
     if (!session) {
-      throw new Error('No session found for author');
+      throw new NotFoundError('Session not found');
     }
 
-    // Add the new recipient
     await this.prisma.sessionKey.create({
       data: {
-        sessionId: session.id,
-        recipientDid,
-        encryptedSessionKey,
+        sessionId: session!.id,
+        recipientDid: body.recipientDid,
+        encryptedDek: Buffer.from(body.encryptedDek),
+        userKeyPairId: body.userKeyPairId,
       },
     });
+
+    return { success: true };
   }
 
   /**
-   * Updates the session keys for a session
+   * Queues a background job to update the session keys for a session
    * @param params - The parameters for updating session keys
    */
-  async updateSessionKeys(params: UpdateSessionKeysParams) {
-    const { authorDid, recipients } = params;
+  async updateSessionKeys(params: UpdateSessionKeysParams): Promise<void> {
+    const jobName = getServiceJobName(
+      this.serviceName,
+      JOB_NAMES.UPDATE_SESSION_KEYS,
+    );
 
-    // Get the most recent session for the author
-    const session = await this.prisma.session.findFirst({
-      where: {
-        authorDid,
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-    });
-
-    if (!session) {
-      throw new Error('No session found for author');
-    }
-
-    // Delete existing session keys
-    await this.prisma.sessionKey.deleteMany({
-      where: {
-        sessionId: session.id,
-      },
-    });
-
-    // Create new session keys
-    await this.prisma.sessionKey.createMany({
-      data: recipients.map((recipient) => ({
-        sessionId: session.id,
-        recipientDid: recipient.recipientDid,
-        encryptedSessionKey: recipient.encryptedSessionKey,
-      })),
-    });
+    await Queue.publish(jobName, params);
   }
 }
