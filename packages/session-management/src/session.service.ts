@@ -17,7 +17,7 @@ export interface SessionKeyModel {
   sessionId: string;
   userKeyPairId: string;
   recipientDid: string;
-  encryptedDek: Buffer;
+  encryptedDek: Uint8Array;
   createdAt: Date;
 }
 
