@@ -7,18 +7,21 @@ import {
   validateAgainstLexicon,
   User,
   safeBtoa,
+  Subject,
 } from '@speakeasy-services/common';
 import { toSessionKeyView } from '../views/session.views.js';
 import { getSessionOperation } from '../lexicon/session.js';
 
 export interface SessionRouteConfig {
   serviceName: string;
+  authorizationRecord: Subject;
   lexiconPrefix: string;
   sessionService: SessionService;
 }
 
 export function createSessionRoutes(config: SessionRouteConfig) {
-  const { serviceName, lexiconPrefix, sessionService } = config;
+  const { serviceName, authorizationRecord, lexiconPrefix, sessionService } =
+    config;
 
   // Get lexicon definitions for each operation
   const createLexicon = getSessionOperation('create');
@@ -37,7 +40,7 @@ export function createSessionRoutes(config: SessionRouteConfig) {
 
       const { sessionKeys, expirationHours } = req.body;
 
-      authorize(req, 'create', 'private_session', {
+      authorize(req, 'create', authorizationRecord, {
         authorDid: (req.user as User)!.did!,
       });
 
@@ -59,7 +62,7 @@ export function createSessionRoutes(config: SessionRouteConfig) {
 
       const { authorDid } = req.body;
 
-      authorize(req, 'revoke', 'private_session', {
+      authorize(req, 'revoke', authorizationRecord, {
         ...req.user!,
         authorDid,
       });
@@ -77,8 +80,7 @@ export function createSessionRoutes(config: SessionRouteConfig) {
         (req.user as User)!.did!,
       );
 
-      // The service layer already handles access control
-      // No need for additional authorization here since the user can only get their own session
+      authorize(req, 'get_private', authorizationRecord, sessionKey);
 
       return {
         body: { encryptedSessionKey: toSessionKeyView(sessionKey) },
@@ -93,7 +95,7 @@ export function createSessionRoutes(config: SessionRouteConfig) {
 
       const authorDid = (req.user as User)!.did!;
 
-      authorize(req, 'add_recipient', 'private_session', {
+      authorize(req, 'add_recipient', authorizationRecord, {
         authorDid,
       });
 
@@ -109,7 +111,7 @@ export function createSessionRoutes(config: SessionRouteConfig) {
       // Validate input against lexicon
       validateAgainstLexicon(updateKeysLexicon, req.body);
 
-      authorize(req, 'update', 'private_session');
+      authorize(req, 'update', authorizationRecord);
 
       await sessionService.updateSessionKeys(req.body);
       return {
