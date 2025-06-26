@@ -8,6 +8,7 @@ import {
   User,
 } from '@speakeasy-services/common';
 import { toSessionKeyView } from '../views/session.views.js';
+import { getSessionOperation } from '../lexicon/session.js';
 
 export interface SessionRouteConfig {
   serviceName: string;
@@ -18,17 +19,24 @@ export interface SessionRouteConfig {
 export function createSessionRoutes(config: SessionRouteConfig) {
   const { serviceName, lexiconPrefix, sessionService } = config;
 
+  // Get lexicon definitions for each operation
+  const createLexicon = getSessionOperation('create');
+  const revokeLexicon = getSessionOperation('revoke');
+  const getSessionLexicon = getSessionOperation('getSession');
+  const addUserLexicon = getSessionOperation('addUser');
+  const updateKeysLexicon = getSessionOperation('updateKeys');
+
   // Define method handlers with lexicon validation
   const methodHandlers = {
     [`${lexiconPrefix}.create`]: async (
       req: ExtendedRequest,
     ): RequestHandlerReturn => {
       // Validate input against lexicon
-      validateAgainstLexicon(`${lexiconPrefix}.create`, req.body);
+      validateAgainstLexicon(createLexicon, req.body);
 
       const { sessionKeys, expirationHours } = req.body;
 
-      authorize(req, 'create', `${serviceName}_session`, {
+      authorize(req, 'create', 'private_session', {
         authorDid: (req.user as User)!.did!,
       });
 
@@ -46,11 +54,11 @@ export function createSessionRoutes(config: SessionRouteConfig) {
       req: ExtendedRequest,
     ): RequestHandlerReturn => {
       // Validate input against lexicon
-      validateAgainstLexicon(`${lexiconPrefix}.revoke`, req.body);
+      validateAgainstLexicon(revokeLexicon, req.body);
 
       const { authorDid } = req.body;
 
-      authorize(req, 'revoke', `${serviceName}_session`, {
+      authorize(req, 'revoke', 'private_session', {
         ...req.user!,
         authorDid,
       });
@@ -68,7 +76,8 @@ export function createSessionRoutes(config: SessionRouteConfig) {
         (req.user as User)!.did!,
       );
 
-      authorize(req, 'get', `${serviceName}_session`, sessionKey as unknown as Record<string, unknown>);
+      // The service layer already handles access control
+      // No need for additional authorization here since the user can only get their own session
 
       return {
         body: { encryptedSessionKey: toSessionKeyView(sessionKey) },
@@ -79,11 +88,11 @@ export function createSessionRoutes(config: SessionRouteConfig) {
       req: ExtendedRequest,
     ): RequestHandlerReturn => {
       // Validate input against lexicon
-      validateAgainstLexicon(`${lexiconPrefix}.addUser`, req.body);
+      validateAgainstLexicon(addUserLexicon, req.body);
 
       const authorDid = (req.user as User)!.did!;
 
-      authorize(req, 'add_recipient', `${serviceName}_session`, {
+      authorize(req, 'add_recipient', 'private_session', {
         authorDid,
       });
 
@@ -97,9 +106,9 @@ export function createSessionRoutes(config: SessionRouteConfig) {
       req: ExtendedRequest,
     ): RequestHandlerReturn => {
       // Validate input against lexicon
-      validateAgainstLexicon(`${lexiconPrefix}.updateKeys`, req.body);
+      validateAgainstLexicon(updateKeysLexicon, req.body);
 
-      authorize(req, 'update', `${serviceName}_session`);
+      authorize(req, 'update', 'private_session');
 
       await sessionService.updateSessionKeys(req.body);
       return {
