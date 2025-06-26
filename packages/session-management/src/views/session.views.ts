@@ -1,4 +1,4 @@
-import { SessionKey } from '../session.service.js';
+import { SessionKeyModel } from '../session.service.js';
 
 import {
   createView,
@@ -16,21 +16,21 @@ export type EncryptedSessionKeyView = {
 /**
  * Create a view that picks recipientDid and createdAt, converting createdAt to ISO string
  */
-export const toSessionKeyView = createView<SessionKey, EncryptedSessionKeyView>(
-  ['sessionId', 'encryptedDek', 'recipientDid', 'createdAt'],
-  {
-    sessionId: (value: string) => value,
-    encryptedDek: (value: Uint8Array) => safeBtoa(value),
-    recipientDid: (value: string) => value,
-    userKeyPairId: (value: string) => value,
-    createdAt: (value: Date) => value.toISOString(),
-  },
-);
+export const toSessionKeyView = createView<
+  SessionKeyModel,
+  EncryptedSessionKeyView
+>(['sessionId', 'encryptedDek', 'recipientDid', 'createdAt'], {
+  sessionId: (value: string) => value,
+  encryptedDek: (value: Uint8Array) => safeBtoa(value),
+  recipientDid: (value: string) => value,
+  userKeyPairId: (value: string) => value,
+  createdAt: (value: Date) => value.toISOString(),
+});
 
 /**
  * Create a list view that maps over the array
  */
 export const toSessionKeyListView = createListView<
-  SessionKey,
+  SessionKeyModel,
   EncryptedSessionKeyView
 >(toSessionKeyView);
