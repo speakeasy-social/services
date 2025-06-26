@@ -21,6 +21,16 @@ export interface SessionKeyModel {
   createdAt: Date;
 }
 
+// Define session with session keys included
+export interface SessionWithKeysModel extends SessionModel {
+  sessionKeys: SessionKeyModel[];
+}
+
+// Define session key with session included
+export interface SessionKeyWithSessionModel extends SessionKeyModel {
+  session?: SessionModel;
+}
+
 // Define the minimum interface required for session operations
 export interface SessionPrismaClient<
   T extends SessionModel = SessionModel,
@@ -34,6 +44,11 @@ export interface SessionPrismaClient<
       orderBy?: any;
       select?: any;
     }) => Promise<T | null>;
+    findMany: (args: {
+      where: any;
+      include?: any;
+      take?: number;
+    }) => Promise<SessionWithKeysModel[]>;
     deleteMany: (args: { where: any }) => Promise<any>;
   };
   sessionKey: {
@@ -41,8 +56,15 @@ export interface SessionPrismaClient<
       where: any;
       include?: any;
     }) => Promise<(K & { session?: T }) | null>;
+    findMany: (args: {
+      where: any;
+      include?: any;
+      take?: number;
+      select?: any;
+    }) => Promise<K[]>;
     create: (args: { data: any }) => Promise<K>;
     createMany: (args: { data: any[] }) => Promise<any>;
+    update: (args: { where: any; data: any }) => Promise<K>;
     deleteMany: (args: { where: any }) => Promise<any>;
   };
   $transaction: <R>(
