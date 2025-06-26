@@ -21,6 +21,16 @@ export interface SessionKeyModel {
   createdAt: Date;
 }
 
+// Define session with session keys included
+export interface SessionWithKeysModel extends SessionModel {
+  sessionKeys: SessionKeyModel[];
+}
+
+// Define session key with session included
+export interface SessionKeyWithSessionModel extends SessionKeyModel {
+  session?: SessionModel;
+}
+
 // Define the minimum interface required for session operations
 export interface SessionPrismaClient<
   T extends SessionModel = SessionModel,
@@ -34,6 +44,11 @@ export interface SessionPrismaClient<
       orderBy?: any;
       select?: any;
     }) => Promise<T | null>;
+    findMany: (args: {
+      where: any;
+      include?: any;
+      take?: number;
+    }) => Promise<SessionWithKeysModel[]>;
     deleteMany: (args: { where: any }) => Promise<any>;
   };
   sessionKey: {
@@ -41,14 +56,22 @@ export interface SessionPrismaClient<
       where: any;
       include?: any;
     }) => Promise<(K & { session?: T }) | null>;
+    findMany: (args: {
+      where: any;
+      include?: any;
+      take?: number;
+      select?: any;
+    }) => Promise<K[]>;
     create: (args: { data: any }) => Promise<K>;
     createMany: (args: { data: any[] }) => Promise<any>;
+    update: (args: { where: any; data: any }) => Promise<K>;
     deleteMany: (args: { where: any }) => Promise<any>;
   };
   $transaction: <R>(
     fn: (tx: SessionPrismaClient<T, K>) => Promise<R>,
   ) => Promise<R>;
   $queryRaw: <R>(query: any) => Promise<R[]>;
+  $queryRawUnsafe: <R>(query: string, ...values: any[]) => Promise<R[]>;
 }
 
 // Define the SessionKey type for the shared service
@@ -83,10 +106,16 @@ export class SessionService<
 > {
   private prisma: SessionPrismaClient<T, K>;
   private serviceName: string;
+  private sessionTableName: string;
 
-  constructor(prisma: SessionPrismaClient<T, K>, serviceName: string) {
+  constructor(
+    prisma: SessionPrismaClient<T, K>,
+    serviceName: string,
+    options?: { sessionTableName?: string },
+  ) {
     this.prisma = prisma;
     this.serviceName = serviceName;
+    this.sessionTableName = options?.sessionTableName ?? 'sessions';
   }
 
   /**
@@ -101,7 +130,15 @@ export class SessionService<
       expirationHours = DEFAULT_EXPIRATION_HOURS,
     } = params;
 
-    const ownSessionKey = recipients.find(
+    // Dedupe recipients by recipientDid, keeping first occurrence
+    const seen = new Set<string>();
+    const uniqueRecipients = recipients.filter((recipient) => {
+      if (seen.has(recipient.recipientDid)) return false;
+      seen.add(recipient.recipientDid);
+      return true;
+    });
+
+    const ownSessionKey = uniqueRecipients.find(
       (recipient) => recipient.recipientDid === authorDid,
     );
     if (!ownSessionKey) {
@@ -112,9 +149,10 @@ export class SessionService<
 
     // open transaction
     const session = await this.prisma.$transaction(async (tx) => {
-      const previousSessions = await tx.$queryRaw<T[]>(
-        `SELECT * FROM sessions WHERE "authorDid" = ${authorDid} AND "revokedAt" IS NULL FOR UPDATE`,
-      );
+      const previousSessions = (await tx.$queryRawUnsafe(
+        `SELECT * FROM ${this.sessionTableName} WHERE "authorDid" = $1 AND "revokedAt" IS NULL FOR UPDATE`,
+        authorDid,
+      )) as T[];
 
       const previousSession = previousSessions[0];
 
@@ -138,7 +176,7 @@ export class SessionService<
           expiresAt: new Date(Date.now() + expirationHours * 60 * 60 * 1000),
 
           sessionKeys: {
-            create: recipients.map((recipient) => ({
+            create: uniqueRecipients.map((recipient) => ({
               userKeyPairId: recipient.userKeyPairId,
               recipientDid: recipient.recipientDid,
               encryptedDek: safeAtob(recipient.encryptedDek),
@@ -182,6 +220,9 @@ export class SessionService<
             gt: new Date(),
           },
         },
+      },
+      include: {
+        session: true,
       },
     });
 
