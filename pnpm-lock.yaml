@@ -234,6 +234,15 @@ importers:
       '@speakeasy-services/common':
         specifier: workspace:*
         version: link:../common
+      '@speakeasy-services/crypto':
+        specifier: workspace:*
+        version: link:../crypto
+      '@speakeasy-services/queue':
+        specifier: workspace:*
+        version: link:../queue
+      '@speakeasy-services/service-base':
+        specifier: workspace:*
+        version: link:../service-base
       crypto:
         specifier: ^1.0.1
         version: 1.0.1
