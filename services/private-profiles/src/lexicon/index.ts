@@ -1,10 +1,20 @@
-import { Lexicons } from '@atproto/lexicon';
 import { createSessionLexicons } from '@speakeasy-services/session-management';
-import { profileLexicons } from './profile.js';
+import {
+  getProfileDef,
+  profileViewDef,
+  putProfileDef,
+} from './types/profile.js';
 
-export const lexicons: Lexicons = {
-  ...createSessionLexicons('social.spkeasy.profileSession'),
-  ...profileLexicons,
-};
+// Get session lexicons as an array
+const sessionLexiconsArray = Object.values(
+  createSessionLexicons('social.spkeasy.profileSession'),
+);
+
+export const lexicons = [
+  ...sessionLexiconsArray,
+  getProfileDef,
+  profileViewDef,
+  putProfileDef,
+];
 
 export type LexiconDefs = typeof lexicons;
