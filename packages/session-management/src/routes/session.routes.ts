@@ -1,4 +1,4 @@
-import { SessionService } from '../services/session.service.js';
+import { SessionService } from '../session.service.js';
 import {
   authorize,
   RequestHandler,
@@ -6,6 +6,7 @@ import {
   ExtendedRequest,
   validateAgainstLexicon,
   User,
+  safeBtoa,
 } from '@speakeasy-services/common';
 import { toSessionKeyView } from '../views/session.views.js';
 
@@ -38,7 +39,7 @@ export function createSessionRoutes(config: SessionRouteConfig) {
         expirationHours,
       });
       return {
-        body: { sessionId: result.id },
+        body: { sessionId: result.sessionId },
       };
     },
 
@@ -69,6 +70,14 @@ export function createSessionRoutes(config: SessionRouteConfig) {
       );
 
       authorize(req, 'revoke', `${serviceName}_session`, sessionKey);
+
+      // Convert the session key to the expected format
+      const sessionKeyView = {
+        recipientDid: sessionKey.recipientDid,
+        userKeyPairId: sessionKey.userKeyPairId,
+        encryptedDek: safeBtoa(sessionKey.encryptedDek),
+        createdAt: sessionKey.createdAt,
+      };
 
       return {
         body: { encryptedSessionKey: toSessionKeyView(sessionKey) },
