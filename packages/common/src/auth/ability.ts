@@ -104,6 +104,7 @@ export type Action =
 export type Subject =
   | 'private_post'
   | 'private_session'
+  | 'private_profile'
   | 'session_key'
   | 'trusted_user'
   | 'group'
