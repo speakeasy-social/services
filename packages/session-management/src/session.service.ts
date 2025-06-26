@@ -43,12 +43,14 @@ export interface SessionPrismaClient<
       where: any;
       orderBy?: any;
       select?: any;
+      include?: any;
     }) => Promise<T | null>;
     findMany: (args: {
       where: any;
       include?: any;
       take?: number;
-    }) => Promise<SessionWithKeysModel[]>;
+      select?: any;
+    }) => Promise<any[]>;
     deleteMany: (args: { where: any }) => Promise<any>;
   };
   sessionKey: {
@@ -67,9 +69,7 @@ export interface SessionPrismaClient<
     update: (args: { where: any; data: any }) => Promise<K>;
     deleteMany: (args: { where: any }) => Promise<any>;
   };
-  $transaction: <R>(
-    fn: (tx: SessionPrismaClient<T, K>) => Promise<R>,
-  ) => Promise<R>;
+  $transaction: <R>(fn: (tx: any) => Promise<R>) => Promise<R>;
   $queryRaw: <R>(query: any) => Promise<R[]>;
 }
 
@@ -134,9 +134,9 @@ export class SessionService<
 
     // open transaction
     const session = await this.prisma.$transaction(async (tx) => {
-      const previousSessions = await tx.$queryRaw<T[]>(
+      const previousSessions = (await tx.$queryRaw(
         `SELECT * FROM sessions WHERE "authorDid" = ${authorDid} AND "revokedAt" IS NULL FOR UPDATE`,
-      );
+      )) as T[];
 
       const previousSession = previousSessions[0];
 
