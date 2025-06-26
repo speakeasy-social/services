@@ -5,6 +5,8 @@ import {
   safeBtoa,
 } from '@speakeasy-services/common';
 
+// TODO: Replace with shared session views from @speakeasy-services/session-management
+// once export issues are resolved
 export type EncryptedSessionKeyView = {
   sessionId: string;
   encryptedDek: string;
