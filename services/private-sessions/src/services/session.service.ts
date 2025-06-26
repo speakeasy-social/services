@@ -8,9 +8,9 @@ import { Session, SessionKey } from '../generated/prisma-client/index.js';
 // Create a new instance of the shared session service with our Prisma client
 export class SessionService extends SharedSessionService<Session, SessionKey> {
   constructor() {
-    // Cast the Prisma client to the expected interface and pass service name
+    // Use the Prisma client directly - the interface is now flexible enough
     super(
-      getPrismaClient() as SessionPrismaClient<Session, SessionKey>,
+      getPrismaClient() as unknown as SessionPrismaClient<Session, SessionKey>,
       'private-sessions',
     );
   }
