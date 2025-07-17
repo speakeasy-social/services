@@ -1,22 +1,5 @@
-import { Server } from '@speakeasy-services/service-base';
-import config from './config.js';
-import { methods } from './routes/key.routes.js';
-import {
-  authorizationMiddleware,
-  authenticateToken,
-} from '@speakeasy-services/common';
-import { lexicons } from './lexicon/index.js';
 import { Queue } from '@speakeasy-services/queue';
-import { healthCheck } from './health.js';
-
-const server = new Server({
-  name: 'user-keys',
-  port: config.PORT,
-  methods,
-  middleware: [authenticateToken, authorizationMiddleware],
-  lexicons,
-  healthCheck,
-});
+import server from './server.js';
 
 // Initialize and start the queue before starting the server
 Queue.start()
