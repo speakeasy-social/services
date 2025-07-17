@@ -3,6 +3,7 @@ import {
   getPrivateKeyDef,
   rotateKeyDef,
   getPublicKeysDef,
+  getPrivateKeysDef,
 } from './types/key.js';
 
 export const lexicons = [
@@ -10,6 +11,7 @@ export const lexicons = [
   getPrivateKeyDef,
   rotateKeyDef,
   getPublicKeysDef,
+  getPrivateKeysDef,
 ];
 
 export type LexiconDefs = typeof lexicons;
