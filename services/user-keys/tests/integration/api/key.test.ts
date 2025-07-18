@@ -55,20 +55,22 @@ describe('User Keys API Tests', () => {
     // Test getPublicKey endpoint
     {
       note: 'get public key for existing user',
-      endpoint: 'social.spkeasy.keys.getPublicKey',
+      endpoint: 'social.spkeasy.key.getPublicKey',
       query: { did: authorDid },
       expectedBody: {
         publicKey: expect.any(String),
-        authorDid: authorDid,
+        recipientDid: authorDid,
+        userKeyPairId: expect.any(String),
       },
     },
     {
       note: 'get public key for new user (creates key)',
-      endpoint: 'social.spkeasy.keys.getPublicKey',
+      endpoint: 'social.spkeasy.key.getPublicKey',
       query: { did: anotherUserDid },
       expectedBody: {
         publicKey: expect.any(String),
-        authorDid: anotherUserDid,
+        recipientDid: anotherUserDid,
+        userKeyPairId: expect.any(String),
       },
       assert: async () => {
         // Verify that a key was created in the database
@@ -83,7 +85,7 @@ describe('User Keys API Tests', () => {
     // Test getPublicKeys endpoint
     {
       note: 'get multiple public keys',
-      endpoint: 'social.spkeasy.keys.getPublicKeys',
+      endpoint: 'social.spkeasy.key.getPublicKeys',
       query: { dids: `${authorDid},${anotherUserDid}` },
       before: async () => {
         // Create keys for both users
@@ -106,11 +108,13 @@ describe('User Keys API Tests', () => {
         publicKeys: [
           {
             publicKey: expect.any(String),
-            authorDid: authorDid,
+            recipientDid: authorDid,
+            userKeyPairId: expect.any(String),
           },
           {
             publicKey: expect.any(String),
-            authorDid: anotherUserDid,
+            recipientDid: anotherUserDid,
+            userKeyPairId: expect.any(String),
           },
         ],
       },
@@ -119,7 +123,7 @@ describe('User Keys API Tests', () => {
     // Test getPrivateKey endpoint
     {
       note: 'get private key for authenticated user',
-      endpoint: 'social.spkeasy.keys.getPrivateKey',
+      endpoint: 'social.spkeasy.key.getPrivateKey',
       bearer: validToken,
       before: async () => {
         // Create a key for the user
@@ -133,16 +137,16 @@ describe('User Keys API Tests', () => {
       },
       expectedBody: {
         privateKey: expect.any(String),
-        publicKey: expect.any(String),
         authorDid: authorDid,
+        userKeyPairId: expect.any(String),
       },
     },
 
     // Test getPrivateKeys endpoint
     {
       note: 'get private keys by IDs',
-      endpoint: 'social.spkeasy.keys.getPrivateKeys',
-      query: { did: authorDid, ids: 'key1,key2' },
+      endpoint: 'social.spkeasy.key.getPrivateKeys',
+      query: { did: authorDid, ids: ['key1', 'key2'] },
       bearer: validToken,
       before: async () => {
         // Create keys for the user
@@ -167,13 +171,13 @@ describe('User Keys API Tests', () => {
         keys: [
           {
             privateKey: expect.any(String),
-            publicKey: expect.any(String),
             authorDid: authorDid,
+            userKeyPairId: expect.any(String),
           },
           {
             privateKey: expect.any(String),
-            publicKey: expect.any(String),
             authorDid: authorDid,
+            userKeyPairId: expect.any(String),
           },
         ],
       },
@@ -183,7 +187,7 @@ describe('User Keys API Tests', () => {
     {
       note: 'rotate key for authenticated user',
       method: 'post',
-      endpoint: 'social.spkeasy.keys.rotate',
+      endpoint: 'social.spkeasy.key.rotate',
       body: {
         publicKey: 'bmV3LXB1YmxpYy1rZXk=', // base64 encoded "new-public-key"
         privateKey: 'bmV3LXByaXZhdGUta2V5', // base64 encoded "new-private-key"
@@ -202,7 +206,8 @@ describe('User Keys API Tests', () => {
       },
       expectedBody: {
         publicKey: expect.any(String),
-        authorDid: authorDid,
+        recipientDid: authorDid,
+        userKeyPairId: expect.any(String),
       },
       assert: async () => {
         // Verify that the old key was marked as deleted
