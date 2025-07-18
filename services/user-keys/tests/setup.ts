@@ -1,3 +1,4 @@
+import { beforeAll, afterAll, afterEach } from 'vitest';
 import { config } from "dotenv";
 import { resolve } from "path";
 
