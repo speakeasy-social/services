@@ -27,7 +27,7 @@ const config = validateEnv(z.object(serviceSchema));
 
 // Set PRIVATE_SESSIONS_DATABASE_URL if not provided (only for development/test)
 if (!config.PRIVATE_SESSIONS_DATABASE_URL && process.env.NODE_ENV !== 'production') {
-  (config as any).PRIVATE_SESSIONS_DATABASE_URL = getDatabaseUrl('private_sessions');
+  (config as any).PRIVATE_SESSIONS_DATABASE_URL = getDatabaseUrl('private_sessions', 'PRIVATE_SESSIONS_DATABASE_URL');
 }
 
 // Export the config with proper typing

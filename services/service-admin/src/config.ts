@@ -27,7 +27,7 @@ const config = validateEnv(z.object(serviceSchema));
 
 // Set SERVICE_ADMIN_DATABASE_URL if not provided (only for development/test)
 if (!config.SERVICE_ADMIN_DATABASE_URL && process.env.NODE_ENV !== 'production') {
-  (config as any).SERVICE_ADMIN_DATABASE_URL = getDatabaseUrl('service_admin');
+  (config as any).SERVICE_ADMIN_DATABASE_URL = getDatabaseUrl('service_admin', 'SERVICE_ADMIN_DATABASE_URL');
 }
 
 // Export the config with proper typing

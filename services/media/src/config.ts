@@ -37,7 +37,7 @@ const config = validateEnv(z.object(serviceSchema));
 
 // Set MEDIA_DATABASE_URL if not provided (only for development/test)
 if (!config.MEDIA_DATABASE_URL && process.env.NODE_ENV !== 'production') {
-  (config as any).MEDIA_DATABASE_URL = getDatabaseUrl('media');
+  (config as any).MEDIA_DATABASE_URL = getDatabaseUrl('media', 'MEDIA_DATABASE_URL');
 }
 
 // Export the config with proper typing
