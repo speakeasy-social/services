@@ -7,6 +7,38 @@ loadEnv({ path: join(process.cwd(), '../../.env') });
 loadEnv({ path: join(process.cwd(), '.env') });
 
 /**
+ * Helper function to generate database URL based on environment
+ * Honors existing environment variables and only modifies database name for test environment
+ */
+export function getDatabaseUrl(schema: string, serviceEnvVar?: string): string {
+  const nodeEnv = process.env.NODE_ENV || 'development';
+  
+  // If a service-specific environment variable is provided, use it as base
+  if (serviceEnvVar && process.env[serviceEnvVar]) {
+    const url = new URL(process.env[serviceEnvVar]!);
+    
+    // In test environment, modify the database name
+    if (nodeEnv === 'test') {
+      const testDbName = process.env.TEST_DB_NAME || 'speakeasy_test';
+      url.pathname = `/${testDbName}`;
+    }
+    
+    // Set the schema
+    url.searchParams.set('schema', schema);
+    return url.toString();
+  }
+  
+  // Fallback for development/test without explicit environment variables
+  if (nodeEnv !== 'production') {
+    const dbName = nodeEnv === 'test' ? (process.env.TEST_DB_NAME || 'speakeasy_test') : 'speakeasy';
+    return `postgresql://speakeasy:speakeasy@localhost:5496/${dbName}?schema=${schema}`;
+  }
+  
+  // In production, we expect explicit environment variables to be set
+  throw new Error(`Database URL for schema '${schema}' must be explicitly set in production environment`);
+}
+
+/**
  * Base configuration schema that services can extend.
  * These are truly shared configurations that should be in the root .env
  */
@@ -19,11 +51,17 @@ export const baseSchema = {
   DATABASE_URL: z
     .string()
     .url()
-    .describe('Shared database URL for PgBoss worker'),
+    .describe('Shared database URL for PgBoss worker')
+    .optional(), // Optional since it can be derived from environment
   PGBOSS_SCHEMA: z
     .string()
     .default('pgboss')
     .describe('Schema for PgBoss jobs'),
+  // Test database configuration
+  TEST_DB_NAME: z
+    .string()
+    .default('speakeasy_test')
+    .describe('Database name to use for test environment'),
   // Service API keys for inter-service communication
   PRIVATE_SESSIONS_API_KEY: z
     .string()
@@ -75,6 +113,11 @@ export class ValidationError extends Error {
  * Services should use this to create their own config with their specific schema.
  */
 export function validateEnv<T extends z.ZodRawShape>(schema: z.ZodObject<T>) {
+  // Set DATABASE_URL if not provided (only for development/test)
+  if (!process.env.DATABASE_URL && process.env.NODE_ENV !== 'production') {
+    process.env.DATABASE_URL = getDatabaseUrl('pgboss');
+  }
+
   const result = schema.safeParse(process.env);
 
   if (!result.success) {
