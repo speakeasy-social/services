@@ -8,17 +8,18 @@ loadEnv({ path: join(process.cwd(), '.env') });
 
 /**
  * Helper function to generate database URL based on environment
+ * Only generates URLs for development/test environments
+ * Production environments should use explicit service-specific environment variables
  */
 export function getDatabaseUrl(schema: string): string {
   const nodeEnv = process.env.NODE_ENV || 'development';
-  const dbName = nodeEnv === 'test' ? 'speakeasy_test' : 'speakeasy';
   
-  // If DATABASE_URL is explicitly set, use it as base and modify schema
-  if (process.env.DATABASE_URL) {
-    const url = new URL(process.env.DATABASE_URL);
-    url.searchParams.set('schema', schema);
-    return url.toString();
+  // In production, we expect explicit environment variables to be set
+  if (nodeEnv === 'production') {
+    throw new Error(`Database URL for schema '${schema}' must be explicitly set in production environment`);
   }
+  
+  const dbName = nodeEnv === 'test' ? 'speakeasy_test' : 'speakeasy';
   
   // Default local development URL
   return `postgresql://speakeasy:speakeasy@localhost:5496/${dbName}?schema=${schema}`;
@@ -94,8 +95,8 @@ export class ValidationError extends Error {
  * Services should use this to create their own config with their specific schema.
  */
 export function validateEnv<T extends z.ZodRawShape>(schema: z.ZodObject<T>) {
-  // Set DATABASE_URL if not provided
-  if (!process.env.DATABASE_URL) {
+  // Set DATABASE_URL if not provided (only for development/test)
+  if (!process.env.DATABASE_URL && process.env.NODE_ENV !== 'production') {
     process.env.DATABASE_URL = getDatabaseUrl('pgboss');
   }
 

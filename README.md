@@ -196,7 +196,7 @@ NODE_ENV=test pnpm dev:setup
 The environment is determined by the `NODE_ENV` environment variable:
 - `NODE_ENV=development` (or unset) → uses `speakeasy` database
 - `NODE_ENV=test` → uses `speakeasy_test` database
-- `NODE_ENV=production` → uses production database URLs (unchanged)
+- `NODE_ENV=production` → requires explicit service-specific environment variables (e.g., `PRIVATE_SESSIONS_DATABASE_URL`, `TRUSTED_USERS_DATABASE_URL`, etc.)
 
 ## Common Issues
 
@@ -210,7 +210,7 @@ If you see errors about database migrations:
 - Database URLs are automatically derived based on `NODE_ENV`:
   - Development: `postgresql://speakeasy:speakeasy@localhost:5496/speakeasy?schema=<service_schema>`
   - Test: `postgresql://speakeasy:speakeasy@localhost:5496/speakeasy_test?schema=<service_schema>`
-  - Production: Uses explicit database URLs from environment variables
+  - Production: Requires explicit service-specific environment variables (e.g., `PRIVATE_SESSIONS_DATABASE_URL`, `TRUSTED_USERS_DATABASE_URL`, etc.)
 
 ### TypeScript Build Errors
 

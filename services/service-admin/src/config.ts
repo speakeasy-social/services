@@ -19,14 +19,14 @@ const serviceSchema = {
     .string()
     .url()
     .describe('Database URL with service_admin schema for Prisma')
-    .optional(), // Optional since it can be derived from DATABASE_URL
+    .optional(), // Optional since it can be derived from environment
 } as const;
 
 // Create and validate the config
 const config = validateEnv(z.object(serviceSchema));
 
-// Set SERVICE_ADMIN_DATABASE_URL if not provided
-if (!config.SERVICE_ADMIN_DATABASE_URL) {
+// Set SERVICE_ADMIN_DATABASE_URL if not provided (only for development/test)
+if (!config.SERVICE_ADMIN_DATABASE_URL && process.env.NODE_ENV !== 'production') {
   (config as any).SERVICE_ADMIN_DATABASE_URL = getDatabaseUrl('service_admin');
 }
 

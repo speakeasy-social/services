@@ -9,7 +9,6 @@ module.exports = {
   moduleNameMapper: {
     '^@speakeasy-services/(.*)$': '<rootDir>/packages/$1/src',
   },
-  setupFilesAfterEnv: ['<rootDir>/tests/setup.ts'],
   testTimeout: 30000, // 30 seconds for integration tests
   collectCoverage: true,
   coverageDirectory: 'coverage',
