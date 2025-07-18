@@ -7,6 +7,39 @@ loadEnv({ path: join(process.cwd(), '../../.env') });
 loadEnv({ path: join(process.cwd(), '.env') });
 
 /**
+ * Helper function to get database configuration based on environment
+ */
+export function getDatabaseConfig() {
+  const nodeEnv = process.env.NODE_ENV || 'development';
+  
+  if (nodeEnv === 'test') {
+    return {
+      host: 'localhost',
+      port: '5497',
+      user: 'speakeasy_test',
+      password: 'speakeasy_test',
+      database: 'speakeasy_test',
+    };
+  } else {
+    return {
+      host: 'localhost',
+      port: '5496',
+      user: 'speakeasy',
+      password: 'speakeasy',
+      database: 'speakeasy',
+    };
+  }
+}
+
+/**
+ * Helper function to construct database URL for a specific schema
+ */
+export function getDatabaseUrl(schema: string): string {
+  const config = getDatabaseConfig();
+  return `postgresql://${config.user}:${config.password}@${config.host}:${config.port}/${config.database}?schema=${schema}`;
+}
+
+/**
  * Base configuration schema that services can extend.
  * These are truly shared configurations that should be in the root .env
  */
@@ -19,7 +52,14 @@ export const baseSchema = {
   DATABASE_URL: z
     .string()
     .url()
-    .describe('Shared database URL for PgBoss worker'),
+    .describe('Shared database URL for PgBoss worker')
+    .transform((url) => {
+      // If DATABASE_URL is not set or is a placeholder, construct it based on environment
+      if (!url || url === 'placeholder') {
+        return getDatabaseUrl('pgboss');
+      }
+      return url;
+    }),
   PGBOSS_SCHEMA: z
     .string()
     .default('pgboss')

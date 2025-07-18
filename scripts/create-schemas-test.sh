@@ -1,26 +1,22 @@
 #!/bin/bash
 set -e
 
-# Determine environment
-ENVIRONMENT=${NODE_ENV:-development}
-echo "Setting up database schemas for environment: $ENVIRONMENT"
+echo "Setting up test database schemas..."
 
-if [ "$ENVIRONMENT" = "test" ]; then
-    # Test environment configuration
-    DB_USER="speakeasy_test"
-    DB_PASSWORD="speakeasy_test"
-    DB_NAME="speakeasy_test"
-    DB_HOST="localhost"
-    DB_PORT="5497"
-    CONTAINER_NAME="speakeasy-services-postgres-test"
-else
-    # Development environment configuration
-    DB_USER="speakeasy"
-    DB_PASSWORD="speakeasy"
-    DB_NAME="speakeasy"
-    DB_HOST="localhost"
-    DB_PORT="5496"
-    CONTAINER_NAME="speakeasy-services-postgres"
+# Test environment configuration
+DB_USER="speakeasy_test"
+DB_PASSWORD="speakeasy_test"
+DB_NAME="speakeasy_test"
+DB_HOST="localhost"
+DB_PORT="5497"
+CONTAINER_NAME="speakeasy-services-postgres-test"
+
+# Ensure test database container is running
+if ! docker compose ps $CONTAINER_NAME | grep -q "Up"; then
+    echo "Starting test database container..."
+    docker compose up -d postgres-test
+    echo "Waiting for test database to be ready..."
+    sleep 10
 fi
 
 # Create schemas for each service
@@ -49,4 +45,4 @@ GRANT CREATE, USAGE ON SCHEMA media TO $DB_USER;
 GRANT USAGE ON SCHEMA pgboss TO $DB_USER;
 EOF
 
-echo "Database schemas created successfully for $ENVIRONMENT environment"
+echo "Test database schemas created successfully"

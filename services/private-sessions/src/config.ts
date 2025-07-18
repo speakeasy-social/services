@@ -1,7 +1,4 @@
-import {
-  validateEnv,
-  baseSchema,
-} from '@speakeasy-services/service-base/config';
+import { validateEnv, baseSchema, getDatabaseUrl } from '@speakeasy-services/service-base/config';
 import z from 'zod';
 
 /**
@@ -18,7 +15,14 @@ const serviceSchema = {
     .string()
     .url()
     .describe('Database URL with private_sessions schema for Prisma')
-    .optional(), // Optional since it can be derived from DATABASE_URL
+    .optional()
+    .transform((url) => {
+      // If PRIVATE_SESSIONS_DATABASE_URL is not set, construct it based on environment
+      if (!url) {
+        return getDatabaseUrl('private_sessions');
+      }
+      return url;
+    }),
 } as const;
 
 // Create and validate the config

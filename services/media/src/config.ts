@@ -1,7 +1,4 @@
-import {
-  validateEnv,
-  baseSchema,
-} from '@speakeasy-services/service-base/config';
+import { validateEnv, baseSchema, getDatabaseUrl } from '@speakeasy-services/service-base/config';
 import z from 'zod';
 
 /**
@@ -18,7 +15,14 @@ const serviceSchema = {
     .string()
     .url()
     .describe('Database URL with media schema for Prisma')
-    .optional(), // Optional since it can be derived from DATABASE_URL
+    .optional()
+    .transform((url) => {
+      // If MEDIA_DATABASE_URL is not set, construct it based on environment
+      if (!url) {
+        return getDatabaseUrl('media');
+      }
+      return url;
+    }),
   // UpCloud S3 configuration
   MEDIA_S3_ENDPOINT: z.string().describe('S3 endpoint URL'),
   MEDIA_S3_REGION: z.string().describe('S3 region'),

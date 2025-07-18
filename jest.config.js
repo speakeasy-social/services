@@ -19,4 +19,6 @@ module.exports = {
     '/dist/',
     '/tests/',
   ],
+  // Set NODE_ENV to test for all tests
+  setupFiles: ['<rootDir>/tests/jest-setup.ts'],
 }; 

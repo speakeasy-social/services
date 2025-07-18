@@ -1,7 +1,4 @@
-import {
-  validateEnv,
-  baseSchema,
-} from '@speakeasy-services/service-base/config';
+import { validateEnv, baseSchema, getDatabaseUrl } from '@speakeasy-services/service-base/config';
 import z from 'zod';
 
 /**
@@ -18,7 +15,14 @@ const serviceSchema = {
     .string()
     .url()
     .describe('Database URL with service_admin schema for Prisma')
-    .optional(), // Optional since it can be derived from DATABASE_URL
+    .optional()
+    .transform((url) => {
+      // If SERVICE_ADMIN_DATABASE_URL is not set, construct it based on environment
+      if (!url) {
+        return getDatabaseUrl('service_admin');
+      }
+      return url;
+    }),
 } as const;
 
 // Create and validate the config

@@ -18,6 +18,23 @@ pnpm dev
 pnpm dev:private-sessions
 ```
 
+## Testing
+
+The application supports separate test and development environments:
+
+```
+# Setup test environment (separate database)
+pnpm test:setup
+
+# Run tests
+pnpm test
+
+# Cleanup test environment
+pnpm test:cleanup
+```
+
+For detailed testing information, see [TEST_ENVIRONMENT.md](TEST_ENVIRONMENT.md).
+
 To add an invite code in prod:
 
 SSH into spkeasy_services_prod
