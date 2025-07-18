@@ -1,5 +1,15 @@
 {
   "terminal": {
     "shellInit": "source ~/.zshrc && source ~/.nvm/nvm.sh"
+  },
+  "backgroundAgents": {
+    "setup": {
+      "command": "pnpm dev:setup",
+      "description": "Setup development environment (deps, db, migrations)"
+    },
+    "postgres": {
+      "command": "docker-compose up -d postgres",
+      "description": "Launch PostgreSQL database"
+    }
   }
 }
