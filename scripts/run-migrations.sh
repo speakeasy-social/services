@@ -5,21 +5,20 @@ set -e
 ENVIRONMENT=${NODE_ENV:-development}
 echo "Running migrations for environment: $ENVIRONMENT"
 
+# Use environment variables for database configuration
+DB_USER=${DB_USER:-speakeasy}
+DB_PASSWORD=${DB_PASSWORD:-speakeasy}
+DB_HOST=${DB_HOST:-localhost}
+
 if [ "$ENVIRONMENT" = "test" ]; then
     # Test environment configuration
-    DB_USER="speakeasy_test"
-    DB_PASSWORD="speakeasy_test"
-    DB_NAME="speakeasy_test"
-    DB_HOST="localhost"
-    DB_PORT="5497"
+    DB_NAME=${DB_NAME_TEST:-speakeasy_test}
+    DB_PORT=${DB_PORT_TEST:-5433}
     CONTAINER_NAME="speakeasy-services-postgres-test"
 else
     # Development environment configuration
-    DB_USER="speakeasy"
-    DB_PASSWORD="speakeasy"
-    DB_NAME="speakeasy"
-    DB_HOST="localhost"
-    DB_PORT="5496"
+    DB_NAME=${DB_NAME:-speakeasy}
+    DB_PORT=${DB_PORT:-5432}
     CONTAINER_NAME="speakeasy-services-postgres"
 fi
 

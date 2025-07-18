@@ -12,23 +12,24 @@ loadEnv({ path: join(process.cwd(), '.env') });
 export function getDatabaseConfig() {
   const nodeEnv = process.env.NODE_ENV || 'development';
   
-  if (nodeEnv === 'test') {
-    return {
-      host: 'localhost',
-      port: '5497',
-      user: 'speakeasy_test',
-      password: 'speakeasy_test',
-      database: 'speakeasy_test',
-    };
-  } else {
-    return {
-      host: 'localhost',
-      port: '5496',
-      user: 'speakeasy',
-      password: 'speakeasy',
-      database: 'speakeasy',
-    };
-  }
+  // Use environment variables for database configuration
+  const host = process.env.DB_HOST || 'localhost';
+  const port = process.env.DB_PORT || '5432';
+  const user = process.env.DB_USER || 'speakeasy';
+  const password = process.env.DB_PASSWORD || 'speakeasy';
+  
+  // Only the database name changes based on environment
+  const database = nodeEnv === 'test' 
+    ? (process.env.DB_NAME_TEST || 'speakeasy_test')
+    : (process.env.DB_NAME || 'speakeasy');
+  
+  return {
+    host,
+    port,
+    user,
+    password,
+    database,
+  };
 }
 
 /**
@@ -48,6 +49,13 @@ export const baseSchema = {
     .enum(['development', 'production', 'test'])
     .default('development'),
   LOG_LEVEL: z.string().default('info'),
+  // Database configuration
+  DB_HOST: z.string().default('localhost'),
+  DB_PORT: z.string().default('5432'),
+  DB_USER: z.string().default('speakeasy'),
+  DB_PASSWORD: z.string().default('speakeasy'),
+  DB_NAME: z.string().default('speakeasy'),
+  DB_NAME_TEST: z.string().default('speakeasy_test'),
   // Worker (PgBoss) database - shared across all services
   DATABASE_URL: z
     .string()

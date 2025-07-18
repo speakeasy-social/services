@@ -5,10 +5,10 @@ This document explains how to set up and use the test environment for the Speake
 ## Overview
 
 The application now supports two separate database environments:
-- **Development**: Uses `speakeasy` database on port 5496
-- **Test**: Uses `speakeasy_test` database on port 5497
+- **Development**: Uses `DB_NAME` database (default: `speakeasy`)
+- **Test**: Uses `DB_NAME_TEST` database (default: `speakeasy_test`)
 
-This separation ensures that tests can run independently without affecting development data.
+The key difference is that only the database name changes between environments. All other database configuration (host, port, user, password) remains the same, making it production-safe.
 
 ## Quick Start
 
@@ -82,19 +82,36 @@ pnpm test:setup:s3
 
 ## Environment Configuration
 
+### Database Configuration
+
+The application uses environment variables for database configuration:
+
+```bash
+# Database configuration (same for both environments)
+DB_HOST=localhost
+DB_PORT=5432
+DB_USER=speakeasy
+DB_PASSWORD=speakeasy
+
+# Database names (different for each environment)
+DB_NAME=speakeasy          # Development database
+DB_NAME_TEST=speakeasy_test # Test database
+
+# Test database port (optional, defaults to 5433)
+DB_PORT_TEST=5433
+```
+
 ### Database URLs
 
 The application automatically constructs database URLs based on `NODE_ENV`:
 
 - **Development** (`NODE_ENV=development`):
-  - Host: `localhost:5496`
-  - Database: `speakeasy`
-  - User: `speakeasy`
+  - Database: `DB_NAME` (default: `speakeasy`)
+  - Port: `DB_PORT` (default: `5432`)
 
 - **Test** (`NODE_ENV=test`):
-  - Host: `localhost:5497`
-  - Database: `speakeasy_test`
-  - User: `speakeasy_test`
+  - Database: `DB_NAME_TEST` (default: `speakeasy_test`)
+  - Port: `DB_PORT_TEST` (default: `5433`)
 
 ### Environment Variables
 
@@ -104,9 +121,18 @@ The test environment uses these key variables:
 NODE_ENV=test
 LOG_LEVEL=debug
 
+# Database configuration
+DB_HOST=localhost
+DB_PORT=5432
+DB_USER=speakeasy
+DB_PASSWORD=speakeasy
+DB_NAME=speakeasy
+DB_NAME_TEST=speakeasy_test
+DB_PORT_TEST=5433
+
 # Database URLs (auto-generated)
-DATABASE_URL=postgresql://speakeasy_test:speakeasy_test@localhost:5497/speakeasy_test?schema=pgboss
-USER_KEYS_DATABASE_URL=postgresql://speakeasy_test:speakeasy_test@localhost:5497/speakeasy_test?schema=user_keys
+DATABASE_URL=postgresql://speakeasy:speakeasy@localhost:5433/speakeasy_test?schema=pgboss
+USER_KEYS_DATABASE_URL=postgresql://speakeasy:speakeasy@localhost:5433/speakeasy_test?schema=user_keys
 # ... other service database URLs
 
 # Test-specific API keys
@@ -128,9 +154,9 @@ The test environment uses these Docker services:
 ### Test Database
 - **Service**: `postgres-test`
 - **Container**: `speakeasy-services-postgres-test`
-- **Port**: `5497`
-- **Database**: `speakeasy_test`
-- **User**: `speakeasy_test`
+- **Port**: `DB_PORT_TEST` (default: `5433`)
+- **Database**: `DB_NAME_TEST` (default: `speakeasy_test`)
+- **User**: `DB_USER` (default: `speakeasy`)
 
 ### Shared Services
 - **LocalStack**: Used for S3 testing (port `4566`)
@@ -153,6 +179,28 @@ The test environment uses these Docker services:
 - `pnpm dev:setup:db` - Create development database schemas
 - `pnpm dev:setup:migrations` - Run development migrations
 
+## Production Safety
+
+This implementation is production-safe because:
+
+1. **Environment Variables**: All database configuration uses environment variables
+2. **No Hardcoded Values**: No database credentials are hardcoded in the application
+3. **Same Credentials**: Test and development use the same user/password, only the database name differs
+4. **Configurable**: All database settings can be overridden via environment variables
+
+### Production Configuration Example
+
+```bash
+# Production environment variables
+DB_HOST=your-production-host
+DB_PORT=5432
+DB_USER=your-production-user
+DB_PASSWORD=your-production-password
+DB_NAME=your-production-db
+DB_NAME_TEST=your-test-db
+DB_PORT_TEST=5432  # Same port as production
+```
+
 ## Troubleshooting
 
 ### Test Database Not Starting
@@ -170,10 +218,10 @@ docker compose restart postgres-test
 ### Database Connection Issues
 ```bash
 # Test connection to development database
-psql -h localhost -p 5496 -U speakeasy -d speakeasy
+psql -h $DB_HOST -p $DB_PORT -U $DB_USER -d $DB_NAME
 
 # Test connection to test database
-psql -h localhost -p 5497 -U speakeasy_test -d speakeasy_test
+psql -h $DB_HOST -p $DB_PORT_TEST -U $DB_USER -d $DB_NAME_TEST
 ```
 
 ### Environment Variables Not Loading
@@ -183,6 +231,13 @@ ls -la .env.test
 
 # Check if NODE_ENV is set correctly
 echo $NODE_ENV
+
+# Check database environment variables
+echo "DB_HOST: $DB_HOST"
+echo "DB_PORT: $DB_PORT"
+echo "DB_USER: $DB_USER"
+echo "DB_NAME: $DB_NAME"
+echo "DB_NAME_TEST: $DB_NAME_TEST"
 ```
 
 ### Clean Slate
@@ -206,6 +261,7 @@ pnpm test:setup
 3. **Don't run tests against development database** - always use the test database
 4. **Use test-specific API keys** and configuration
 5. **Reset test data** between test runs if needed
+6. **Use environment variables** for all database configuration in production
 
 ## Integration with CI/CD
 

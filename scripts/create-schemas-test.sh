@@ -3,12 +3,12 @@ set -e
 
 echo "Setting up test database schemas..."
 
-# Test environment configuration
-DB_USER="speakeasy_test"
-DB_PASSWORD="speakeasy_test"
-DB_NAME="speakeasy_test"
-DB_HOST="localhost"
-DB_PORT="5497"
+# Use environment variables for database configuration
+DB_USER=${DB_USER:-speakeasy}
+DB_PASSWORD=${DB_PASSWORD:-speakeasy}
+DB_NAME=${DB_NAME_TEST:-speakeasy_test}
+DB_HOST=${DB_HOST:-localhost}
+DB_PORT=${DB_PORT_TEST:-5433}
 CONTAINER_NAME="speakeasy-services-postgres-test"
 
 # Ensure test database container is running
