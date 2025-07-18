@@ -21,15 +21,19 @@ export const getPublicKeyDef: LexiconDoc = {
         encoding: 'application/json',
         schema: {
           type: 'object',
-          required: ['publicKey', 'authorDid'],
+          required: ['publicKey', 'recipientDid', 'userKeyPairId'],
           properties: {
             publicKey: {
               type: 'string',
               description: "The user's public key in base64 format",
             },
-            authorDid: {
+            recipientDid: {
               type: 'string',
               description: 'The DID of the key owner',
+            },
+            userKeyPairId: {
+              type: 'string',
+              description: 'The ID of the key pair',
             },
           },
         },
@@ -75,15 +79,19 @@ export const getPublicKeysDef: LexiconDoc = {
     },
     publicKey: {
       type: 'object',
-      required: ['publicKey', 'recipientDid'],
+      required: ['publicKey', 'recipientDid', 'userKeyPairId'],
       properties: {
         publicKey: {
           type: 'string',
           description: "The user's public key in base64 format",
         },
-        authorDid: {
+        recipientDid: {
           type: 'string',
           description: 'The DID of the key owner',
+        },
+        userKeyPairId: {
+          type: 'string',
+          description: 'The ID of the key pair',
         },
       },
     },
@@ -92,7 +100,7 @@ export const getPublicKeysDef: LexiconDoc = {
 
 export const getPrivateKeysDef: LexiconDoc = {
   lexicon: 1,
-  id: 'social.spkeasy.keys.getPrivateKey',
+  id: 'social.spkeasy.keys.getPrivateKeys',
   defs: {
     main: {
       type: 'query',
