@@ -10,6 +10,30 @@
     "postgres": {
       "command": "docker-compose up -d postgres",
       "description": "Launch PostgreSQL database"
+    },
+    "cloud-setup": {
+      "command": "pnpm cloud:setup",
+      "description": "Complete cloud environment setup (deps, db, migrations, build)"
+    },
+    "build": {
+      "command": "pnpm build",
+      "description": "Build all packages and services"
+    },
+    "typecheck": {
+      "command": "pnpm cloud:typecheck",
+      "description": "Run comprehensive TypeScript type checking"
+    },
+    "lint": {
+      "command": "pnpm lint",
+      "description": "Run ESLint across all packages"
+    },
+    "test": {
+      "command": "pnpm cloud:test",
+      "description": "Run all tests with database integration"
+    },
+    "dev": {
+      "command": "pnpm dev",
+      "description": "Start development environment with all services"
     }
   }
 }
