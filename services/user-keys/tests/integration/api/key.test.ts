@@ -1,5 +1,6 @@
-import server from '../../src/server.js';
-import { PrismaClient } from '../../src/generated/prisma-client/index.js';
+import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach } from 'vitest';
+import server from '../../../src/server.js';
+import { PrismaClient } from '../../../src/generated/prisma-client/index.js';
 import {
   ApiTest,
   runApiTests,
