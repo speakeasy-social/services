@@ -1,4 +1,4 @@
-import { validateEnv, baseSchema } from '@speakeasy-services/service-base/config';
+import { validateEnv, baseSchema, getDatabaseUrl } from '@speakeasy-services/service-base/config';
 import z from 'zod';
 
 /**
@@ -19,6 +19,11 @@ const serviceSchema = {
 
 // Create and validate the config
 const config = validateEnv(z.object(serviceSchema));
+
+// Set TRUSTED_USERS_DATABASE_URL if not provided
+if (!config.TRUSTED_USERS_DATABASE_URL) {
+  (config as any).TRUSTED_USERS_DATABASE_URL = getDatabaseUrl('trusted_users');
+}
 
 // Export the config with proper typing
 export type Config = typeof config;

@@ -127,10 +127,14 @@ The services are built as a collection of microservices that share a common deve
   - Single database instance
   - Separate schemas for each service
   - Shared PgBoss schema for job processing
+  - Environment-based database names:
+    - Development: `speakeasy` database
+    - Test: `speakeasy_test` database
+    - Production: Uses production database URLs
   - Default credentials:
     - User: speakeasy
     - Password: speakeasy
-    - Database: speakeasy
+    - Database: speakeasy (development) or speakeasy_test (test)
 
 - **PgBoss**
   - Centralized job processing
@@ -164,6 +168,36 @@ The services are built as a collection of microservices that share a common deve
    - Run database migrations
    - Build and start the services
 
+### Environment Support
+
+The application supports multiple environments:
+
+- **Development** (default): Uses `speakeasy` database
+- **Test**: Uses `speakeasy_test` database
+
+#### Development Environment
+```bash
+# Default development setup
+pnpm dev:setup
+
+# Or explicitly set environment
+NODE_ENV=development pnpm dev:setup
+```
+
+#### Test Environment
+```bash
+# Test environment setup
+pnpm test:setup
+
+# Or explicitly set environment
+NODE_ENV=test pnpm dev:setup
+```
+
+The environment is determined by the `NODE_ENV` environment variable:
+- `NODE_ENV=development` (or unset) → uses `speakeasy` database
+- `NODE_ENV=test` → uses `speakeasy_test` database
+- `NODE_ENV=production` → uses production database URLs (unchanged)
+
 ## Common Issues
 
 ### Database Migrations
@@ -171,8 +205,12 @@ The services are built as a collection of microservices that share a common deve
 If you see errors about database migrations:
 
 - Check that your `.env` file has the correct database URLs
-- Each service has its own database URL (e.g. `PRIVATE_SESSIONS_DB_URL`, `TRUSTED_USERS_DB_URL`)
+- Each service has its own database URL (e.g. `PRIVATE_SESSIONS_DATABASE_URL`, `TRUSTED_USERS_DATABASE_URL`)
 - The main `DATABASE_URL` is used for migrations
+- Database URLs are automatically derived based on `NODE_ENV`:
+  - Development: `postgresql://speakeasy:speakeasy@localhost:5496/speakeasy?schema=<service_schema>`
+  - Test: `postgresql://speakeasy:speakeasy@localhost:5496/speakeasy_test?schema=<service_schema>`
+  - Production: Uses explicit database URLs from environment variables
 
 ### TypeScript Build Errors
 

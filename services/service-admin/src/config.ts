@@ -1,6 +1,7 @@
 import {
   validateEnv,
   baseSchema,
+  getDatabaseUrl,
 } from '@speakeasy-services/service-base/config';
 import z from 'zod';
 
@@ -23,6 +24,11 @@ const serviceSchema = {
 
 // Create and validate the config
 const config = validateEnv(z.object(serviceSchema));
+
+// Set SERVICE_ADMIN_DATABASE_URL if not provided
+if (!config.SERVICE_ADMIN_DATABASE_URL) {
+  (config as any).SERVICE_ADMIN_DATABASE_URL = getDatabaseUrl('service_admin');
+}
 
 // Export the config with proper typing
 export type Config = typeof config;

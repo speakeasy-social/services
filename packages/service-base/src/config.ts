@@ -7,6 +7,24 @@ loadEnv({ path: join(process.cwd(), '../../.env') });
 loadEnv({ path: join(process.cwd(), '.env') });
 
 /**
+ * Helper function to generate database URL based on environment
+ */
+export function getDatabaseUrl(schema: string): string {
+  const nodeEnv = process.env.NODE_ENV || 'development';
+  const dbName = nodeEnv === 'test' ? 'speakeasy_test' : 'speakeasy';
+  
+  // If DATABASE_URL is explicitly set, use it as base and modify schema
+  if (process.env.DATABASE_URL) {
+    const url = new URL(process.env.DATABASE_URL);
+    url.searchParams.set('schema', schema);
+    return url.toString();
+  }
+  
+  // Default local development URL
+  return `postgresql://speakeasy:speakeasy@localhost:5496/${dbName}?schema=${schema}`;
+}
+
+/**
  * Base configuration schema that services can extend.
  * These are truly shared configurations that should be in the root .env
  */
@@ -19,7 +37,8 @@ export const baseSchema = {
   DATABASE_URL: z
     .string()
     .url()
-    .describe('Shared database URL for PgBoss worker'),
+    .describe('Shared database URL for PgBoss worker')
+    .optional(), // Optional since it can be derived from environment
   PGBOSS_SCHEMA: z
     .string()
     .default('pgboss')
@@ -75,6 +94,11 @@ export class ValidationError extends Error {
  * Services should use this to create their own config with their specific schema.
  */
 export function validateEnv<T extends z.ZodRawShape>(schema: z.ZodObject<T>) {
+  // Set DATABASE_URL if not provided
+  if (!process.env.DATABASE_URL) {
+    process.env.DATABASE_URL = getDatabaseUrl('pgboss');
+  }
+
   const result = schema.safeParse(process.env);
 
   if (!result.success) {

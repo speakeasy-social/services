@@ -7,7 +7,7 @@ services:
     environment:
       POSTGRES_USER: speakeasy
       POSTGRES_PASSWORD: speakeasy
-      POSTGRES_DB: speakeasy
+      POSTGRES_DB: ${POSTGRES_DB:-speakeasy}
     ports:
       - '5496:5432'
     volumes:

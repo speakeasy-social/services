@@ -19,4 +19,11 @@ module.exports = {
     '/dist/',
     '/tests/',
   ],
+  moduleDirectories: ['node_modules', 'packages'],
+  extensionsToTreatAsEsm: ['.ts'],
+  globals: {
+    'ts-jest': {
+      useESM: true,
+    },
+  },
 }; 
