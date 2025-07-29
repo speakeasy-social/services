@@ -7,15 +7,6 @@ set -e
 ENV=${NODE_ENV:-development}
 echo "Setting up $ENV environment..."
 
-# Set database name based on environment
-if [ "$ENV" = "test" ]; then
-    export POSTGRES_DB="speakeasy_test"
-    echo "Using test database: $POSTGRES_DB"
-else
-    export POSTGRES_DB="speakeasy"
-    echo "Using development database: $POSTGRES_DB"
-fi
-
 # Setup environment files
 echo "Setting up environment files..."
 pnpm dev:setup:env

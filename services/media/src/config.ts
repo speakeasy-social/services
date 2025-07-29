@@ -18,8 +18,7 @@ const serviceSchema = {
   MEDIA_DATABASE_URL: z
     .string()
     .url()
-    .describe('Database URL with media schema for Prisma')
-    .optional(), // Optional since it can be derived from environment
+    .describe('Database URL with media schema for Prisma'),
   // UpCloud S3 configuration
   MEDIA_S3_ENDPOINT: z.string().describe('S3 endpoint URL'),
   MEDIA_S3_REGION: z.string().describe('S3 region'),
@@ -35,10 +34,11 @@ const serviceSchema = {
 // Create and validate the config
 const config = validateEnv(z.object(serviceSchema));
 
-// Set MEDIA_DATABASE_URL if not provided (only for development/test)
-if (!config.MEDIA_DATABASE_URL && process.env.NODE_ENV !== 'production') {
-  (config as any).MEDIA_DATABASE_URL = getDatabaseUrl('media', 'MEDIA_DATABASE_URL');
-}
+// Set MEDIA_DATABASE_URL using getDatabaseUrl
+(config as any).MEDIA_DATABASE_URL = getDatabaseUrl(
+  'media',
+  'MEDIA_DATABASE_URL',
+);
 
 // Export the config with proper typing
 export type Config = typeof config;

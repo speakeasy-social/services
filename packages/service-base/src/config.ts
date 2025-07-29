@@ -8,34 +8,26 @@ loadEnv({ path: join(process.cwd(), '.env') });
 
 /**
  * Helper function to generate database URL based on environment
- * Honors existing environment variables and only modifies database name for test environment
  */
 export function getDatabaseUrl(schema: string, serviceEnvVar?: string): string {
   const nodeEnv = process.env.NODE_ENV || 'development';
-  
-  // If a service-specific environment variable is provided, use it as base
-  if (serviceEnvVar && process.env[serviceEnvVar]) {
-    const url = new URL(process.env[serviceEnvVar]!);
-    
-    // In test environment, modify the database name
-    if (nodeEnv === 'test') {
-      const testDbName = process.env.TEST_DB_NAME || 'speakeasy_test';
-      url.pathname = `/${testDbName}`;
-    }
-    
-    // Set the schema
-    url.searchParams.set('schema', schema);
-    return url.toString();
+
+  // In test environment, always use test database
+  if (nodeEnv === 'test') {
+    const testDbName = process.env.TEST_DB_NAME || 'speakeasy_test';
+    return `postgresql://speakeasy:speakeasy@localhost:5496/${testDbName}?schema=${schema}`;
   }
-  
-  // Fallback for development/test without explicit environment variables
-  if (nodeEnv !== 'production') {
-    const dbName = nodeEnv === 'test' ? (process.env.TEST_DB_NAME || 'speakeasy_test') : 'speakeasy';
-    return `postgresql://speakeasy:speakeasy@localhost:5496/${dbName}?schema=${schema}`;
+
+  // In production and development, serviceEnvVar MUST be provided and set
+  if (!serviceEnvVar || !process.env[serviceEnvVar]) {
+    throw new Error(
+      `Database URL for schema '${schema}' must be explicitly set via ${serviceEnvVar} in ${nodeEnv} environment`,
+    );
   }
-  
-  // In production, we expect explicit environment variables to be set
-  throw new Error(`Database URL for schema '${schema}' must be explicitly set in production environment`);
+
+  const url = new URL(process.env[serviceEnvVar]!);
+  url.searchParams.set('schema', schema);
+  return url.toString();
 }
 
 /**

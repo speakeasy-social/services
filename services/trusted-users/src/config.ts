@@ -1,4 +1,8 @@
-import { validateEnv, baseSchema, getDatabaseUrl } from '@speakeasy-services/service-base/config';
+import {
+  validateEnv,
+  baseSchema,
+  getDatabaseUrl,
+} from '@speakeasy-services/service-base/config';
 import z from 'zod';
 
 /**
@@ -11,19 +15,20 @@ const serviceSchema = {
   PORT: z.string().transform(Number).default('3000'),
   HOST: z.string().default('0.0.0.0'),
   // Service database - isolated schema for this service
-  TRUSTED_USERS_DATABASE_URL: z.string()
+  TRUSTED_USERS_DATABASE_URL: z
+    .string()
     .url()
-    .describe('Database URL with trusted_users schema for Prisma')
-    .optional(), // Optional since it can be derived from environment
+    .describe('Database URL with trusted_users schema for Prisma'),
 } as const;
 
 // Create and validate the config
 const config = validateEnv(z.object(serviceSchema));
 
-// Set TRUSTED_USERS_DATABASE_URL if not provided (only for development/test)
-if (!config.TRUSTED_USERS_DATABASE_URL && process.env.NODE_ENV !== 'production') {
-  (config as any).TRUSTED_USERS_DATABASE_URL = getDatabaseUrl('trusted_users', 'TRUSTED_USERS_DATABASE_URL');
-}
+// Set TRUSTED_USERS_DATABASE_URL using getDatabaseUrl
+(config as any).TRUSTED_USERS_DATABASE_URL = getDatabaseUrl(
+  'trusted_users',
+  'TRUSTED_USERS_DATABASE_URL',
+);
 
 // Export the config with proper typing
 export type Config = typeof config;
