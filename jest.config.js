@@ -9,7 +9,6 @@ module.exports = {
   moduleNameMapper: {
     '^@speakeasy-services/(.*)$': '<rootDir>/packages/$1/src',
   },
-  setupFilesAfterEnv: ['<rootDir>/tests/setup.ts'],
   testTimeout: 30000, // 30 seconds for integration tests
   collectCoverage: true,
   coverageDirectory: 'coverage',
@@ -19,4 +18,11 @@ module.exports = {
     '/dist/',
     '/tests/',
   ],
+  moduleDirectories: ['node_modules', 'packages'],
+  extensionsToTreatAsEsm: ['.ts'],
+  globals: {
+    'ts-jest': {
+      useESM: true,
+    },
+  },
 }; 

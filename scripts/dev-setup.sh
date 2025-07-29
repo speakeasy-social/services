@@ -3,7 +3,9 @@
 # Exit on error
 set -e
 
-echo "Setting up development environment..."
+# Determine environment (default to development if not specified)
+ENV=${NODE_ENV:-development}
+echo "Setting up $ENV environment..."
 
 # Setup environment files
 echo "Setting up environment files..."
@@ -15,27 +17,28 @@ pnpm dev:setup:infra
 
 # Setup database
 echo "Setting up database..."
-pnpm dev:setup:db
+NODE_ENV=$ENV pnpm dev:setup:db
 
 # Run migrations
 echo "Running migrations..."
-pnpm dev:setup:migrations
+NODE_ENV=$ENV pnpm dev:setup:migrations
 
 # Initialize S3
 echo "Initializing S3..."
 pnpm dev:setup:s3
 
-# Add dev invite code
-echo "Adding dev invite code..."
-pnpm invite:add dev private-posts true 20
-
-echo
-echo "👉 Use the invite code \"dev\" to activate private posts" 
-echo
+# Add dev invite code (only for development)
+if [ "$ENV" != "test" ]; then
+    echo "Adding dev invite code..."
+    pnpm invite:add dev private-posts true 20
+    echo
+    echo "👉 Use the invite code \"dev\" to activate private posts" 
+    echo
+fi
 
 # Setup pgboss
 echo "Setting up pgboss..."
-(cd packages/queue && pnpm setup:pgboss)
+(cd packages/queue && NODE_ENV=$ENV pnpm setup:pgboss)
 
-echo "Development setup complete!" 
+echo "$ENV setup complete!" 
 

@@ -9,7 +9,9 @@
     "dev:setup:migrations": "./scripts/run-migrations.sh",
     "dev:setup:s3": "./scripts/init-s3.sh",
     "dev:setup": "./scripts/dev-setup.sh",
-
+    "test:setup": "NODE_ENV=test ./scripts/dev-setup.sh",
+    "test:setup:db": "NODE_ENV=test ./scripts/create-schemas.sh",
+    "test:setup:migrations": "NODE_ENV=test ./scripts/run-migrations.sh",
     "dev:prisma": "turbo run dev:prisma",
     "build": "turbo run build",
     "clean": "turbo run clean",
