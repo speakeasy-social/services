@@ -1,0 +1,94 @@
+name: Test User Keys Service
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'services/user-keys/**'
+      - 'packages/**'
+      - '.github/workflows/test.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'services/user-keys/**'
+      - 'packages/**'
+      - '.github/workflows/test.yml'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: postgres
+          POSTGRES_DB: user_keys_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - uses: actions/cache@v3
+        name: Setup pnpm cache
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - uses: actions/cache@v3
+        name: Setup node_modules cache
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-node-modules-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-node-modules-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build packages
+        run: |
+          cd packages/common && pnpm build
+          cd ../queue && pnpm build
+          cd ../service-base && pnpm build
+          cd ../test-utils && pnpm build
+
+      - name: Generate Prisma client
+        run: cd services/user-keys && pnpm prisma:generate
+        env:
+          USER_KEYS_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/user_keys_test
+
+      - name: Run database migrations
+        run: cd services/user-keys && pnpm prisma:migrate
+        env:
+          USER_KEYS_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/user_keys_test
+
+      - name: Run tests
+        run: cd services/user-keys && pnpm test
+        env:
+          USER_KEYS_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/user_keys_test
+          NODE_ENV: test
