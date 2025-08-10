@@ -45,8 +45,7 @@
 
 import request from "supertest";
 import { Server } from "@speakeasy-services/service-base";
-import { after } from "node:test";
-import { before } from "node:test";
+import { beforeEach, afterEach } from "vitest";
 
 /**
  * Interface defining the structure of an API test case.
@@ -129,7 +128,7 @@ export const createApiTestRunner = (options: ApiTestRunnerOptions) => {
       let response: any;
       let requestBuilder: request.Test;
 
-      before(async () => {
+      beforeEach(async () => {
         // Run before hook if provided
         if (test.before) {
           await test.before();
@@ -179,7 +178,7 @@ export const createApiTestRunner = (options: ApiTestRunnerOptions) => {
 
       if (test.after) {
         const afterFn = test.after;
-        after(async () => {
+        afterEach(async () => {
           await afterFn();
         });
       }

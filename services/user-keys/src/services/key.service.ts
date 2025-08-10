@@ -197,7 +197,7 @@ export class KeyService {
         // Lock the row for update
         const keys = await tx.$queryRaw<
           UserKey[]
-        >`SELECT * FROM user_key WHERE author_did = ${authorDid} AND deleted_at IS NULL FOR UPDATE`;
+        >`SELECT * FROM user_keys WHERE "authorDid" = ${authorDid} AND "deletedAt" IS NULL FOR UPDATE`;
 
         const key = keys[0];
 
