@@ -16,9 +16,8 @@
     "dev:worker": "tsx watch src/worker.ts",
     "clean": "rm -rf dist",
     "lint": "eslint src",
-    "test": "jest",
-    "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "prisma:migrate": "prisma migrate deploy",
     "prisma:generate": "prisma generate"
   },
@@ -37,19 +36,19 @@
   "devDependencies": {
     "@mermaid-js/mermaid-cli": "^11.4.2",
     "@speakeasy-services/test-utils": "workspace:^",
-    "@types/jest": "^29.5.12",
     "@types/node": "^22.13.11",
+    "@types/supertest": "^6.0.2",
     "@typescript-eslint/eslint-plugin": "^7.0.1",
     "@typescript-eslint/parser": "^7.0.1",
+    "@vitest/ui": "^3.2.4",
     "eslint": "^8.56.0",
-    "jest": "^29.7.0",
-    "jest-environment-node": "^29.7.0",
-    "jest-mock-extended": "^3.0.5",
     "prisma": "^6.5.0",
     "prisma-erd-generator": "^2.0.4",
     "supertest": "^6.3.4",
-    "ts-jest": "^29.1.2",
     "tsx": "^4.19.3",
-    "typescript": "^5.8.3"
+    "typescript": "^5.8.3",
+    "vite": "^7.0.5",
+    "vite-tsconfig-paths": "^5.1.4",
+    "vitest": "^3.2.4"
   }
 }

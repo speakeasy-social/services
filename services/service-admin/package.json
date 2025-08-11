@@ -17,7 +17,8 @@
     "dev:setup": "tsx src/cli/addInvite.ts dev private-posts true 3",
     "clean": "rm -rf dist",
     "lint": "eslint src",
-    "test": "jest",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "prisma:migrate": "prisma migrate deploy",
     "prisma:generate": "prisma generate",
     "cli:addInvite": "node dist/cli/addInvite.js"
@@ -37,13 +38,20 @@
     "zod": "^3.24.2"
   },
   "devDependencies": {
+    "@speakeasy-services/test-utils": "workspace:^",
     "@types/node": "^22.13.11",
+    "@types/supertest": "^6.0.2",
     "@typescript-eslint/eslint-plugin": "^7.0.1",
     "@typescript-eslint/parser": "^7.0.1",
+    "@vitest/ui": "^3.2.4",
     "eslint": "^8.56.0",
     "prisma": "^6.5.0",
     "prisma-erd-generator": "^2.0.4",
+    "supertest": "^6.3.4",
     "tsx": "^4.19.3",
-    "typescript": "^5.8.3"
+    "typescript": "^5.8.3",
+    "vite": "^7.0.5",
+    "vite-tsconfig-paths": "^5.1.4",
+    "vitest": "^3.2.4"
   }
-} 
+}

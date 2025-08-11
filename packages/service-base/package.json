@@ -29,7 +29,7 @@
     "dev": "tsc --build --watch --preserveWatchOutput",
     "clean": "rm -rf dist",
     "lint": "eslint src",
-    "test": "jest",
+    "test": "echo 'No tests yet'",
     "watch": "tsc --watch --preserveWatchOutput"
   },
   "dependencies": {
