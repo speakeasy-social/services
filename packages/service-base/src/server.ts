@@ -206,10 +206,18 @@ export class Server {
       if (this.options.onShutdown) {
         await this.options.onShutdown();
       }
-      process.exit(0);
+      // Only exit if we're not in a test environment
+      if (process.env.NODE_ENV !== 'test' && !process.env.VITEST) {
+        process.exit(0);
+      }
     } catch (err) {
       this.logger.error({ error: err }, 'Error during shutdown');
-      process.exit(1);
+      // Only exit if we're not in a test environment
+      if (process.env.NODE_ENV !== 'test' && !process.env.VITEST) {
+        process.exit(1);
+      }
+      // In test environments, just re-throw the error so tests can handle it properly
+      throw err;
     }
   }
 }
