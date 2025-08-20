@@ -9,6 +9,7 @@ You will need Docker installed
 ```
 # First time
 pnpm install
+pnpm build
 pnpm dev:setup
 
 # Launch dev environment
