@@ -5,10 +5,10 @@ import {
   validateAgainstLexicon,
   authorize,
   User,
+  ValidationError,
 } from '@speakeasy-services/common';
 import { uploadMediaDef, deleteMediaDef } from '../lexicon/types/media.js';
 import { MediaService } from '../services/media.service.js';
-import { ValidationError } from '@atproto/lexicon';
 import config from '../config.js';
 
 const mediaService = new MediaService();

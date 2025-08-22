@@ -111,7 +111,6 @@ describe('Media API Tests', () => {
     it('should reject upload without session ID header', async () => {
       const imageData = Buffer.from('fake-image-data');
       
-      // Based on test output, this returns 500 likely due to unhandled error in validation
       const response = await request(server.express)
         .post('/xrpc/social.spkeasy.media.upload')
         .set('Authorization', `Bearer ${validToken}`)
@@ -119,8 +118,9 @@ describe('Media API Tests', () => {
         .set('Content-Length', imageData.length.toString())
         .send(imageData);
         
-      // Accept either 400 or 500 for now - validation should return 400 but might be 500 due to error handling
-      expect([400, 500]).toContain(response.status);
+      // Missing session ID header should return 400 (bad request)
+      // TODO: Implementation currently returns 500, needs to be fixed to return 400
+      expect(response.status).toBe(400);
     });
 
     it('should reject non-image file types', async () => {
@@ -134,7 +134,9 @@ describe('Media API Tests', () => {
         .set('X-Speakeasy-Session-Id', sessionId)
         .send(textData);
         
-      expect([400, 500]).toContain(response.status);
+      // Invalid content type should return 400 (bad request)
+      // TODO: Implementation currently returns 500, needs to be fixed to return 400
+      expect(response.status).toBe(400);
     });
 
     it('should reject files exceeding size limit', async () => {
@@ -149,7 +151,9 @@ describe('Media API Tests', () => {
         .set('X-Speakeasy-Session-Id', sessionId)
         .send(largeData);
         
-      expect([400, 500]).toContain(response.status);
+      // File size exceeding limit should return 400 (bad request)
+      // TODO: Implementation currently returns 500, needs to be fixed to return 400
+      expect(response.status).toBe(400);
     });
 
     it('should accept different image formats', async () => {
@@ -181,34 +185,47 @@ describe('Media API Tests', () => {
     });
 
     it('should enforce daily upload quota', async () => {
-      // Create files that will exceed the daily quota when combined
-      const singleFileSize = 15 * 1024 * 1024; // 15MB
-      const imageData = Buffer.alloc(singleFileSize);
+      // Use a unique user for quota testing to avoid interference from other tests
+      const quotaTestUserDid = 'did:example:quota-test-user';
+      const quotaTestToken = generateTestToken(quotaTestUserDid);
       
-      // First upload should succeed
-      const firstResponse = await request(server.express)
+      // Mock Bluesky session for quota test user
+      mockBlueskySession({ did: quotaTestUserDid, host: 'http://localhost:2583' });
+      
+      // Create files that will exceed the 20MB daily quota (quota is 20MB, individual file limit is 2MB)
+      const fileSize = 1.5 * 1024 * 1024; // 1.5MB per file
+      const imageData = Buffer.alloc(fileSize);
+      
+      // Upload files to reach quota (need ~14 files at 1.5MB each to exceed 20MB)
+      const uploads = [];
+      for (let i = 0; i < 14; i++) {
+        const response = await request(server.express)
+          .post('/xrpc/social.spkeasy.media.upload')
+          .set('Authorization', `Bearer ${quotaTestToken}`)
+          .set('Content-Type', 'image/jpeg')
+          .set('Content-Length', imageData.length.toString())
+          .set('X-Speakeasy-Session-Id', `${sessionId}-quota-${i}`)
+          .send(imageData);
+        
+        uploads.push(response.status);
+        
+        // Stop if we hit the quota limit
+        if (response.status === 400 && response.body.message?.includes('Daily upload limit')) {
+          break;
+        }
+      }
+      
+      // The final upload should have been rejected due to quota
+      const finalResponse = await request(server.express)
         .post('/xrpc/social.spkeasy.media.upload')
-        .set('Authorization', `Bearer ${validToken}`)
+        .set('Authorization', `Bearer ${quotaTestToken}`)
         .set('Content-Type', 'image/jpeg')
         .set('Content-Length', imageData.length.toString())
-        .set('X-Speakeasy-Session-Id', `${sessionId}-1`)
+        .set('X-Speakeasy-Session-Id', `${sessionId}-quota-final`)
         .send(imageData);
-        
-      expect([200, 500]).toContain(firstResponse.status);
       
-      // If the first upload failed, skip the second test as it depends on the first
-      if (firstResponse.status !== 200) return;
-
-      // Second upload should fail (total would be 30MB > 20MB quota)
-      const secondResponse = await request(server.express)
-        .post('/xrpc/social.spkeasy.media.upload')
-        .set('Authorization', `Bearer ${validToken}`)
-        .set('Content-Type', 'image/jpeg')
-        .set('Content-Length', imageData.length.toString())
-        .set('X-Speakeasy-Session-Id', `${sessionId}-2`)
-        .send(imageData);
-        
-      expect([400, 500]).toContain(secondResponse.status);
+      expect(finalResponse.status).toBe(400);
+      expect(finalResponse.body.message).toContain('Daily upload limit');
     });
 
     it('should require authentication', async () => {
