@@ -237,8 +237,8 @@ describe('User Keys API Tests', () => {
         orderBy: { createdAt: 'desc' },
       });
       expect(newKey).toBeTruthy();
-      expect(newKey?.publicKey).toEqual(new Uint8Array(Buffer.from('new-public-key')));
-      expect(newKey?.privateKey).toEqual(new Uint8Array(Buffer.from('new-private-key')));
+      expect(newKey?.publicKey).toEqual(Uint8Array.from(Buffer.from('bmV3LXB1YmxpYy1rZXk=', 'base64')));
+      expect(newKey?.privateKey).toEqual(Uint8Array.from(Buffer.from('bmV3LXByaXZhdGUta2V5', 'base64')));
     });
   });
 });
