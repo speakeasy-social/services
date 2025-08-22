@@ -119,7 +119,6 @@ describe('Media API Tests', () => {
         .send(imageData);
         
       // Missing session ID header should return 400 (bad request)
-      // TODO: Implementation currently returns 500, needs to be fixed to return 400
       expect(response.status).toBe(400);
     });
 
@@ -135,7 +134,6 @@ describe('Media API Tests', () => {
         .send(textData);
         
       // Invalid content type should return 400 (bad request)
-      // TODO: Implementation currently returns 500, needs to be fixed to return 400
       expect(response.status).toBe(400);
     });
 
@@ -152,7 +150,6 @@ describe('Media API Tests', () => {
         .send(largeData);
         
       // File size exceeding limit should return 400 (bad request)
-      // TODO: Implementation currently returns 500, needs to be fixed to return 400
       expect(response.status).toBe(400);
     });
 
