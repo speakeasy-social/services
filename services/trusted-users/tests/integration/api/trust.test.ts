@@ -37,7 +37,7 @@ describe('Trusted Users API Tests', () => {
     // Clear test data before each test
     await prisma.trustedUser.deleteMany();
     // Setup mock for Bluesky session validation
-    mockBlueskySession({ did: authorDid });
+    mockBlueskySession({ did: authorDid, host: 'http://localhost:2583' });
   });
 
   afterEach(() => {
@@ -74,7 +74,7 @@ describe('Trusted Users API Tests', () => {
     {
       note: 'empty list',
       endpoint: 'social.spkeasy.graph.getTrusted',
-      query: { did: authorDid },
+      query: { authorDid: authorDid },
       bearer: validToken,
       expectedBody: {
         trusted: [],
@@ -83,7 +83,7 @@ describe('Trusted Users API Tests', () => {
     {
       note: 'with trusted users',
       endpoint: 'social.spkeasy.graph.getTrusted',
-      query: { did: authorDid },
+      query: { authorDid: authorDid },
       bearer: validToken,
       before: async () => {
         await prisma.trustedUser.create({
