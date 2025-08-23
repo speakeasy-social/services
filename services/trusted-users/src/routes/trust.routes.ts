@@ -37,10 +37,13 @@ const methodHandlers = {
 
     const { authorDid, recipientDid } = req.query;
 
+    // Check if the user can list trusted users for this authorDid
+    authorize(req, 'list', 'trusted_user', { authorDid });
+
     // Get the data from the service
     const trustedUsers = await trustService.getTrusted(
       authorDid as string,
-      recipientDid as string,
+      recipientDid as string | undefined,
     );
     authorize(req, 'list', 'trusted_user', trustedUsers);
 

@@ -21,14 +21,19 @@ export class TrustService {
    */
   async getTrusted(
     authorDid: string,
-    recipientDid: string,
+    recipientDid?: string,
   ): Promise<TrustedUser[]> {
+    const whereClause: any = {
+      authorDid,
+      deletedAt: null,
+    };
+    
+    if (recipientDid) {
+      whereClause.recipientDid = recipientDid;
+    }
+    
     return prisma.trustedUser.findMany({
-      where: {
-        authorDid,
-        recipientDid,
-        deletedAt: null,
-      },
+      where: whereClause,
     });
   }
 
