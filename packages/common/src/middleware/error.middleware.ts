@@ -69,6 +69,7 @@ export const errorHandler: ErrorRequestHandler = async (
     [
       'ValidationError',
       'NotFoundError',
+      'AuthenticationError',
       'PrismaClientKnownRequestError',
       'ServiceError',
     ].includes(error.name) ||
@@ -91,6 +92,8 @@ export const errorHandler: ErrorRequestHandler = async (
     if (error.name === 'NotFoundError') {
       statusCode = 404;
       responseObject.code = 'NotFound';
+    } else if (error.name === 'AuthenticationError') {
+      statusCode = 401;
     }
   }
 

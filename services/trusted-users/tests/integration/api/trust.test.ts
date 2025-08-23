@@ -57,7 +57,10 @@ describe('Trusted Users API Tests', () => {
         note: `${test.note} - without token`,
         bearer: undefined,
         expectedStatus: 401,
-        expectedBody: { error: 'Unauthorized' },
+        expectedBody: { 
+          error: 'AuthenticationError', 
+          message: 'Missing authorization header' 
+        },
       },
       // Test with wrong user token
       {
