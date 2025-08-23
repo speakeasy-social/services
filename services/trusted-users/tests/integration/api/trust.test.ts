@@ -10,14 +10,17 @@ import {
   verifyBlueskySessionMocks,
 } from '@speakeasy-services/test-utils';
 import { generateTestToken } from '@speakeasy-services/test-utils';
+import nock from 'nock';
 
 const authorDid = 'did:example:alex-author';
+const wrongUserDid = 'did:example:wrong-user';
 const validRecipient = 'did:example:valid-valery';
 const invalidRecipient = 'did:example:deleted-dave';
 
 describe('Trusted Users API Tests', () => {
   let prisma: PrismaClient;
   const validToken = generateTestToken(authorDid);
+  const wrongUserToken = generateTestToken(wrongUserDid);
 
   beforeAll(async () => {
     // Initialize Prisma client
@@ -36,8 +39,40 @@ describe('Trusted Users API Tests', () => {
   beforeEach(async () => {
     // Clear test data before each test
     await prisma.trustedUser.deleteMany();
-    // Setup mock for Bluesky session validation
-    mockBlueskySession({ did: authorDid, host: 'http://localhost:2583' });
+    
+    // Setup mock for Bluesky session validation that can handle multiple users
+    // Use nock to intercept the session validation and return different users based on token
+    nock.cleanAll();
+    
+    nock('http://localhost:2583')
+      .persist()
+      .get('/xrpc/com.atproto.server.getSession')
+      .reply(function(uri: string) {
+        // Extract the Authorization header from the request
+        const authHeader = this.req.headers.authorization;
+        const token = authHeader?.replace('Bearer ', '');
+        
+        // Return different users based on the token
+        if (token === validToken) {
+          return [200, {
+            did: authorDid,
+            handle: 'alex.bsky.social',
+            email: 'alex@example.com',
+            accessJwt: 'mock-access-token',
+            refreshJwt: 'mock-refresh-token',
+          }];
+        } else if (token === wrongUserToken) {
+          return [200, {
+            did: wrongUserDid,
+            handle: 'wrong.bsky.social', 
+            email: 'wrong@example.com',
+            accessJwt: 'mock-access-token',
+            refreshJwt: 'mock-refresh-token',
+          }];
+        } else {
+          return [401, { error: 'Invalid token' }];
+        }
+      });
   });
 
   afterEach(() => {
@@ -66,7 +101,7 @@ describe('Trusted Users API Tests', () => {
       {
         ...test,
         note: `${test.note} - with wrong user token`,
-        bearer: 'wrong-user-token',
+        bearer: wrongUserToken,
         expectedStatus: 403,
         expectedBody: { error: 'Forbidden' },
       },
