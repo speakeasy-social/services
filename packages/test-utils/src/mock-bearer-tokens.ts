@@ -66,6 +66,82 @@ export function mockBlueskySession({
 }
 
 /**
+ * Mocks the Bluesky session validation API call for multiple users with different tokens.
+ * This allows tests to authenticate different users based on their JWT tokens.
+ *
+ * @param options Configuration options for the mock
+ * @param options.users Map of token to user data
+ * @param options.host The host to mock (defaults to http://localhost:2583)
+ */
+export function mockMultiUserBlueskySession({
+  users,
+  host = "http://localhost:2583",
+}: {
+  users: Map<string, { did: string; handle: string; email?: string }>;
+  host?: string;
+}) {
+  // Clean up any existing mocks
+  nock.cleanAll();
+
+  nock(host)
+    .persist()
+    .get('/xrpc/com.atproto.server.getSession')
+    .reply(function(uri: string) {
+      // Extract the Authorization header from the request
+      const authHeader = this.req.headers.authorization;
+      const token = authHeader?.replace('Bearer ', '');
+      
+      // Look up the user data for this token
+      const userData = users.get(token || '');
+      
+      if (userData) {
+        return [200, {
+          did: userData.did,
+          handle: userData.handle,
+          email: userData.email || `${userData.handle.split('.')[0]}@example.com`,
+          accessJwt: 'mock-access-token',
+          refreshJwt: 'mock-refresh-token',
+        }];
+      } else {
+        // Return 401 for unknown tokens
+        return [401, { error: 'Invalid token' }];
+      }
+    });
+}
+
+/**
+ * Convenience helper for the common two-user scenario (valid user + wrong user).
+ * 
+ * @param options Configuration options for the mock
+ * @param options.validToken The token for the valid user
+ * @param options.validUser User data for the valid user
+ * @param options.wrongUserToken The token for the unauthorized user  
+ * @param options.wrongUser User data for the unauthorized user
+ * @param options.host The host to mock (defaults to http://localhost:2583)
+ */
+export function mockTwoUserBlueskySession({
+  validToken,
+  validUser,
+  wrongUserToken,
+  wrongUser,
+  host = "http://localhost:2583",
+}: {
+  validToken: string;
+  validUser: { did: string; handle: string; email?: string };
+  wrongUserToken: string;
+  wrongUser: { did: string; handle: string; email?: string };
+  host?: string;
+}) {
+  mockMultiUserBlueskySession({
+    users: new Map([
+      [validToken, validUser],
+      [wrongUserToken, wrongUser],
+    ]),
+    host,
+  });
+}
+
+/**
  * Cleans up all nock mocks and clears the token cache.
  * This should be called in the afterAll/afterEach of your tests.
  */
