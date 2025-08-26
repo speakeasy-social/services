@@ -11,6 +11,7 @@ import {
 import {
   getFeaturesDef,
   applyInviteCodeDef,
+  createCheckoutSessionDef,
 } from '../lexicon/types/features.js';
 import { toFeaturesListView } from '../views/feature.views.js';
 
@@ -51,6 +52,24 @@ const methodHandlers = {
       body: { status: 'success' },
     };
   },
+  'social.spkeasy.actor.createCheckoutSession': async (
+    req: ExtendedRequest,
+  ): RequestHandlerReturn => {
+
+    // Validate input against lexicon
+    validateAgainstLexicon(createCheckoutSessionDef, req.body);
+
+    authorize(req, 'create', 'payment');
+
+    const clientSecret = await featureService.createCheckoutSession();
+
+    return {
+      body: {
+        status: 'success',
+        clientSecret,
+      },
+    };
+  },
 } as const;
 
 // Define methods using XRPC lexicon
@@ -60,6 +79,9 @@ export const methods: Record<MethodName, { handler: RequestHandler }> = {
   },
   'social.spkeasy.actor.applyInviteCode': {
     handler: methodHandlers['social.spkeasy.actor.applyInviteCode'],
+  },
+  'social.spkeasy.actor.createCheckoutSession': {
+    handler: methodHandlers['social.spkeasy.actor.createCheckoutSession'],
   },
 };
 
