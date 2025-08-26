@@ -36,8 +36,8 @@ export class FeatureService {
     await prisma.$transaction(async (tx) => {
       // Use raw query to get the invite code with FOR UPDATE lock
       const inviteCodes = await tx.$queryRaw<InviteCode[]>`
-        SELECT * FROM invite_codes 
-        WHERE code = ${code} 
+        SELECT * FROM invite_codes
+        WHERE code = ${code}
         FOR UPDATE
       `;
 
@@ -86,5 +86,27 @@ export class FeatureService {
         data: { remainingUses: { decrement: 1 } },
       });
     });
+  }
+
+  async createCheckoutSession(): Promise<string> {
+    const stripe = require('stripe')('SANDBOX_API_KEY');
+
+    const session = await stripe.checkout.sessions.create({
+        line_items: [{
+          price_data: {
+            currency: 'nzd',
+            product_data: {
+              name: 'Something',
+            },
+            unit_amount: 1,
+          },
+          quantity: 1,
+        }],
+        mode: 'payment',
+        ui_mode: 'embedded',
+        return_url: '/thankyou'
+      });
+
+    return session.clientSecret;
   }
 }

@@ -360,6 +360,8 @@ importers:
         specifier: ^3.2.4
         version: 3.2.4(@types/node@22.18.1)(@vitest/ui@3.2.4)(jiti@2.5.1)(tsx@4.20.5)(yaml@2.8.1)
 
+  services/private-profiles: {}
+
   services/private-sessions:
     dependencies:
       '@atproto/lexicon':
@@ -492,6 +494,9 @@ importers:
       pino-pretty:
         specifier: ^13.0.0
         version: 13.1.1
+      stripe:
+        specifier: ^18.4.0
+        version: 18.5.0(@types/node@22.18.1)
       zod:
         specifier: ^3.24.2
         version: 3.25.76
@@ -3338,7 +3343,7 @@ packages:
   puppeteer@23.11.1:
     resolution: {integrity: sha512-53uIX3KR5en8l7Vd8n5DUv90Ae9QDQsyIthaUFVzwV6yU750RjqRznEtNMBT20VthqAdemnJN+hxVdmMHKt7Zw==}
     engines: {node: '>=18'}
-    deprecated: < 24.10.2 is no longer supported
+    deprecated: < 24.15.0 is no longer supported
     hasBin: true
 
   pure-rand@6.1.0:
@@ -3608,6 +3613,15 @@ packages:
 
   strip-literal@3.0.0:
     resolution: {integrity: sha512-TcccoMhJOM3OebGhSBEmp3UZ2SfDMZUEBdRA/9ynfLi8yYajyWX3JiXArcJt4Umh4vISpspkQIY8ZZoCqjbviA==}
+
+  stripe@18.5.0:
+    resolution: {integrity: sha512-Hp+wFiEQtCB0LlNgcFh5uVyKznpDjzyUZ+CNVEf+I3fhlYvh7rZruIg+jOwzJRCpy0ZTPMjlzm7J2/M2N6d+DA==}
+    engines: {node: '>=12.*'}
+    peerDependencies:
+      '@types/node': '>=12.x.x'
+    peerDependenciesMeta:
+      '@types/node':
+        optional: true
 
   stylis@4.3.6:
     resolution: {integrity: sha512-yQ3rwFWRfwNUY7H5vpU0wfdkNSnvnJinhF9830Swlaxl03zsOjCfmX0ugac+3LtK0lYSgwL/KXc8oYL3mG4YFQ==}
@@ -7123,6 +7137,12 @@ snapshots:
   strip-literal@3.0.0:
     dependencies:
       js-tokens: 9.0.1
+
+  stripe@18.5.0(@types/node@22.18.1):
+    dependencies:
+      qs: 6.14.0
+    optionalDependencies:
+      '@types/node': 22.18.1
 
   stylis@4.3.6: {}
 

@@ -83,3 +83,38 @@ export const applyInviteCodeDef: LexiconDoc = {
     },
   },
 };
+
+export const createCheckoutSessionDef: LexiconDoc = {
+  lexicon: 1,
+  id: 'social.spkeasy.actor.createCheckoutSession',
+  defs: {
+    main: {
+      type: 'procedure',
+      description: 'Process a payment through Stripe',
+      input: {
+        encoding: 'application/json',
+        schema: {
+          type: 'object',
+          required: [],
+          properties: {
+            customerId: {
+              type: 'string',
+              description: 'The Stripe ID of the customer',
+            },
+          },
+        },
+      },
+      output: {
+        encoding: 'application/json',
+        schema: {
+          type: 'object',
+          required: ['status', 'clientSecret'],
+          properties: {
+            status: { type: 'string' },
+            clientSecret: { type: 'string' },
+          },
+        },
+      },
+    },
+  },
+};

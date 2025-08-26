@@ -29,7 +29,6 @@ coverage/
 .vscode/*
 !.vscode/extensions.json
 !.vscode/launch.json
-!.vscode/settings.json
 
 # OS
 .DS_Store

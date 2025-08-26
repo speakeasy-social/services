@@ -1,3 +1,3 @@
-import { getFeaturesDef, applyInviteCodeDef } from './types/features.js';
+import { getFeaturesDef, applyInviteCodeDef, createCheckoutSessionDef } from './types/features.js';
 
-export const lexicons = [getFeaturesDef, applyInviteCodeDef];
+export const lexicons = [getFeaturesDef, applyInviteCodeDef, createCheckoutSessionDef];

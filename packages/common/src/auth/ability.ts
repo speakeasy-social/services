@@ -27,6 +27,7 @@ export type Subject =
   | 'notification'
   | 'reaction'
   | 'invite_code'
+  | 'payment'
   | 'media'
   | 'key';
 
