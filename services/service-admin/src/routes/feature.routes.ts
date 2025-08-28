@@ -54,11 +54,12 @@ const methodHandlers = {
   'social.spkeasy.actor.createCheckoutSession': async (
     req: ExtendedRequest,
   ): RequestHandlerReturn => {
+    const { unit_amount_decimal: unitAmountDecimal } = req.body;
 
     // Validate input against lexicon
     validateAgainstLexicon(createCheckoutSessionDef, req.body);
 
-    const clientSecret = await featureService.createCheckoutSession();
+    const clientSecret = await featureService.createCheckoutSession(unitAmountDecimal as string);
 
     return {
       body: {

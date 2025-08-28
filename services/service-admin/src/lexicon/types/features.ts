@@ -95,11 +95,11 @@ export const createCheckoutSessionDef: LexiconDoc = {
         encoding: 'application/json',
         schema: {
           type: 'object',
-          required: [],
+          required: ['unit_amount_decimal'],
           properties: {
-            customerId: {
-              type: 'string',
-              description: 'The Stripe ID of the customer',
+            unit_amount_decimal: {
+              type: 'blob',
+              description: 'A decimal value in cents with at most 12 decimal places',
             },
           },
         },
