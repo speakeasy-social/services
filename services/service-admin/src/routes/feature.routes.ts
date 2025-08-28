@@ -58,8 +58,6 @@ const methodHandlers = {
     // Validate input against lexicon
     validateAgainstLexicon(createCheckoutSessionDef, req.body);
 
-    authorize(req, 'create', 'payment');
-
     const clientSecret = await featureService.createCheckoutSession();
 
     return {
