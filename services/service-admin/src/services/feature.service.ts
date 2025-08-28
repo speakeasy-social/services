@@ -5,6 +5,8 @@ import {
 } from '../generated/prisma-client/index.js';
 import { NotFoundError, ValidationError } from '@speakeasy-services/common';
 import { getPrismaClient } from '../db.js';
+import Stripe from 'stripe';
+import config from '../config.js';
 
 const prisma = getPrismaClient();
 
@@ -88,25 +90,23 @@ export class FeatureService {
     });
   }
 
-  async createCheckoutSession(): Promise<string> {
-    const stripe = require('stripe')('SANDBOX_API_KEY');
-
+  async createCheckoutSession(): Promise<string | Error> {
+    const stripe = new Stripe(config.STRIPE_SECRET_KEY);
     const session = await stripe.checkout.sessions.create({
-        line_items: [{
-          price_data: {
-            currency: 'nzd',
-            product_data: {
-              name: 'Something',
-            },
-            unit_amount: 1,
+      line_items: [{
+        price_data: {
+          currency: 'nzd',
+          product_data: {
+            name: 'One-time Donation',
           },
-          quantity: 1,
-        }],
-        mode: 'payment',
-        ui_mode: 'embedded',
-        return_url: '/thankyou'
-      });
-
-    return session.clientSecret;
+          unit_amount: 1500,
+        },
+        quantity: 1,
+      }],
+      mode: 'payment',
+      ui_mode: 'embedded',
+      return_url: `${config.SPKEASY_HOST}/donate/thanks`,
+    });
+    return session.client_secret ?? new Error("Stripe API call failed");
   }
 }
