@@ -8,39 +8,40 @@ Each line represents a required XRPC endpoint with its purpose:
 
 ```
 # Trust Management (Graph)
-social.spkeasy.graph.getTrusted           - List users trusted by the given author DID
-social.spkeasy.graph.addTrusted           - Add a new trusted user
-social.spkeasy.graph.removeTrusted        - Remove a trusted user
+social.spkeasy.graph.getTrusted               - List users trusted by the given author DID
+social.spkeasy.graph.addTrusted               - Add a new trusted user
+social.spkeasy.graph.removeTrusted            - Remove a trusted user
 
 # Session Management
-social.spkeasy.privateSession.revoke      - Revoke an active session
-social.spkeasy.privateSession.addUser     - Add new trusted user to the current session
-social.spkeasy.privateSession.getSession  - Get the currecnt active session
+social.spkeasy.privateSession.revoke          - Revoke an active session
+social.spkeasy.privateSession.addUser         - Add new trusted user to the current session
+social.spkeasy.privateSession.getSession      - Get the currecnt active session
 
 # Post Management
-social.spkeasy.privatePosts.getPosts      - List private posts accessible to a recipient
-social.spkeasy.privatePosts.createPost    - Create a new private post
-social.spkeasy.privatePosts.deletePost    - Delete a private post
+social.spkeasy.privatePosts.getPosts          - List private posts accessible to a recipient
+social.spkeasy.privatePosts.createPost        - Create a new private post
+social.spkeasy.privatePosts.deletePost        - Delete a private post
 
-social.spkeasy.reaction.createReaction    - Create like
-social.spkeasy.reaction.deleteReaction    - Delete like
+social.spkeasy.reaction.createReaction        - Create like
+social.spkeasy.reaction.deleteReaction        - Delete like
 
-social.spkeasy.notification.getUnreadCount  - Get count of unread notifications
+social.spkeasy.notification.getUnreadCount    - Get count of unread notifications
 social.spkeasy.notification.listNotification  - List notifications
-social.spkeasy.notification.updateSeen    - Update last seen time for notifications
+social.spkeasy.notification.updateSeen        - Update last seen time for notifications
 
 # User management
-social.spkeasy.actor.getProfile           - Returns encrypted private profile
-social.spkeasy.actor.putProfile           - Update encrypted private profile
+social.spkeasy.actor.getProfile               - Returns encrypted private profile
+social.spkeasy.actor.putProfile               - Update encrypted private profile
 
 # Feature Management
-social.spkeasy.actor.getFeatures          - Get features enabled for an actor
-social.spkeasy.actor.applyInviteCode      - Apply a code to enable a feature
+social.spkeasy.actor.getFeatures              - Get features enabled for an actor
+social.spkeasy.actor.applyInviteCode          - Apply a code to enable a feature
+social.spkeasy.actor.createCheckoutSession    - Create a checkout session with the Stripe API
 
-# Key Management - Swiss service
-social.spkeasy.keys.getPublicKey          - Get user's public key for encryption
-social.spkeasy.keys.getPrivateKey         - Get user's private key (owner only)
-social.spkeasy.keys.rotate                - Request key rotation
+# Key Management                              - Swiss service
+social.spkeasy.keys.getPublicKey              - Get user's public key for encryption
+social.spkeasy.keys.getPrivateKey             - Get user's private key (owner only)
+social.spkeasy.keys.rotate                    - Request key rotation
 ```
 
 ## Trust Management
