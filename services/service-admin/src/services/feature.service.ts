@@ -5,6 +5,8 @@ import {
 } from '../generated/prisma-client/index.js';
 import { NotFoundError, ValidationError } from '@speakeasy-services/common';
 import { getPrismaClient } from '../db.js';
+import Stripe from 'stripe';
+import config from '../config.js';
 
 const prisma = getPrismaClient();
 
@@ -36,8 +38,8 @@ export class FeatureService {
     await prisma.$transaction(async (tx) => {
       // Use raw query to get the invite code with FOR UPDATE lock
       const inviteCodes = await tx.$queryRaw<InviteCode[]>`
-        SELECT * FROM invite_codes 
-        WHERE code = ${code} 
+        SELECT * FROM invite_codes
+        WHERE code = ${code}
         FOR UPDATE
       `;
 
@@ -86,5 +88,25 @@ export class FeatureService {
         data: { remainingUses: { decrement: 1 } },
       });
     });
+  }
+
+  async createCheckoutSession(unitAmountDecimal: string): Promise<string | Error> {
+    const stripe = new Stripe(config.STRIPE_SECRET_KEY);
+    const session = await stripe.checkout.sessions.create({
+      line_items: [{
+        price_data: {
+          currency: 'nzd',
+          product_data: {
+            name: 'One-time Donation',
+          },
+          unit_amount_decimal: unitAmountDecimal,
+        },
+        quantity: 1,
+      }],
+      mode: 'payment',
+      ui_mode: 'embedded',
+      return_url: `${config.SPKEASY_HOST}/donate/thanks`,
+    });
+    return session.client_secret ?? new Error("Stripe API call failed");
   }
 }

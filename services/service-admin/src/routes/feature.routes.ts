@@ -10,6 +10,7 @@ import {
 import {
   getFeaturesDef,
   applyInviteCodeDef,
+  createCheckoutSessionDef,
 } from '../lexicon/types/features.js';
 import { toFeaturesListView } from '../views/feature.views.js';
 
@@ -50,6 +51,23 @@ const methodHandlers = {
       body: { status: 'success' },
     };
   },
+  'social.spkeasy.actor.createCheckoutSession': async (
+    req: ExtendedRequest,
+  ): RequestHandlerReturn => {
+    const { unit_amount_decimal: unitAmountDecimal } = req.body;
+
+    // Validate input against lexicon
+    validateAgainstLexicon(createCheckoutSessionDef, req.body);
+
+    const clientSecret = await featureService.createCheckoutSession(unitAmountDecimal as string);
+
+    return {
+      body: {
+        status: 'success',
+        clientSecret,
+      },
+    };
+  },
 } as const;
 
 // Define methods using XRPC lexicon
@@ -59,6 +77,9 @@ export const methods: Record<MethodName, { handler: RequestHandler }> = {
   },
   'social.spkeasy.actor.applyInviteCode': {
     handler: methodHandlers['social.spkeasy.actor.applyInviteCode'],
+  },
+  'social.spkeasy.actor.createCheckoutSession': {
+    handler: methodHandlers['social.spkeasy.actor.createCheckoutSession'],
   },
 };
 
