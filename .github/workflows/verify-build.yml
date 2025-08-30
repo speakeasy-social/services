@@ -70,8 +70,20 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Setup test database
-        run: pnpm test:setup
+      - name: Setup environment files
+        run: pnpm dev:setup:env
+
+      - name: Setup database schemas
+        run: NODE_ENV=test pnpm dev:setup:db
+
+      - name: Run database migrations
+        run: NODE_ENV=test pnpm dev:setup:migrations
+
+      - name: Initialize S3
+        run: pnpm dev:setup:s3
+
+      - name: Setup pgboss
+        run: cd packages/queue && NODE_ENV=test pnpm setup:pgboss
 
       - name: Build
         run: pnpm build
