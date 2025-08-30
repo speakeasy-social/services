@@ -73,6 +73,9 @@ jobs:
       - name: Setup environment files
         run: pnpm dev:setup:env
 
+      - name: Install PostgreSQL client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+
       - name: Setup database schemas
         run: NODE_ENV=test pnpm dev:setup:db
 
