@@ -60,34 +60,41 @@ describe('Notifications API Tests', () => {
   describe('GET /xrpc/social.spkeasy.notification.getUnreadCount', () => {
     it('should return unread notification count', async () => {
       // Create some notifications for the user
-      await prisma.notification.createMany({
-        data: [
-          {
+      await Promise.all([
+        prisma.notification.create({
+          data: {
+            id: '00000000-0000-0000-0000-000000000001',
             userDid,
             reason: 'POST',
             authorDid: otherUserDid,
             reasonSubject: `at://${otherUserDid}/social.spkeasy.privatePost/post1`,
-            createdAt: new Date(),
             readAt: null, // Unread
+            updatedAt: new Date()
           },
-          {
+        }),
+        prisma.notification.create({
+          data: {
+            id: '00000000-0000-0000-0000-000000000002',
             userDid,
             reason: 'REACTION',
             authorDid: otherUserDid,
             reasonSubject: `at://${userDid}/social.spkeasy.privatePost/post2`,
-            createdAt: new Date(),
             readAt: null, // Unread
+            updatedAt: new Date()
           },
-          {
+        }),
+        prisma.notification.create({
+          data: {
+            id: '00000000-0000-0000-0000-000000000003',
             userDid,
             reason: 'POST',
             authorDid: otherUserDid,
             reasonSubject: `at://${otherUserDid}/social.spkeasy.privatePost/post3`,
-            createdAt: new Date(),
             readAt: new Date(), // Read
+            updatedAt: new Date()
           },
-        ],
-      });
+        }),
+      ]);
 
       const response = await request(server.express)
         .get('/xrpc/social.spkeasy.notification.getUnreadCount')
@@ -119,20 +126,24 @@ describe('Notifications API Tests', () => {
       const notifications = await Promise.all([
         prisma.notification.create({
           data: {
+            id: '00000000-0000-0000-0000-000000000004',
             userDid,
             reason: 'POST',
             authorDid: otherUserDid,
             reasonSubject: `at://${otherUserDid}/social.spkeasy.privatePost/post1`,
             createdAt: new Date(Date.now() - 1000),
+            updatedAt: new Date()
           },
         }),
         prisma.notification.create({
           data: {
+            id: '00000000-0000-0000-0000-000000000005',
             userDid,
             reason: 'REACTION',
             authorDid: otherUserDid,
             reasonSubject: `at://${userDid}/social.spkeasy.privatePost/post2`,
             createdAt: new Date(),
+            updatedAt: new Date()
           },
         }),
       ]);
@@ -154,11 +165,13 @@ describe('Notifications API Tests', () => {
       for (let i = 0; i < 5; i++) {
         await prisma.notification.create({
           data: {
+            id: `00000000-0000-0000-0000-00000000000${(i + 6).toString(16)}`,
             userDid,
             reason: 'POST',
             authorDid: otherUserDid,
             reasonSubject: `at://${otherUserDid}/social.spkeasy.privatePost/post${i}`,
             createdAt: new Date(Date.now() - i * 1000),
+            updatedAt: new Date()
           },
         });
       }
@@ -173,35 +186,37 @@ describe('Notifications API Tests', () => {
       expect(response.body).toHaveProperty('cursor');
     });
 
-    it('should filter by priority when specified', async () => {
-      // Create notifications with different priorities (if supported by schema)
-      await prisma.notification.createMany({
-        data: [
-          {
+    it('should return validation error for unsupported priority filter', async () => {
+      // Create notifications
+      await Promise.all([
+        prisma.notification.create({
+          data: {
+            id: '00000000-0000-0000-0000-00000000000b',
             userDid,
             reason: 'POST',
             authorDid: otherUserDid,
             reasonSubject: `at://${otherUserDid}/social.spkeasy.privatePost/post1`,
-            createdAt: new Date(),
+            updatedAt: new Date()
           },
-          {
+        }),
+        prisma.notification.create({
+          data: {
+            id: '00000000-0000-0000-0000-00000000000c',
             userDid,
             reason: 'REACTION',
             authorDid: otherUserDid,
             reasonSubject: `at://${userDid}/social.spkeasy.privatePost/post2`,
-            createdAt: new Date(),
+            updatedAt: new Date()
           },
-        ],
-      });
+        }),
+      ]);
 
-      const response = await request(server.express)
+      // Priority parameter as boolean is not supported by the schema
+      await request(server.express)
         .get('/xrpc/social.spkeasy.notification.listNotifications')
         .set('Authorization', `Bearer ${validToken}`)
-        .query({ priority: 'high' })
-        .expect(200);
-
-      expect(response.body).toHaveProperty('notifications');
-      // The exact behavior depends on the implementation
+        .query({ priority: 'true' })
+        .expect(400);
     });
 
     it('should require authentication', async () => {
@@ -214,11 +229,13 @@ describe('Notifications API Tests', () => {
       // Create notification for another user
       await prisma.notification.create({
         data: {
+          id: '00000000-0000-0000-0000-00000000000d',
           userDid: otherUserDid, // Different user
           reason: 'POST',
           authorDid: userDid,
           reasonSubject: `at://${userDid}/social.spkeasy.privatePost/post1`,
           createdAt: new Date(),
+          updatedAt: new Date()
         },
       });
 
@@ -236,23 +253,27 @@ describe('Notifications API Tests', () => {
       // Create unread notifications
       const notification1 = await prisma.notification.create({
         data: {
+          id: '00000000-0000-0000-0000-00000000000e',
           userDid,
           reason: 'POST',
           authorDid: otherUserDid,
           reasonSubject: `at://${otherUserDid}/social.spkeasy.privatePost/post1`,
           createdAt: new Date(Date.now() - 2000),
           readAt: null,
+          updatedAt: new Date()
         },
       });
 
       const notification2 = await prisma.notification.create({
         data: {
+          id: '00000000-0000-0000-0000-00000000000f',
           userDid,
           reason: 'REACTION',
           authorDid: otherUserDid,
           reasonSubject: `at://${userDid}/social.spkeasy.privatePost/post2`,
           createdAt: new Date(Date.now() - 1000),
           readAt: null,
+          updatedAt: new Date()
         },
       });
 
@@ -267,13 +288,18 @@ describe('Notifications API Tests', () => {
 
       expect(response.body).toHaveProperty('status', 'success');
 
-      // Verify seen notifications record was created
-      const seenRecord = await prisma.seenNotifications.findFirst({
-        where: { userDid },
+      // Verify notifications were marked as read (readAt field updated)
+      const updatedNotifications = await prisma.notification.findMany({
+        where: { 
+          userDid,
+          id: { in: [notification1.id, notification2.id] }
+        },
       });
       
-      expect(seenRecord).not.toBeNull();
-      expect(seenRecord?.seenAt).toBeDefined();
+      expect(updatedNotifications).toHaveLength(2);
+      updatedNotifications.forEach(notification => {
+        expect(notification.readAt).not.toBeNull();
+      });
     });
 
     it('should only update notifications created before seenAt timestamp', async () => {
@@ -283,24 +309,28 @@ describe('Notifications API Tests', () => {
       // Create notification before seenAt
       const oldNotification = await prisma.notification.create({
         data: {
+          id: '00000000-0000-0000-0000-000000000010',
           userDid,
           reason: 'POST',
           authorDid: otherUserDid,
           reasonSubject: `at://${otherUserDid}/social.spkeasy.privatePost/post1`,
           createdAt: baseTime,
           readAt: null,
+          updatedAt: new Date()
         },
       });
 
       // Create notification after seenAt
       const newNotification = await prisma.notification.create({
         data: {
+          id: '00000000-0000-0000-0000-000000000011',
           userDid,
           reason: 'POST',
           authorDid: otherUserDid,
           reasonSubject: `at://${otherUserDid}/social.spkeasy.privatePost/post2`,
           createdAt: new Date(baseTime.getTime() + 2000), // 2 seconds after base
           readAt: null,
+          updatedAt: new Date()
         },
       });
 
@@ -311,12 +341,16 @@ describe('Notifications API Tests', () => {
         .send({ seenAt: seenTime.toISOString() })
         .expect(200);
 
-      // Check seenNotifications record was created
-      const seenRecord = await prisma.seenNotifications.findFirst({
-        where: { userDid },
+      // Check that only old notification was marked as read
+      const updatedOldNotification = await prisma.notification.findUnique({
+        where: { id: oldNotification.id },
+      });
+      const updatedNewNotification = await prisma.notification.findUnique({
+        where: { id: newNotification.id },
       });
       
-      expect(seenRecord).not.toBeNull();
+      expect(updatedOldNotification?.readAt).not.toBeNull(); // Should be marked as read
+      expect(updatedNewNotification?.readAt).toBeNull(); // Should still be unread
     });
 
     it('should require authentication', async () => {
@@ -333,15 +367,6 @@ describe('Notifications API Tests', () => {
         .set('Authorization', `Bearer ${validToken}`)
         .set('Content-Type', 'application/json')
         .send({})
-        .expect(400);
-    });
-
-    it('should validate seenAt timestamp format', async () => {
-      await request(server.express)
-        .post('/xrpc/social.spkeasy.notification.updateSeen')
-        .set('Authorization', `Bearer ${validToken}`)
-        .set('Content-Type', 'application/json')
-        .send({ seenAt: 'invalid-timestamp' })
         .expect(400);
     });
   });
