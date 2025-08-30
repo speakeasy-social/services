@@ -8,13 +8,39 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: speakeasy
+          POSTGRES_PASSWORD: speakeasy
+          POSTGRES_DB: speakeasy
+        ports:
+          - 5496:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      localstack:
+        image: localstack/localstack:latest
+        env:
+          SERVICES: s3
+          DEBUG: 1
+          AWS_ACCESS_KEY_ID: s3_test_key
+          AWS_SECRET_ACCESS_KEY: s3_test_secret
+          DEFAULT_REGION: us-east-1
+        ports:
+          - 4566:4566
+
     steps:
       - uses: actions/checkout@v4
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22.14.0'
 
       - name: Install pnpm
         uses: pnpm/action-setup@v2
@@ -44,6 +70,9 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Setup test database
+        run: pnpm test:setup
 
       - name: Build
         run: pnpm build
