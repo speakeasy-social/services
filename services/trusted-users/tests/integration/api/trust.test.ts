@@ -132,7 +132,8 @@ describe('Trusted Users API Tests', () => {
       },
       expectedBody: {
         trusted: [{ 
-          did: validRecipient
+          recipientDid: validRecipient,
+          createdAt: expect.any(String)
         }],
       },
     },
