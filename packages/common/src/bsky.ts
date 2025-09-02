@@ -1,7 +1,7 @@
 import fetch from 'node-fetch';
 import jwt from 'jsonwebtoken';
 import { AuthenticationError } from './errors.js';
-import { ExtendedRequest, User } from './express-extensions.js';
+import { ExtendedRequest } from './express-extensions.js';
 
 export interface BlueskySession {
   did: string;
@@ -46,7 +46,7 @@ export function getHostFromToken(token: string) {
 
 export async function blueskyFetch(path: string, options: BlueskyFetchOptions) {
   let host = options.host;
-  let token = options.token;
+  const token = options.token;
 
   // If we have a query, we need to add it to the path
   if (options.query) {
@@ -86,23 +86,105 @@ export async function blueskyFetch(path: string, options: BlueskyFetchOptions) {
 }
 
 /**
- * Verifies a Bluesky session token by making a request to the Bluesky API.
+ * Verifies a Bluesky session token by making a request to the issuing PDS.
+ * Validates JWT structure, makes authenticated call to PDS, and cross-validates response.
  * In development mode, it will use a local Bluesky instance if the token's audience is 'did:web:localhost'.
  *
  * @param token - The JWT token to verify
  * @returns A Promise that resolves to a BlueskySession object containing the user's DID, handle, and tokens
- * @throws AuthenticationError if the token is invalid or the session verification fails
+ * @throws AuthenticationError if the token is invalid, malformed, or the session verification fails
  */
 export async function fetchBlueskySession(
   token: string,
 ): Promise<BlueskySession> {
-  const response = await blueskyFetch('com.atproto.server.getSession', {
-    token,
-  });
+  // First, validate JWT structure and extract claims
+  let decoded: jwt.JwtPayload;
+  try {
+    decoded = jwt.decode(token) as jwt.JwtPayload;
+    if (!decoded) {
+      throw new AuthenticationError('Invalid JWT format');
+    }
+  } catch (error) {
+    throw new AuthenticationError('Failed to decode JWT');
+  }
 
-  const session = response as BlueskySession;
+  // Validate required JWT claims
+  if (!decoded.iss || typeof decoded.iss !== 'string') {
+    throw new AuthenticationError('JWT missing or invalid issuer (iss) claim');
+  }
 
-  return session;
+  if (!decoded.sub || typeof decoded.sub !== 'string' || !decoded.sub.startsWith('did:')) {
+    throw new AuthenticationError('JWT missing or invalid subject (sub) claim - must be a valid DID');
+  }
+
+  // Check token expiration
+  if (decoded.exp && decoded.exp < Math.floor(Date.now() / 1000)) {
+    throw new AuthenticationError('JWT token has expired');
+  }
+
+  const pdsUrl = decoded.iss;
+  const claimedDid = decoded.sub;
+
+  // Make authenticated request to the issuing PDS
+  try {
+    const response = await fetch(`${pdsUrl}/xrpc/com.atproto.server.getSession`, {
+      method: 'GET',
+      headers: { 
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (!response.ok) {
+      throw new AuthenticationError(`PDS validation failed with status ${response.status}: ${response.statusText}`);
+    }
+
+    const sessionData = await response.json() as any;
+
+    // Strict validation of PDS response structure
+    if (!sessionData || typeof sessionData !== 'object') {
+      throw new AuthenticationError('PDS returned invalid response format');
+    }
+
+    if (!sessionData.did || typeof sessionData.did !== 'string') {
+      throw new AuthenticationError('PDS returned malformed session data - missing or invalid DID');
+    }
+
+    // Cross-validate: DID from JWT must match DID from PDS
+    if (sessionData.did !== claimedDid) {
+      throw new AuthenticationError(`DID mismatch: JWT claims ${claimedDid} but PDS returned ${sessionData.did}`);
+    }
+
+    // Construct validated session object
+    const session: BlueskySession = {
+      did: sessionData.did,
+      handle: sessionData.handle || '',
+      email: sessionData.email,
+      accessJwt: token,
+      refreshJwt: sessionData.refreshJwt || ''
+    };
+
+    return session;
+
+  } catch (error) {
+    // Re-throw AuthenticationErrors as-is
+    if (error instanceof AuthenticationError) {
+      throw error;
+    }
+
+    // Handle network/fetch errors
+    if (error instanceof TypeError && error.message.includes('fetch')) {
+      throw new AuthenticationError(`Unable to contact PDS at ${pdsUrl}: ${error.message}`);
+    }
+
+    // Handle JSON parsing errors
+    if (error instanceof SyntaxError) {
+      throw new AuthenticationError('PDS returned invalid JSON response');
+    }
+
+    // Generic fallback
+    throw new AuthenticationError(`Session validation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
 }
 
 export async function fetchBlueskyProfile(
@@ -172,7 +254,7 @@ export async function fetchFollowingDids(
       }
 
       const data = (await response.json()) as BlueskyFollows;
-      const followDids = data.follows.map((follow: any) => follow.did);
+      const followDids = data.follows.map((follow: { did: string }) => follow.did);
       allFollowDids.push(...followDids);
       cursor = data.cursor;
     } while (cursor);
@@ -242,5 +324,5 @@ export async function fetchBlueskyPosts(
     },
   })) as { posts: any[] };
 
-  return response.posts;
+  return response.posts as PostView[];
 }

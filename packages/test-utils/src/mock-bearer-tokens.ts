@@ -2,7 +2,7 @@ import nock from "nock";
 import { cache } from "@speakeasy-services/common";
 
 /**
- * Mocks the Bluesky session validation API call.
+ * Mocks the Bluesky session validation API call for the enhanced JWT authentication.
  * This should be called in the beforeAll/beforeEach of your tests.
  *
  * @param options Configuration options for the mock
@@ -11,6 +11,8 @@ import { cache } from "@speakeasy-services/common";
  * @param options.host The host to mock (defaults to bsky.social)
  * @param options.status The HTTP status to return (defaults to 200)
  * @param options.error Whether to simulate an error response
+ * @param options.malformedResponse Whether to return a malformed response (for testing error handling)
+ * @param options.didMismatch Whether to return a different DID than expected (for testing validation)
  */
 export function mockBlueskySession({
   did = "did:example:alex",
@@ -18,12 +20,16 @@ export function mockBlueskySession({
   host = "https://bsky.social",
   status = 200,
   error = false,
+  malformedResponse = false,
+  didMismatch = false,
 }: {
   did?: string;
   handle?: string;
   host?: string;
   status?: number;
   error?: boolean;
+  malformedResponse?: boolean;
+  didMismatch?: boolean;
 } = {}) {
   // Clean up any existing mocks
   nock.cleanAll();
@@ -31,6 +37,22 @@ export function mockBlueskySession({
   if (error) {
     // Mock error response
     nock(host).get("/xrpc/com.atproto.server.getSession").reply(status);
+  } else if (malformedResponse) {
+    // Mock malformed response for testing error handling
+    nock(host).get("/xrpc/com.atproto.server.getSession").reply(200, {
+      // Missing required 'did' field or wrong type
+      invalidField: "test",
+      did: null, // Invalid DID
+    });
+  } else if (didMismatch) {
+    // Mock response with different DID for testing validation
+    nock(host).get("/xrpc/com.atproto.server.getSession").reply(200, {
+      did: "did:example:different-user", // Different DID than what's in the JWT
+      handle,
+      email: "alex@example.com",
+      accessJwt: "mock-access-token",
+      refreshJwt: "mock-refresh-token",
+    });
   } else {
     // Mock successful response
     nock(host).get("/xrpc/com.atproto.server.getSession").reply(status, {

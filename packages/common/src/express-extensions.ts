@@ -66,3 +66,4 @@ export function getSessionDid(req: ExtendedRequest): string {
   
   return userDid;
 }
+
