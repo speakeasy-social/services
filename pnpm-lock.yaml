@@ -266,7 +266,7 @@ importers:
         specifier: ^4.17.21
         version: 4.17.21
       '@types/jsonwebtoken':
-        specifier: ^9.0.5
+        specifier: ^9.0.9
         version: 9.0.9
       '@types/node':
         specifier: ^22.13.11
