@@ -24,19 +24,25 @@ export type BlueskyFetchOptions = {
   query?: Record<string, string | string[]>;
 };
 
+function getHostOrLocalhost(host: string, aud: string | string[] | undefined) {
+  // Are we in development?
+  if (
+    ['test', 'development'].includes(process.env.NODE_ENV || '') &&
+    aud === 'did:web:localhost'
+  ) {
+    return 'http://localhost:2583';
+  }
+
+  return host;
+}
+
 export function getHostFromToken(token: string) {
   let host = 'https://bsky.social';
 
   try {
     const decoded = jwt.decode(token) as jwt.JwtPayload;
 
-    // Are we in development?
-    if (
-      ['test', 'development'].includes(process.env.NODE_ENV || '') &&
-      decoded?.aud === 'did:web:localhost'
-    ) {
-      host = 'http://localhost:2583';
-    }
+    host = getHostOrLocalhost(host, decoded?.aud);
   } catch (error) {
     throw new AuthenticationError('Corrupt session token');
   }
@@ -109,11 +115,19 @@ export async function fetchBlueskySession(
 
   // Validate required JWT claims
   if (!decoded.aud || typeof decoded.aud !== 'string') {
-    throw new AuthenticationError('JWT missing or invalid audience (aud) claim');
+    throw new AuthenticationError(
+      'JWT missing or invalid audience (aud) claim',
+    );
   }
 
-  if (!decoded.sub || typeof decoded.sub !== 'string' || !decoded.sub.startsWith('did:')) {
-    throw new AuthenticationError('JWT missing or invalid subject (sub) claim - must be a valid DID');
+  if (
+    !decoded.sub ||
+    typeof decoded.sub !== 'string' ||
+    !decoded.sub.startsWith('did:')
+  ) {
+    throw new AuthenticationError(
+      'JWT missing or invalid subject (sub) claim - must be a valid DID',
+    );
   }
 
   // Extract host from aud (expect format: did:web:hostname)
@@ -122,49 +136,64 @@ export async function fetchBlueskySession(
     throw new AuthenticationError('Unknown JWT audience, cannot authenticate');
   }
 
-  const pdsHost = audMatch[1];
+  let pdsHost = audMatch[1];
   const userDid = decoded.sub;
 
   // Check if this is a trusted server
   const trustedDomains = ['blacksky.app', 'bsky.social', 'bsky.network'];
-  const isTrusted = trustedDomains.some(domain => 
-    pdsHost === domain || pdsHost.endsWith('.' + domain)
+
+  const isTrusted = trustedDomains.some(
+    (domain) => pdsHost === domain || pdsHost.endsWith('.' + domain),
   );
 
   if (!isTrusted) {
     // For untrusted servers, verify the user's handle matches the PDS domain
     try {
-      const didDoc = await blueskyFetch('com.atproto.identity.resolveDid', {
+      const profile = (await blueskyFetch('app.bsky.actor.getProfile', {
         token,
-        query: { did: userDid }
-      }) as any;
-      
+        query: { actor: userDid },
+      })) as any;
+
       // Extract handle from alsoKnownAs field (format: at://handle)
-      const handleEntry = didDoc.alsoKnownAs?.find((aka: string) => aka.startsWith('at://'));
-      if (!handleEntry) {
-        throw new AuthenticationError('User DID document missing handle information');
+      const userHandle = profile.handle;
+      if (!userHandle) {
+        throw new AuthenticationError(
+          'User DID document missing handle information',
+        );
       }
 
-      const userHandle = handleEntry.replace('at://', '');
-      
+      let domainsMatch =
+        userHandle.endsWith('.' + pdsHost) || userHandle === pdsHost;
+
+      if (
+        ['test', 'development'].includes(process.env.NODE_ENV || '') &&
+        !domainsMatch
+      ) {
+        if (userHandle.endsWith('.test') && pdsHost === 'localhost') {
+          domainsMatch = true;
+        }
+      }
+
       // Verify handle is subdomain of PDS domain
-      if (!userHandle.endsWith('.' + pdsHost) && userHandle !== pdsHost) {
+      if (!domainsMatch) {
         throw new AuthenticationError(
-          `User handle domain ${userHandle} does not match PDS domain ${pdsHost}`
+          `User handle domain ${userHandle} does not match PDS domain ${pdsHost}`,
         );
       }
     } catch (error) {
       if (error instanceof AuthenticationError) {
         throw error;
       }
-      throw new AuthenticationError(`Failed to verify user domain: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new AuthenticationError(
+        `Failed to verify user domain: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
     }
   }
 
-  // Now validate the token with the determined PDS
+  // Now validate the token with the PDS from the token aud
   const response = await blueskyFetch('com.atproto.server.getSession', {
     token,
-    host: `https://${pdsHost}`,
+    host: getHostOrLocalhost(`https://${pdsHost}`, decoded.aud),
   });
 
   return response as BlueskySession;
@@ -237,7 +266,9 @@ export async function fetchFollowingDids(
       }
 
       const data = (await response.json()) as BlueskyFollows;
-      const followDids = data.follows.map((follow: { did: string }) => follow.did);
+      const followDids = data.follows.map(
+        (follow: { did: string }) => follow.did,
+      );
       allFollowDids.push(...followDids);
       cursor = data.cursor;
     } while (cursor);
