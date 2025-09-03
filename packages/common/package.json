@@ -29,7 +29,8 @@
     "dev": "tsc --build --watch --preserveWatchOutput",
     "clean": "rm -rf dist",
     "lint": "eslint src",
-    "test": "jest"
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@atproto/lexicon": "^0.4.9",
@@ -54,6 +55,8 @@
     "@types/node-cache": "^4.2.5",
     "eslint": "^8.56.0",
     "nock": "^13.5.1",
-    "typescript": "^5.8.3"
+    "typescript": "^5.8.3",
+    "vite": "^7.0.5",
+    "vitest": "^3.2.4"
   }
 }
