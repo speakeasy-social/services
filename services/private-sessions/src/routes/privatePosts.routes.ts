@@ -5,6 +5,7 @@ import {
   ExtendedRequest,
   validateAgainstLexicon,
   User,
+  getSessionDid,
 } from '@speakeasy-services/common';
 import {
   getPostsDef,
@@ -47,9 +48,10 @@ const methodHandlers = {
     // Convert limit to number if provided
     const limitNum = limit ? parseInt(limit, 10) : undefined;
 
+    const userDid = getSessionDid(req);
     const result = await privatePostsService.getPosts(
       req,
-      (req.user! as User).did!,
+      userDid,
       {
         authorDids: authors,
         uris,
@@ -83,9 +85,10 @@ const methodHandlers = {
     // Convert limit to number if provided
     const limitNum = limit ? parseInt(limit, 10) : undefined;
 
+    const userDid = getSessionDid(req);
     const result = await privatePostsService.getPostThread(
       req,
-      (req.user as User)!.did!,
+      userDid,
       {
         uri,
         limit: limitNum,
@@ -127,14 +130,15 @@ const methodHandlers = {
     // Validate input against lexicon
     validateAgainstLexicon(createPostsDef, req.body);
 
+    const userDid = getSessionDid(req);
     authorize(req, 'create', 'private_post', {
-      authorDid: (req.user as User)?.did,
+      authorDid: userDid,
     });
 
     const user = req.user as User;
 
     await privatePostsService.createEncryptedPosts(
-      user.did,
+      userDid,
       user.handle,
       user.token,
       req.body,

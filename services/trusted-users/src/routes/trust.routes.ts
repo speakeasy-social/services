@@ -11,6 +11,7 @@ import {
   ExtendedRequest,
   validateAgainstLexicon,
   User,
+  getSessionDid,
 } from '@speakeasy-services/common';
 import {
   getTrustedDef,
@@ -55,7 +56,7 @@ const methodHandlers = {
   'social.spkeasy.graph.getTrustedCount': async (
     req: ExtendedRequest,
   ): RequestHandlerReturn => {
-    const authorDid = (req.user as User)?.did;
+    const authorDid = getSessionDid(req);
 
     authorize(req, 'count', 'trusted_user', { authorDid });
 
@@ -76,7 +77,7 @@ const methodHandlers = {
   'social.spkeasy.graph.getDailyTrustedQuota': async (
     req: ExtendedRequest,
   ): RequestHandlerReturn => {
-    const authorDid = (req.user as User)?.did;
+    const authorDid = getSessionDid(req);
 
     authorize(req, 'count', 'trusted_user', { authorDid });
 
@@ -101,7 +102,7 @@ const methodHandlers = {
     // Validate input against lexicon
     validateAgainstLexicon(addTrustedDef, req.body);
 
-    const authorDid = (req.user as User)?.did;
+    const authorDid = getSessionDid(req);
 
     // Authorize the action
     authorize(req, 'create', 'trusted_user', { authorDid });
@@ -124,7 +125,7 @@ const methodHandlers = {
     // Validate input against lexicon
     validateAgainstLexicon(bulkAddTrustedDef, req.body);
 
-    const authorDid = (req.user as User)?.did;
+    const authorDid = getSessionDid(req);
 
     // Authorize the action
     authorize(req, 'create', 'trusted_user', { authorDid });
@@ -150,11 +151,9 @@ const methodHandlers = {
     validateAgainstLexicon(removeTrustedDef, req.body);
 
     const { recipientDid } = req.body as { recipientDid: string };
-    if (!(req.user as User)?.did) {
-      throw new ValidationError('User DID is required');
-    }
+    // getSessionDid will throw NoSessionError if user DID is missing
 
-    const authorDid = (req.user as User)?.did;
+    const authorDid = getSessionDid(req);
 
     // Authorize the action
     authorize(req, 'delete', 'trusted_user', { authorDid });
@@ -177,7 +176,7 @@ const methodHandlers = {
     // Validate input against lexicon
     validateAgainstLexicon(bulkRemoveTrustedDef, req.body);
 
-    const authorDid = (req.user as User)?.did;
+    const authorDid = getSessionDid(req);
 
     // Authorize the action
     authorize(req, 'create', 'trusted_user', { authorDid });

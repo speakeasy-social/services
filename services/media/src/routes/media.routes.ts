@@ -5,6 +5,7 @@ import {
   validateAgainstLexicon,
   authorize,
   User,
+  getSessionDid,
 } from '@speakeasy-services/common';
 import { uploadMediaDef, deleteMediaDef } from '../lexicon/types/media.js';
 import { MediaService } from '../services/media.service.js';
@@ -86,7 +87,7 @@ const methodHandlers = {
     }
 
     const result = await mediaService.uploadMedia(
-      (req.user as User).did!,
+      getSessionDid(req),
       req,
       sessionId,
       mimeType,

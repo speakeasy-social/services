@@ -83,3 +83,14 @@ export class RateLimitError extends ErrorWithDetails {
     super('RateLimitError', message, 429, details ?? {});
   }
 }
+
+export class NoSessionError extends ServiceError {
+  constructor(
+    message: string = 'This operation requires the user to have a session but cannot find the session',
+    public details?: Record<string, any>,
+  ) {
+    super(message, 400);
+    this.name = 'NoSessionError';
+    this.details = details;
+  }
+}

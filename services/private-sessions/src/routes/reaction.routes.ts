@@ -6,6 +6,7 @@ import {
   ExtendedRequest,
   validateAgainstLexicon,
   User,
+  getSessionDid,
 } from '@speakeasy-services/common';
 import {
   createReactionDef,
@@ -19,7 +20,7 @@ const methodHandlers = {
   'social.spkeasy.reaction.createReaction': async (
     req: ExtendedRequest,
   ): RequestHandlerReturn => {
-    const did = (req.user as User)!.did!;
+    const did = getSessionDid(req);
 
     // Validate input against lexicon
     validateAgainstLexicon(createReactionDef, req.body);
@@ -37,7 +38,7 @@ const methodHandlers = {
   'social.spkeasy.reaction.deleteReaction': async (
     req: ExtendedRequest,
   ): RequestHandlerReturn => {
-    const did = (req.user as User)!.did!;
+    const did = getSessionDid(req);
 
     // Validate input against lexicon
     validateAgainstLexicon(deleteReactionDef, req.body);

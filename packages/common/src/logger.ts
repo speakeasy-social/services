@@ -56,8 +56,13 @@ export async function logAttributes(req: ExtendedRequest, status: number) {
 
   if (req.user) {
     if (req.user.type === 'user') {
-      // HMAC the user DID
-      user = await hmac(req.user.did);
+      // HMAC the user DID - safely handle missing DID
+      const userDid = req.user.did;
+      if (userDid && typeof userDid === 'string' && userDid.trim() !== '') {
+        user = await hmac(userDid);
+      } else {
+        user = 'invalid-session-did';
+      }
     } else {
       // No need to obscure which service made the request,
       // that's not private
