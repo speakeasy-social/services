@@ -7,7 +7,8 @@ echo "Setting up databases..."
 # Determine PostgreSQL connection method
 if [ "$CI" = "true" ] || [ "$USE_DIRECT_PSQL" = "true" ]; then
     # In CI or when explicitly requested, use direct psql connection
-    PSQL_CMD="PGPASSWORD=speakeasy psql -h localhost -p 5496 -U speakeasy"
+    export PGPASSWORD=speakeasy
+    PSQL_CMD="psql -h localhost -p 5496 -U speakeasy"
     echo "Using direct psql connection"
 else
     # In local development, use docker compose exec
