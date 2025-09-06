@@ -255,10 +255,10 @@ export async function fetchFollowingDids(
       if (!response.ok) {
         if (response.status === 429 || response.status >= 500) {
           req.logger.warn(
-            'Getting follows: Rate limit or server error while fetching follows',
             {
               status: response.status,
             },
+            'Getting follows: Rate limit or server error while fetching follows',
           );
           return allFollowDids;
         }

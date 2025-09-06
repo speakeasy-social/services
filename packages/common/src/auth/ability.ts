@@ -51,7 +51,7 @@ const can = (
  */
 const userAbilities = [
   // User-level trust permissions
-  can('*', 'trusted_user', { authorDid: 'did' }),
+  can('*', 'trusted_user', { did: 'authorDid' }),
 
   // Authors can manage their own sessions and posts
   can('create', 'private_session', { authorDid: 'did' }),
@@ -170,7 +170,10 @@ function isAuthorized(
             ? value.slice(1)
             : record[value];
 
-          return user[key as keyof (User | Service)] === expectedValue;
+          const userValue = user[key as keyof (User | Service)];
+          const matches = userValue === expectedValue;
+          if (process.env.DEBUG_AUTH) console.log(`Comparing: user.${key}="${userValue}" vs expected="${expectedValue}" => ${matches}`);
+          return matches;
         })
       );
     }

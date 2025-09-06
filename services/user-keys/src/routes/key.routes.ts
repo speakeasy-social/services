@@ -142,8 +142,8 @@ const methodHandlers = {
 
     const result = await keyService.requestRotation(
       userDid,
-      privateKey,
       publicKey,
+      privateKey,
     );
     return {
       body: toPublicKeyView(result!),

@@ -45,7 +45,7 @@
 
 import request from "supertest";
 import { Server } from "@speakeasy-services/service-base";
-import { beforeEach, afterEach } from "vitest";
+import { beforeEach, afterEach, describe, it, expect } from "vitest";
 
 /**
  * Interface defining the structure of an API test case.
