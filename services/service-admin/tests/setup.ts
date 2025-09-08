@@ -1,8 +1,12 @@
+import { beforeAll, afterAll, afterEach } from 'vitest';
 import { config } from "dotenv";
 import { resolve } from "path";
 
-// Load test environment variables
-const envPath = resolve(process.cwd(), ".env.test");
+// Load environment variables - try .env.test first, then fall back to .env
+const envTestPath = resolve(process.cwd(), ".env.test");
+const envPath = resolve(process.cwd(), ".env");
+
+config({ path: envTestPath });
 config({ path: envPath });
 
 // Global test setup
