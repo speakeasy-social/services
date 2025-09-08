@@ -92,4 +92,11 @@ jobs:
         run: pnpm build
 
       - name: Test
-        run: pnpm test
+        run: NODE_ENV=test pnpm test
+        env:
+          USER_KEYS_DATABASE_URL: postgresql://speakeasy:speakeasy@localhost:5496/speakeasy_test?schema=user_keys
+          TRUSTED_USERS_DATABASE_URL: postgresql://speakeasy:speakeasy@localhost:5496/speakeasy_test?schema=trusted_users
+          PRIVATE_SESSIONS_DATABASE_URL: postgresql://speakeasy:speakeasy@localhost:5496/speakeasy_test?schema=private_sessions
+          SERVICE_ADMIN_DATABASE_URL: postgresql://speakeasy:speakeasy@localhost:5496/speakeasy_test?schema=service_admin
+          MEDIA_DATABASE_URL: postgresql://speakeasy:speakeasy@localhost:5496/speakeasy_test?schema=media
+          DATABASE_URL: postgresql://speakeasy:speakeasy@localhost:5496/speakeasy_test?schema=pgboss
