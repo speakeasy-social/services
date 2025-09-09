@@ -16,7 +16,7 @@ import { cache } from "@speakeasy-services/common";
  */
 export function mockBlueskySession({
   did = "did:example:alex",
-  handle = "alex.bsky.social",
+  handle = "alex.test",
   host = "https://bsky.social",
   status = 200,
   error = false,
@@ -33,29 +33,55 @@ export function mockBlueskySession({
 } = {}) {
   // Clean up any existing mocks
   nock.cleanAll();
+  
+  // Also mock the getProfile endpoint which is called for untrusted servers
+  // This is needed for localhost testing
+  if (host === "http://localhost:2583") {
+    nock(host)
+      .persist()
+      .get(/\/xrpc\/app\.bsky\.actor\.getProfile/)
+      .reply(200, {
+        did,
+        handle: handle.endsWith('.test') ? handle : `${handle.split('.')[0]}.test`,
+        displayName: "Test User",
+        description: "Test user profile",
+      });
+  }
 
   if (error) {
     // Mock error response
-    nock(host).get("/xrpc/com.atproto.server.getSession").reply(status);
+    nock(host)
+      .persist() // Always persist in tests to handle multiple auth checks
+      .get("/xrpc/com.atproto.server.getSession")
+      .reply(status);
   } else if (malformedResponse) {
     // Mock malformed response for testing error handling
-    nock(host).get("/xrpc/com.atproto.server.getSession").reply(200, {
-      // Missing required 'did' field or wrong type
-      invalidField: "test",
-      did: null, // Invalid DID
-    });
+    nock(host)
+      .persist()
+      .get("/xrpc/com.atproto.server.getSession")
+      .reply(200, {
+        // Missing required 'did' field or wrong type
+        invalidField: "test",
+        did: null, // Invalid DID
+      });
   } else if (didMismatch) {
     // Mock response with different DID for testing validation
-    nock(host).get("/xrpc/com.atproto.server.getSession").reply(200, {
-      did: "did:example:different-user", // Different DID than what's in the JWT
-      handle,
-      email: "alex@example.com",
-      accessJwt: "mock-access-token",
-      refreshJwt: "mock-refresh-token",
-    });
+    nock(host)
+      .persist()
+      .get("/xrpc/com.atproto.server.getSession")
+      .reply(200, {
+        did: "did:example:different-user", // Different DID than what's in the JWT
+        handle,
+        email: "alex@example.com",
+        accessJwt: "mock-access-token",
+        refreshJwt: "mock-refresh-token",
+      });
   } else {
-    // Mock successful response
-    nock(host).get("/xrpc/com.atproto.server.getSession").reply(status, {
+    // Mock successful response - persist the mock for multiple calls
+    nock(host)
+      .persist()
+      .get("/xrpc/com.atproto.server.getSession")
+      .reply(status, {
       did,
       handle,
       email: "alex@example.com",

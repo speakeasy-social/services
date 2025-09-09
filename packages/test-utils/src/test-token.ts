@@ -19,7 +19,8 @@ export function generateTestToken(
     expired?: boolean;
   } = {}
 ): string {
-  const { handle = 'test-user.bsky.social', pdsUrl = 'https://bsky.social', expired = false } = options;
+  // Default handle to .test domain for localhost testing compatibility
+  const { handle = 'test-user.test', pdsUrl = 'https://bsky.social', expired = false } = options;
   
   const now = Math.floor(Date.now() / 1000);
   const payload = {
