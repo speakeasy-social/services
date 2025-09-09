@@ -27,7 +27,6 @@ describe('Service Admin API Tests', () => {
 
   afterAll(async () => {
     await prisma.$disconnect();
-    // @ts-ignore - shutdown is private but we need it for tests
     await server.shutdown();
   });
 

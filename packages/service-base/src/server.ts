@@ -1,5 +1,6 @@
 import express from 'express';
 import { Express, Request, Response, NextFunction } from 'express';
+import { Server as HTTPServer } from 'http';
 import { validateEnv, baseSchema } from './config.js';
 import { LexiconDoc } from '@atproto/lexicon';
 import z from 'zod';
@@ -53,6 +54,7 @@ export class Server {
   private config: ReturnType<typeof validateEnv<typeof baseSchema>>;
   private options: ServerOptions;
   private logger: ReturnType<typeof createLogger>;
+  private httpServer?: HTTPServer;
 
   constructor(options: ServerOptions) {
     this.options = options;
@@ -186,7 +188,7 @@ export class Server {
 
   public async start() {
     try {
-      this.express.listen(this.options.port, '0.0.0.0', () => {
+      this.httpServer = this.express.listen(this.options.port, '0.0.0.0', () => {
         this.logger.info(
           `🚀 ${this.options.name} service running on port ${this.options.port}`,
         );
@@ -200,9 +202,20 @@ export class Server {
     process.on('SIGINT', () => this.shutdown());
   }
 
-  private async shutdown() {
+  public async shutdown() {
     this.logger.info('Shutting down server...');
     try {
+      // Close the HTTP server first
+      if (this.httpServer) {
+        await new Promise<void>((resolve, reject) => {
+          this.httpServer!.close((err) => {
+            if (err) reject(err);
+            else resolve();
+          });
+        });
+        this.httpServer = undefined;
+      }
+
       if (this.options.onShutdown) {
         await this.options.onShutdown();
       }
