@@ -90,7 +90,7 @@ export class FeatureService {
     });
   }
 
-  async createCheckoutSession(unitAmountDecimal: string): Promise<string | Error> {
+  async createCheckoutSession(unitAmount: number): Promise<string | Error> {
     const stripe = new Stripe(config.STRIPE_SECRET_KEY);
     const session = await stripe.checkout.sessions.create({
       line_items: [{
@@ -99,7 +99,7 @@ export class FeatureService {
           product_data: {
             name: 'One-time Donation',
           },
-          unit_amount_decimal: unitAmountDecimal,
+          unit_amount: unitAmount,
         },
         quantity: 1,
       }],
