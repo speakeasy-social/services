@@ -44,12 +44,12 @@ describe('Trusted Users API Tests', () => {
       users: new Map([
         [validToken, {
           did: authorDid,
-          handle: 'alex.bsky.social',
+          handle: 'alex.test',
           email: 'alex@example.com',
         }],
         [wrongUserToken, {
           did: wrongUserDid,
-          handle: 'wrong.bsky.social',
+          handle: 'wrong.test',
           email: 'wrong@example.com',
         }],
       ]),

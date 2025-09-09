@@ -109,6 +109,38 @@ export function mockMultiUserBlueskySession({
   // Clean up any existing mocks
   nock.cleanAll();
 
+  // Mock the getProfile endpoint needed for untrusted servers
+  if (host === "http://localhost:2583") {
+    nock(host)
+      .persist()
+      .get(/\/xrpc\/app\.bsky\.actor\.getProfile/)
+      .reply(function(uri: string) {
+        // Extract DID from query parameters
+        const url = new URL(uri, host);
+        const actorDid = url.searchParams.get('actor');
+        
+        // Find user data by DID
+        let userData: { did: string; handle: string; email?: string } | undefined;
+        for (const [token, user] of users) {
+          if (user.did === actorDid) {
+            userData = user;
+            break;
+          }
+        }
+        
+        if (userData) {
+          return [200, {
+            did: userData.did,
+            handle: userData.handle.endsWith('.test') ? userData.handle : `${userData.handle.split('.')[0]}.test`,
+            displayName: "Test User",
+            description: "Test user profile",
+          }];
+        } else {
+          return [404, { error: 'Actor not found' }];
+        }
+      });
+  }
+
   nock(host)
     .persist()
     .get('/xrpc/com.atproto.server.getSession')
