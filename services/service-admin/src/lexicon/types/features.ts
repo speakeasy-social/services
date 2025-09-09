@@ -95,11 +95,11 @@ export const createCheckoutSessionDef: LexiconDoc = {
         encoding: 'application/json',
         schema: {
           type: 'object',
-          required: ['unit_amount_decimal'],
+          required: ['unit_amount'],
           properties: {
-            unit_amount_decimal: {
-              type: 'blob',
-              description: 'A decimal value in cents with at most 12 decimal places',
+            unit_amount: {
+              type: 'integer',
+              description: 'A positive integer in cents (or 0 for a free price) representing how much to charge.',
             },
           },
         },
