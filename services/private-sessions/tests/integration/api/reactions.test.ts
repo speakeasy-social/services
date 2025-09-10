@@ -44,8 +44,10 @@ describe('Reactions API Tests', () => {
   });
 
   beforeEach(async () => {
-    // Clear test data before each test
+    // Clear test data before each test - order matters due to foreign key constraints
     await prisma.reaction.deleteMany();
+    await prisma.mediaPost.deleteMany();
+    await prisma.notification.deleteMany();
     await prisma.encryptedPost.deleteMany();
     await prisma.sessionKey.deleteMany();
     await prisma.session.deleteMany();

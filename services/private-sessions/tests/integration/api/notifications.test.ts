@@ -43,9 +43,14 @@ describe('Notifications API Tests', () => {
   });
 
   beforeEach(async () => {
-    // Clear test data before each test
+    // Clear test data before each test - order matters due to foreign key constraints
+    await prisma.reaction.deleteMany();
+    await prisma.mediaPost.deleteMany();
     await prisma.notification.deleteMany();
     await prisma.seenNotifications.deleteMany();
+    await prisma.encryptedPost.deleteMany();
+    await prisma.sessionKey.deleteMany();
+    await prisma.session.deleteMany();
     
     // Setup mock for Bluesky session validation
     mockBlueskySession({ did: userDid, host: 'http://localhost:2583' });
