@@ -93,3 +93,5 @@ jobs:
 
       - name: Test
         run: NODE_ENV=test pnpm test
+        env:
+          CI: true

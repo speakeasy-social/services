@@ -8,5 +8,7 @@ export default defineConfig({
     environment: 'node',
     setupFiles: ['./tests/setup.ts'],
     testTimeout: 10000,
+    // Improve CI output clarity
+    reporter: process.env.CI ? ['verbose', 'github-actions'] : ['verbose'],
   },
 });
