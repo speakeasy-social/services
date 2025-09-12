@@ -118,3 +118,38 @@ export const createCheckoutSessionDef: LexiconDoc = {
     },
   },
 };
+
+export const createSubscriptionDef: LexiconDoc = {
+  lexicon: 1,
+  id: 'social.spkeasy.actor.createSubscription',
+  defs: {
+    main: {
+      type: 'procedure',
+      description: 'Start a subscription through Stripe',
+      input: {
+        encoding: 'application/json',
+        schema: {
+          type: 'object',
+          required: ['unit_amount'],
+          properties: {
+            unit_amount: {
+              type: 'integer',
+              description: 'A positive integer in cents (or 0 for a free price) representing how much to charge.',
+            },
+          },
+        },
+      },
+      output: {
+        encoding: 'application/json',
+        schema: {
+          type: 'object',
+          required: ['status', 'clientSecret'],
+          properties: {
+            status: { type: 'string' },
+            clientSecret: { type: 'string' },
+          },
+        },
+      },
+    },
+  },
+};
