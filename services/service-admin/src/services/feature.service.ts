@@ -1,12 +1,11 @@
-import {
-  PrismaClient,
-  UserFeature,
-  InviteCode,
-} from '../generated/prisma-client/index.js';
 import { NotFoundError, ValidationError } from '@speakeasy-services/common';
-import { getPrismaClient } from '../db.js';
 import Stripe from 'stripe';
 import config from '../config.js';
+import { getPrismaClient } from '../db.js';
+import {
+  InviteCode,
+  UserFeature
+} from '../generated/prisma-client/index.js';
 
 const prisma = getPrismaClient();
 
@@ -108,5 +107,30 @@ export class FeatureService {
       return_url: `${config.SPKEASY_HOST}/donate/thanks`,
     });
     return session.client_secret ?? new Error("Stripe API call failed");
+  }
+
+  async createSubscription(unitAmount: number): Promise<string | Error> {
+    const stripe = new Stripe(config.STRIPE_SECRET_KEY);
+    const session = await stripe.checkout.sessions.create({
+      line_items: [{
+        price_data: {
+          currency: 'nzd',
+          product_data: {
+            name: 'Monthly Donation',
+          },
+          recurring: {
+            interval: 'month',
+            interval_count: 1,
+          },
+          unit_amount: unitAmount,
+        },
+        quantity: 1,
+      }],
+      mode: 'subscription',
+      ui_mode: 'embedded',
+      return_url: `${config.SPKEASY_HOST}/donate/thanks`,
+    });
+    return session.client_secret ?? new Error("Stripe API call failed");
+
   }
 }
