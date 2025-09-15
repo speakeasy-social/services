@@ -114,6 +114,6 @@ export class FeatureService {
         quantity: 1,
       }],
     });
-    return session.client_secret ?? new Error("Stripe API call failed");
+    return session.client_secret ?? new Error("Stripe API call did not return a client secret");
   }
 }

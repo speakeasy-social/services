@@ -90,7 +90,7 @@ export const donateDef: LexiconDoc = {
   defs: {
     main: {
       type: 'procedure',
-      description: 'Donate to Speakeasy via Stripe, as a single payment or subscription',
+      description: 'Prepare payment details for a Stripe checkout as either one-time payment or subscription',
       input: {
         encoding: 'application/json',
         schema: {
