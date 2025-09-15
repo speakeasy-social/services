@@ -36,8 +36,7 @@ social.spkeasy.actor.putProfile               - Update encrypted private profile
 # Feature Management
 social.spkeasy.actor.getFeatures              - Get features enabled for an actor
 social.spkeasy.actor.applyInviteCode          - Apply a code to enable a feature
-social.spkeasy.actor.createCheckoutSession    - Create a checkout session with the Stripe API
-social.spkeasy.actor.createSubscription    - Create a subscription with the Stripe API
+social.spkeasy.actor.donate                   - Donate to Speakeasy as a single payment or monthly subscription
 
 # Key Management                              - Swiss service
 social.spkeasy.keys.getPublicKey              - Get user's public key for encryption

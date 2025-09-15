@@ -84,57 +84,26 @@ export const applyInviteCodeDef: LexiconDoc = {
   },
 };
 
-export const createCheckoutSessionDef: LexiconDoc = {
+export const donateDef: LexiconDoc = {
   lexicon: 1,
-  id: 'social.spkeasy.actor.createCheckoutSession',
+  id: 'social.spkeasy.actor.donate',
   defs: {
     main: {
       type: 'procedure',
-      description: 'Process a payment through Stripe',
+      description: 'Donate to Speakeasy via Stripe, as a single payment or subscription',
       input: {
         encoding: 'application/json',
         schema: {
           type: 'object',
-          required: ['unit_amount'],
+          required: ['unit_amount', 'mode'],
           properties: {
             unit_amount: {
               type: 'integer',
               description: 'A positive integer in cents (or 0 for a free price) representing how much to charge.',
             },
-          },
-        },
-      },
-      output: {
-        encoding: 'application/json',
-        schema: {
-          type: 'object',
-          required: ['status', 'clientSecret'],
-          properties: {
-            status: { type: 'string' },
-            clientSecret: { type: 'string' },
-          },
-        },
-      },
-    },
-  },
-};
-
-export const createSubscriptionDef: LexiconDoc = {
-  lexicon: 1,
-  id: 'social.spkeasy.actor.createSubscription',
-  defs: {
-    main: {
-      type: 'procedure',
-      description: 'Start a subscription through Stripe',
-      input: {
-        encoding: 'application/json',
-        schema: {
-          type: 'object',
-          required: ['unit_amount'],
-          properties: {
-            unit_amount: {
-              type: 'integer',
-              description: 'A positive integer in cents (or 0 for a free price) representing how much to charge.',
+            mode: {
+              type: 'string',
+              description: "Must be either 'payment' or 'subscription'",
             },
           },
         },
