@@ -1,19 +1,18 @@
-import { FeatureService } from '../services/feature.service.js';
 import {
   authorize,
+  ExtendedRequest,
+  getSessionDid,
   RequestHandler,
   RequestHandlerReturn,
-  ExtendedRequest,
-  validateAgainstLexicon,
-  User,
-  getSessionDid,
+  validateAgainstLexicon
 } from '@speakeasy-services/common';
 import {
-  getFeaturesDef,
   applyInviteCodeDef,
-  createCheckoutSessionDef,
-  createSubscriptionDef,
+  donateDef,
+  getFeaturesDef
 } from '../lexicon/types/features.js';
+import { FeatureService } from '../services/feature.service.js';
+import { Mode } from '../types.js';
 import { toFeaturesListView } from '../views/feature.views.js';
 
 const featureService = new FeatureService();
@@ -53,33 +52,15 @@ const methodHandlers = {
       body: { status: 'success' },
     };
   },
-  'social.spkeasy.actor.createCheckoutSession': async (
+  'social.spkeasy.actor.donate': async (
     req: ExtendedRequest,
   ): RequestHandlerReturn => {
-    const { unit_amount: unitAmount } = req.body;
+    const { unit_amount: unitAmount, mode } = req.body;
 
     // Validate input against lexicon
-    validateAgainstLexicon(createCheckoutSessionDef, req.body);
+    validateAgainstLexicon(donateDef, req.body);
 
-    const clientSecret = await featureService.createCheckoutSession(unitAmount as number);
-
-    return {
-      body: {
-        status: 'success',
-        clientSecret,
-      },
-    };
-  },
-  'social.spkeasy.actor.createSubscription': async (
-    req: ExtendedRequest,
-  ): RequestHandlerReturn => {
-    const { unit_amount: unitAmount } = req.body;
-
-    // Validate input against lexicon
-    validateAgainstLexicon(createSubscriptionDef, req.body);
-
-    // const clientSecret = await featureService.createSubscription();
-    const clientSecret = await featureService.createSubscription(unitAmount as number);
+    const clientSecret = await featureService.donate(unitAmount as number, mode as Mode);
 
     return {
       body: {
@@ -98,11 +79,8 @@ export const methods: Record<MethodName, { handler: RequestHandler }> = {
   'social.spkeasy.actor.applyInviteCode': {
     handler: methodHandlers['social.spkeasy.actor.applyInviteCode'],
   },
-  'social.spkeasy.actor.createCheckoutSession': {
-    handler: methodHandlers['social.spkeasy.actor.createCheckoutSession'],
-  },
-  'social.spkeasy.actor.createSubscription': {
-    handler: methodHandlers['social.spkeasy.actor.createSubscription'],
+  'social.spkeasy.actor.donate': {
+    handler: methodHandlers['social.spkeasy.actor.donate'],
   },
 };
 

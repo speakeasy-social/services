@@ -6,6 +6,7 @@ import {
   InviteCode,
   UserFeature
 } from '../generated/prisma-client/index.js';
+import { Mode } from '../types.js';
 
 const prisma = getPrismaClient();
 
@@ -89,48 +90,30 @@ export class FeatureService {
     });
   }
 
-  async createCheckoutSession(unitAmount: number): Promise<string | Error> {
+  async donate(unitAmount: number, mode: Mode): Promise<string | Error> {
+    const paymentPriceData = {
+      currency: 'nzd',
+      unit_amount: unitAmount,
+      product_data: { name: 'One-time Donation' },
+    }
+    const subscriptionPriceData = {
+      currency: 'nzd',
+      unit_amount: unitAmount,
+      product_data: { name: 'Monthly Donation' },
+      recurring: { interval: 'month', interval_count: 1 }
+    }
+    const price_data = mode === 'payment' ? paymentPriceData : subscriptionPriceData
+
     const stripe = new Stripe(config.STRIPE_SECRET_KEY);
     const session = await stripe.checkout.sessions.create({
-      line_items: [{
-        price_data: {
-          currency: 'nzd',
-          product_data: {
-            name: 'One-time Donation',
-          },
-          unit_amount: unitAmount,
-        },
-        quantity: 1,
-      }],
-      mode: 'payment',
+      mode,
       ui_mode: 'embedded',
       return_url: `${config.SPKEASY_HOST}/donate/thanks`,
-    });
-    return session.client_secret ?? new Error("Stripe API call failed");
-  }
-
-  async createSubscription(unitAmount: number): Promise<string | Error> {
-    const stripe = new Stripe(config.STRIPE_SECRET_KEY);
-    const session = await stripe.checkout.sessions.create({
       line_items: [{
-        price_data: {
-          currency: 'nzd',
-          product_data: {
-            name: 'Monthly Donation',
-          },
-          recurring: {
-            interval: 'month',
-            interval_count: 1,
-          },
-          unit_amount: unitAmount,
-        },
+        price_data,
         quantity: 1,
       }],
-      mode: 'subscription',
-      ui_mode: 'embedded',
-      return_url: `${config.SPKEASY_HOST}/donate/thanks`,
     });
     return session.client_secret ?? new Error("Stripe API call failed");
-
   }
 }
