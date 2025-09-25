@@ -36,12 +36,14 @@ social.spkeasy.actor.putProfile               - Update encrypted private profile
 # Feature Management
 social.spkeasy.actor.getFeatures              - Get features enabled for an actor
 social.spkeasy.actor.applyInviteCode          - Apply a code to enable a feature
-social.spkeasy.actor.donate                   - Donate to Speakeasy as a single payment or monthly subscription
 
 # Key Management                              - Swiss service
 social.spkeasy.keys.getPublicKey              - Get user's public key for encryption
 social.spkeasy.keys.getPrivateKey             - Get user's private key (owner only)
 social.spkeasy.keys.rotate                    - Request key rotation
+
+# Misc.
+social.spkeasy.actor.donate                   - Donate to Speakeasy as a single payment or monthly subscription
 ```
 
 ## Trust Management
