@@ -110,6 +110,7 @@ export type Subject =
   | 'feature'
   | 'notification'
   | 'reaction'
+  | 'testimonial'
   | 'invite_code'
   | 'media'
   | 'key';
@@ -264,6 +265,7 @@ const userAbilities = [
 
   // Media creation doesn't require ownership checks (usage tracked elsewhere)
   can('create', 'media'),
+  can('create', 'testimonial'),
 
   // Users can manage their own keys
   // user.did must match record.authorDid (user owns the key)
