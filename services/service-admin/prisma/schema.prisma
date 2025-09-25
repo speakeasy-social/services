@@ -16,7 +16,7 @@ model InviteCode {
   code          String   @unique
   totalUses     Int      @default(1)
   remainingUses Int      @default(1)
-  key           String   
+  key           String
   value         String   @default("true")
   createdAt     DateTime @default(now())
   updatedAt     DateTime?
@@ -54,7 +54,17 @@ model UserFeature {
 
   @@index([userDid, key], name: "idx_user_did_key_index")
   @@map("user_features")
-} 
+}
+
+model Testimonial {
+  id        String   @id @default(uuid()) @db.Uuid
+  userDid   String   @db.Uuid
+  message   String
+  createdAt DateTime @default(now())
+
+  @@index([userDid], name: "idx_testimonial_user_did")
+  @@map("testimonials")
+}
 
 // Generates a broken ER diagram, see README.md if you
 // need to update the diagram
