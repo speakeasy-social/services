@@ -465,6 +465,9 @@ importers:
       pino-pretty:
         specifier: ^13.0.0
         version: 13.0.0
+      stripe:
+        specifier: ^18.4.0
+        version: 18.4.0(@types/node@22.13.11)
       zod:
         specifier: ^3.24.2
         version: 3.24.2
@@ -7549,6 +7552,19 @@ packages:
     resolution: {integrity: sha512-TcccoMhJOM3OebGhSBEmp3UZ2SfDMZUEBdRA/9ynfLi8yYajyWX3JiXArcJt4Umh4vISpspkQIY8ZZoCqjbviA==}
     dependencies:
       js-tokens: 9.0.1
+
+  /stripe@18.4.0(@types/node@22.13.11):
+    resolution: {integrity: sha512-LKFeDnDYo4U/YzNgx2Lc9PT9XgKN0JNF1iQwZxgkS4lOw5NunWCnzyH5RhTlD3clIZnf54h7nyMWkS8VXPmtTQ==}
+    engines: {node: '>=12.*'}
+    peerDependencies:
+      '@types/node': '>=12.x.x'
+    peerDependenciesMeta:
+      '@types/node':
+        optional: true
+    dependencies:
+      '@types/node': 22.13.11
+      qs: 6.13.0
+    dev: false
 
   /stylis@4.3.6:
     resolution: {integrity: sha512-yQ3rwFWRfwNUY7H5vpU0wfdkNSnvnJinhF9830Swlaxl03zsOjCfmX0ugac+3LtK0lYSgwL/KXc8oYL3mG4YFQ==}

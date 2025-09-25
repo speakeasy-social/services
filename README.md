@@ -165,6 +165,7 @@ The services are built as a collection of microservices that share a common deve
    ```
    This will:
    - Create a `.env` file from `.env.example` if it doesn't exist
+   - Replace placeholder Stripe API secret key (Test environment!) in `.env` if relevant to your work
    - Start all services in Docker
    - Run database migrations
    - Build and start the services
