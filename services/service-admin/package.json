@@ -28,7 +28,7 @@
   "dependencies": {
     "@atproto/lexicon": "^0.4.9",
     "@atproto/xrpc-server": "^0.7.13",
-    "@prisma/client": "^6.5.0",
+    "@prisma/client": "^6.16.3",
     "@speakeasy-services/common": "workspace:^",
     "@speakeasy-services/service-base": "workspace:^",
     "dotenv": "^16.4.7",
@@ -41,9 +41,9 @@
     "@typescript-eslint/eslint-plugin": "^7.0.1",
     "@typescript-eslint/parser": "^7.0.1",
     "eslint": "^8.56.0",
-    "prisma": "^6.5.0",
+    "prisma": "^6.16.3",
     "prisma-erd-generator": "^2.0.4",
     "tsx": "^4.19.3",
     "typescript": "^5.8.3"
   }
-} 
+}
