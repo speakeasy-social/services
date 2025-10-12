@@ -2,7 +2,7 @@ import { LexiconDoc } from '@atproto/lexicon';
 
 export const createTestimonialDef: LexiconDoc = {
   lexicon: 1,
-  id: 'social.spkeasy.testimonial.create',
+  id: 'social.spkeasy.actor.createTestimonial',
   defs: {
     main: {
       type: 'procedure',
@@ -21,9 +21,10 @@ export const createTestimonialDef: LexiconDoc = {
         encoding: 'application/json',
         schema: {
           type: 'object',
-          required: ['status'],
+          required: ['status', 'clientSecret'],
           properties: {
             status: { type: 'string' },
+            clientSecret: { type: 'string' },
           },
         },
       },

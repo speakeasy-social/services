@@ -15,7 +15,7 @@ const testimonialService = new TestimonialService();
 
 // Define method handlers with lexicon validation
 const methodHandlers = {
-  'social.spkeasy.testimonial.create': async (
+  'social.spkeasy.actor.createTestimonial': async (
     req: ExtendedRequest,
   ): RequestHandlerReturn => {
     const did = getSessionDid(req);
@@ -25,11 +25,12 @@ const methodHandlers = {
     validateAgainstLexicon(createTestimonialDef, req.body);
 
     const { message } = req.query;
-    await testimonialService.createTestimonial(did as string, message as string);
+    const result = await testimonialService.createTestimonial(did as string, message as string);
 
     return {
       body: {
         status: 'success',
+        clientSecret: result,
       },
     };
   },
@@ -37,8 +38,8 @@ const methodHandlers = {
 
 // Define methods using XRPC lexicon
 export const methods: Record<MethodName, { handler: RequestHandler }> = {
-  'social.spkeasy.testimonial.create': {
-    handler: methodHandlers['social.spkeasy.testimonial.create'],
+  'social.spkeasy.actor.createTestimonial': {
+    handler: methodHandlers['social.spkeasy.actor.createTestimonial'],
   },
 };
 

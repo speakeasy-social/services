@@ -4,11 +4,13 @@
 generator client {
   provider = "prisma-client-js"
   output = "../src/generated/prisma-client"
+  // previewFeatures = ["postgresqlExtensions"]
 }
 
 datasource db {
   provider = "postgresql"
   url      = env("SERVICE_ADMIN_DATABASE_URL")
+  // extensions = [uuidOssp(map: "uuid-ossp")]
 }
 
 model InviteCode {
@@ -56,13 +58,24 @@ model UserFeature {
   @@map("user_features")
 }
 
+model Supporter {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  did          String
+  contribution String
+  details      Json?
+  createdAt    DateTime @default(now())
+
+  @@index([did, createdAt], name: "idx_supporter_did_created")
+  @@map("supporters")
+}
+
 model Testimonial {
-  id        String   @id @default(uuid()) @db.Uuid
-  userDid   String   @db.Uuid
-  message   String
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  did       String
+  content   Json
   createdAt DateTime @default(now())
 
-  @@index([userDid], name: "idx_testimonial_user_did")
+  @@index([did], name: "idx_testimonial_did")
   @@map("testimonials")
 }
 
