@@ -69,6 +69,8 @@ export const errorHandler: ErrorRequestHandler = async (
     [
       'ValidationError',
       'NotFoundError',
+      'AuthenticationError',
+      'AuthorizationError',
       'PrismaClientKnownRequestError',
       'ServiceError',
     ].includes(error.name) ||
@@ -91,6 +93,16 @@ export const errorHandler: ErrorRequestHandler = async (
     if (error.name === 'NotFoundError') {
       statusCode = 404;
       responseObject.code = 'NotFound';
+    } else if (error.name === 'AuthenticationError') {
+      statusCode = 401;
+    } else if (error.name === 'AuthorizationError') {
+      statusCode = 403;
+      responseObject = {
+        error: 'Forbidden',
+        message: '',
+      };
+      // Remove message field for AuthorizationError to match test expectations  
+      delete (responseObject as any).message;
     }
   }
 

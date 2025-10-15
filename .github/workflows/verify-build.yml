@@ -2,11 +2,36 @@ name: Verify Build
 
 on:
   pull_request:
-    branches: [main]
 
 jobs:
   build:
     runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: speakeasy
+          POSTGRES_PASSWORD: speakeasy
+          POSTGRES_DB: speakeasy
+        ports:
+          - 5496:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      localstack:
+        image: localstack/localstack:latest
+        env:
+          SERVICES: s3
+          DEBUG: 1
+          AWS_ACCESS_KEY_ID: s3_test_key
+          AWS_SECRET_ACCESS_KEY: s3_test_secret
+          DEFAULT_REGION: us-east-1
+        ports:
+          - 4566:4566
 
     steps:
       - uses: actions/checkout@v4
@@ -14,12 +39,12 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22.14.0'
 
       - name: Install pnpm
-        uses: pnpm/action-setup@v2
+        uses: pnpm/action-setup@v4
         with:
-          version: 8
+          version: 10.15.1
 
       # - name: Get pnpm store directory
       #   shell: bash
@@ -45,5 +70,28 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Setup environment files
+        run: pnpm dev:setup:env
+
+      - name: Install PostgreSQL client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+
+      - name: Setup database schemas
+        run: NODE_ENV=test pnpm dev:setup:db
+
+      - name: Run database migrations
+        run: NODE_ENV=test pnpm dev:setup:migrations
+
+      - name: Initialize S3
+        run: pnpm dev:setup:s3
+
+      - name: Setup pgboss
+        run: cd packages/queue && NODE_ENV=test pnpm setup:pgboss
+
       - name: Build
         run: pnpm build
+
+      - name: Test
+        run: NODE_ENV=test pnpm test
+        env:
+          CI: true

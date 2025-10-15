@@ -196,7 +196,16 @@ export async function fetchBlueskySession(
     host: getHostOrLocalhost(`https://${pdsHost}`, decoded.aud),
   });
 
-  return response as BlueskySession;
+  // If PDS returned an error, return it as-is
+  if (response && typeof response === 'object' && 'error' in response) {
+    return response as any;
+  }
+
+  // For successful responses, ensure accessJwt is set
+  return {
+    ...(response as any),
+    accessJwt: token,
+  } as BlueskySession;
 }
 
 export async function fetchBlueskyProfile(
@@ -255,10 +264,10 @@ export async function fetchFollowingDids(
       if (!response.ok) {
         if (response.status === 429 || response.status >= 500) {
           req.logger.warn(
-            'Getting follows: Rate limit or server error while fetching follows',
             {
               status: response.status,
             },
+            'Getting follows: Rate limit or server error while fetching follows',
           );
           return allFollowDids;
         }
