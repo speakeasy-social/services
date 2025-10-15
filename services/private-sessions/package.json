@@ -16,7 +16,7 @@
     "dev:worker": "tsx watch src/worker.ts",
     "clean": "rm -rf dist",
     "lint": "eslint src",
-    "test": "vitest run",
+    "test": "vitest run --no-file-parallelism",
     "test:watch": "vitest",
     "prisma:migrate": "prisma migrate deploy",
     "prisma:generate": "prisma generate"
