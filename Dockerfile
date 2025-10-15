@@ -11,7 +11,7 @@ WORKDIR /app
 COPY . .
 
 # Install all dependencies (including dev) for build
-RUN pnpm install --frozen-lockfile
+RUN COREPACK_ENABLE_DOWNLOAD_PROMPT=0 pnpm install --frozen-lockfile
 
 # Build all services and their dependencies
 RUN pnpm turbo run build --filter=@speakeasy-services/private-sessions... && \
@@ -38,7 +38,7 @@ COPY --from=base /app/pnpm-lock.yaml .
 COPY --from=base /app/pnpm-workspace.yaml .
 
 # Install production dependencies only and generate Prisma clients
-RUN pnpm install --frozen-lockfile --prod
+RUN COREPACK_ENABLE_DOWNLOAD_PROMPT=0 pnpm install --frozen-lockfile --prod
 
 # Copy supervisor script and make it executable
 COPY supervisor.js ./
