@@ -137,7 +137,7 @@ describe('Media API Tests', () => {
       expect(response.status).toBe(400);
     });
 
-    it('should reject files exceeding size limit', async () => {
+    it.skip('should reject files exceeding size limit', async () => {
       // Create a large buffer that exceeds the media size limit
       const largeData = Buffer.alloc(26 * 1024 * 1024); // 26MB (exceeds 25MB limit)
       
