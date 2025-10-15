@@ -189,17 +189,13 @@ export class Server {
   public async start() {
     try {
       await new Promise<void>((resolve, reject) => {
-        this.httpServer = this.express.listen(this.options.port, '0.0.0.0', (err) => {
-          if (err) {
-            reject(err);
-          } else {
-            const actualPort = this.httpServer?.address();
+        this.httpServer = this.express.listen(this.options.port, '0.0.0.0', () => {
+          const actualPort = this.httpServer?.address();
             const port = typeof actualPort === 'object' && actualPort?.port ? actualPort.port : this.options.port;
             this.logger.info(
               `🚀 ${this.options.name} service running on port ${port}`,
             );
             resolve();
-          }
         });
       });
     } catch (err) {
