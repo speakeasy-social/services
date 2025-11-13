@@ -88,15 +88,6 @@ export const baseSchema = {
     .string()
     .min(1)
     .describe('Host for service-admin service'),
-  SPKEASY_HOST: z
-    .string()
-    .min(1)
-    .describe('Host for Speakeasy front end'),
-
-  STRIPE_SECRET_KEY: z
-    .string()
-    .min(1)
-    .describe('Secret key for conneting to Stripe API'),
 
   HMAC_SECRET: z.string().min(1).describe('Secret key for HMAC hashing'),
   LOG_SALT: z.string().min(1).describe('Salt for HMAC hashing'),
