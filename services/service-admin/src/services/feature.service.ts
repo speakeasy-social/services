@@ -1,10 +1,12 @@
-import {
-  PrismaClient,
-  UserFeature,
-  InviteCode,
-} from '../generated/prisma-client/index.js';
 import { NotFoundError, ValidationError } from '@speakeasy-services/common';
+import Stripe from 'stripe';
+import config from '../config.js';
 import { getPrismaClient } from '../db.js';
+import {
+  InviteCode,
+  UserFeature
+} from '../generated/prisma-client/index.js';
+import { Mode } from '../types.js';
 
 const prisma = getPrismaClient();
 
@@ -36,8 +38,8 @@ export class FeatureService {
     await prisma.$transaction(async (tx) => {
       // Use raw query to get the invite code with FOR UPDATE lock
       const inviteCodes = await tx.$queryRaw<InviteCode[]>`
-        SELECT * FROM invite_codes 
-        WHERE code = ${code} 
+        SELECT * FROM invite_codes
+        WHERE code = ${code}
         FOR UPDATE
       `;
 
@@ -86,5 +88,35 @@ export class FeatureService {
         data: { remainingUses: { decrement: 1 } },
       });
     });
+  }
+
+  async donate(unitAmount: number, mode: Mode): Promise<string | Error> {
+    const paymentPriceData = {
+      currency: 'nzd',
+      unit_amount: unitAmount,
+      product_data: { name: 'One-time Donation' },
+    }
+    const subscriptionPriceData = {
+      currency: 'nzd',
+      unit_amount: unitAmount,
+      product_data: { name: 'Monthly Donation' },
+      recurring: { interval: 'month', interval_count: 1 }
+    }
+    const price_data = mode === 'payment' ? paymentPriceData : subscriptionPriceData
+
+    const stripe = new Stripe(config.STRIPE_SECRET_KEY);
+    const session = await stripe.checkout.sessions.create({
+      mode,
+      ui_mode: 'embedded',
+      return_url: `${config.SPKEASY_HOST}/donate/thanks`,
+      line_items: [{
+        price_data,
+        quantity: 1,
+      }],
+    });
+    if (!session.client_secret) {
+       throw new Error("Stripe API call did not return a client secret");
+    }
+    return session.client_secret;
   }
 }

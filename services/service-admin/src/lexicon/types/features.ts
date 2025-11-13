@@ -83,3 +83,42 @@ export const applyInviteCodeDef: LexiconDoc = {
     },
   },
 };
+
+export const donateDef: LexiconDoc = {
+  lexicon: 1,
+  id: 'social.spkeasy.actor.donate',
+  defs: {
+    main: {
+      type: 'procedure',
+      description: 'Prepare payment details for a Stripe checkout as either one-time payment or subscription',
+      input: {
+        encoding: 'application/json',
+        schema: {
+          type: 'object',
+          required: ['unit_amount', 'mode'],
+          properties: {
+            unit_amount: {
+              type: 'integer',
+              description: 'A positive integer in cents (or 0 for a free price) representing how much to charge.',
+            },
+            mode: {
+              type: 'string',
+              description: "Must be either 'payment' or 'subscription'",
+            },
+          },
+        },
+      },
+      output: {
+        encoding: 'application/json',
+        schema: {
+          type: 'object',
+          required: ['status', 'clientSecret'],
+          properties: {
+            status: { type: 'string' },
+            clientSecret: { type: 'string' },
+          },
+        },
+      },
+    },
+  },
+};

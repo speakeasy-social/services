@@ -19,7 +19,17 @@ const serviceSchema = {
     .string()
     .url()
     .describe('Database URL with service_admin schema for Prisma'),
-} as const;
+
+  SPKEASY_HOST: z
+    .string()
+    .min(1)
+    .describe('Host for Speakeasy front end'),
+
+  STRIPE_SECRET_KEY: z
+    .string()
+    .min(1)
+    .describe('Secret key for conneting to Stripe API'),
+  } as const;
 
 // Create and validate the config
 const config = validateEnv(z.object(serviceSchema));
