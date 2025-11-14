@@ -10,7 +10,8 @@
     "clean": "rimraf dist",
     "dev": "tsc -w",
     "lint": "eslint . --ext .ts",
-    "test": "jest"
+    "test": "vitest run --no-file-parallelism",
+    "test:watch": "vitest watch"
   },
   "dependencies": {
     "@atproto/lexicon": "^0.4.9",
