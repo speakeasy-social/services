@@ -198,6 +198,8 @@ export class PrivatePostsService {
     // Fetch posts from database
     const where: Prisma.EncryptedPostWhereInput = {
       session: {
+        expiresAt: { gt: new Date() },
+        revokedAt: null,
         sessionKeys: {
           some: {
             recipientDid: recipientDid,
@@ -369,6 +371,8 @@ export class PrivatePostsService {
         .findFirst({
           where: {
             session: {
+              expiresAt: { gt: new Date() },
+              revokedAt: null,
               sessionKeys: {
                 some: {
                   recipientDid: recipientDid,
@@ -390,6 +394,8 @@ export class PrivatePostsService {
         .findMany({
           where: {
             session: {
+              expiresAt: { gt: new Date() },
+              revokedAt: null,
               sessionKeys: {
                 some: {
                   recipientDid: recipientDid,
@@ -409,6 +415,8 @@ export class PrivatePostsService {
             const nestedReplies = await prisma.encryptedPost.findMany({
               where: {
                 session: {
+                  expiresAt: { gt: new Date() },
+                  revokedAt: null,
                   sessionKeys: {
                     some: {
                       recipientDid: recipientDid,
@@ -436,38 +444,50 @@ export class PrivatePostsService {
           Prisma.sql`
             WITH RECURSIVE post_chain AS (
               -- Base case: start with the current post
-              SELECT 
+              SELECT
                 ep.*,
                 (EXISTS (
-                  SELECT 1 FROM reactions r 
+                  SELECT 1 FROM reactions r
                   WHERE r.uri = ep.uri AND r."userDid" = ${recipientDid}
                 ))::int as reaction_count,
                 1 as depth
               FROM encrypted_posts ep
+              JOIN sessions s ON ep."sessionId" = s.id
               WHERE ep.uri = ${canonicalUri}
               AND ep."sessionId" IN (
-                SELECT "sessionId" 
-                FROM session_keys 
-                WHERE "recipientDid" = ${recipientDid}
+                SELECT sk."sessionId"
+                FROM session_keys sk
+                JOIN sessions s2 ON sk."sessionId" = s2.id
+                WHERE sk."recipientDid" = ${recipientDid}
+                  AND s2."expiresAt" > NOW()
+                  AND s2."revokedAt" IS NULL
               )
-              
+              AND s."expiresAt" > NOW()
+              AND s."revokedAt" IS NULL
+
               UNION ALL
-              
+
               -- Recursive case: join with parent posts
-              SELECT 
+              SELECT
                 parent.*,
                 (EXISTS (
-                  SELECT 1 FROM reactions r 
+                  SELECT 1 FROM reactions r
                   WHERE r.uri = parent.uri AND r."userDid" = ${recipientDid}
                 ))::int as reaction_count,
                 pc.depth + 1
               FROM encrypted_posts parent
+              JOIN sessions s ON parent."sessionId" = s.id
               INNER JOIN post_chain pc ON parent.uri = pc."replyUri"
               WHERE parent."sessionId" IN (
-                SELECT "sessionId" 
-                FROM session_keys 
-                WHERE "recipientDid" = ${recipientDid}
+                SELECT sk."sessionId"
+                FROM session_keys sk
+                JOIN sessions s2 ON sk."sessionId" = s2.id
+                WHERE sk."recipientDid" = ${recipientDid}
+                  AND s2."expiresAt" > NOW()
+                  AND s2."revokedAt" IS NULL
               )
+              AND s."expiresAt" > NOW()
+              AND s."revokedAt" IS NULL
               AND pc.depth < 30
             )
             SELECT * FROM post_chain

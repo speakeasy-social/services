@@ -54,22 +54,22 @@ const userAbilities = [
   can('*', 'trusted_user', { did: 'authorDid' }),
 
   // Authors can manage their own sessions and posts
-  can('create', 'private_session', { authorDid: 'did' }),
-  can('revoke', 'private_session', { authorDid: 'did' }),
-  can('*', 'private_post', { authorDid: 'did' }),
+  can('create', 'private_session', { did: 'authorDid' }),
+  can('revoke', 'private_session', { did: 'authorDid' }),
+  can('*', 'private_post', { did: 'authorDid' }),
   // Recipients can read posts shared with them
-  can('list', 'private_post', { recipientDid: 'did' }),
-  can('list', 'session_key', { recipientDid: 'did' }),
-  can('list', 'feature', { userDid: 'did' }),
-  can('apply', 'invite_code', { userDid: 'did' }),
+  can('list', 'private_post', { did: 'recipientDid' }),
+  can('list', 'session_key', { did: 'recipientDid' }),
+  can('list', 'feature', { did: 'userDid' }),
+  can('apply', 'invite_code', { did: 'userDid' }),
 
-  can('*', 'notification', { userDid: 'did' }),
-  can('*', 'reaction', { userDid: 'did' }),
+  can('*', 'notification', { did: 'userDid' }),
+  can('*', 'reaction', { did: 'userDid' }),
 
   can('create', 'media'),
 
   // Users can manage their own keys
-  can('*', 'key', { authorDid: 'did' }),
+  can('*', 'key', { did: 'authorDid' }),
   // Anyone can read public keys
   can('get', 'key'),
 ];
