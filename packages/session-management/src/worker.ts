@@ -2,7 +2,7 @@ import { Worker } from '@speakeasy-services/service-base';
 import { getServiceJobName, JOB_NAMES } from '@speakeasy-services/queue';
 import { SessionPrismaClient } from './session.service.js';
 import { recryptDEK } from '@speakeasy-services/crypto';
-import { speakeasyApiRequest } from 'packages/common/dist/utils/index.js';
+import { speakeasyApiRequest } from '@speakeasy-services/common';
 
 const DAYS = 24 * 60 * 60 * 1000;
 const WINDOW_FOR_NEW_TRUSTED_USER = 365 * DAYS;
