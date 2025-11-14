@@ -537,13 +537,11 @@ describe('Private Posts API Tests', () => {
     const otherUserDid = 'did:example:bob-other-user';
     const otherUserToken = generateTestToken(otherUserDid);
 
-    beforeEach(() => {
-      // Mock session for the other user
-      mockBlueskySession({ did: otherUserDid, host: 'http://localhost:2583' });
-    });
-
     describe('Cross-user post access control', () => {
       it('should not allow user to delete another user\'s post', async () => {
+        // Mock Bluesky session for otherUserDid who will try to delete
+        mockBlueskySession({ did: otherUserDid, host: 'http://localhost:2583' });
+
         // Create session and post owned by authorDid
         const session = await prisma.session.create({
           data: {
@@ -577,7 +575,7 @@ describe('Private Posts API Tests', () => {
           .set('Authorization', `Bearer ${otherUserToken}`)
           .set('Content-Type', 'application/json')
           .send({ uri: testPostUri })
-          .expect(404); // Post should not be found for different user
+          .expect(403); // Should be forbidden - user cannot delete another user's post
 
         // Verify post still exists
         const post = await prisma.encryptedPost.findUnique({
@@ -587,6 +585,9 @@ describe('Private Posts API Tests', () => {
       });
 
       it('should not return posts from sessions user is not a member of', async () => {
+        // Mock Bluesky session for otherUserDid who will try to read
+        mockBlueskySession({ did: otherUserDid, host: 'http://localhost:2583' });
+
         // Create session WITHOUT otherUserDid as a recipient
         const session = await prisma.session.create({
           data: {
@@ -627,6 +628,9 @@ describe('Private Posts API Tests', () => {
       });
 
       it('should not return post thread if user is not in session', async () => {
+        // Mock Bluesky session for otherUserDid who will try to read thread
+        mockBlueskySession({ did: otherUserDid, host: 'http://localhost:2583' });
+
         // Create session and post WITHOUT otherUserDid
         const session = await prisma.session.create({
           data: {
