@@ -58,7 +58,10 @@ function lexiconToZodSchema(
         zodType = z.number();
         break;
       case 'boolean':
-        zodType = z.boolean();
+        zodType = z.union([
+          z.boolean(),
+          z.string().transform((val) => val === 'true'),
+        ]);
         break;
       case 'integer':
         zodType = z.union([
