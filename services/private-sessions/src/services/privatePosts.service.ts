@@ -37,6 +37,8 @@ interface GetPostsOptions {
   uris?: string[];
   replyTo?: string;
   filter?: string;
+  hasReplies?: boolean;
+  hasMedia?: boolean;
 }
 
 export class PrivatePostsService {
@@ -229,6 +231,14 @@ export class PrivatePostsService {
           where.OR = [{ replyUri: uris[0] }, { replyRootUri: uris[0] }];
         }),
       );
+    }
+
+    if (options.hasReplies === true) {
+      where.replyUri = { not: null };
+    }
+
+    if (options.hasMedia === true) {
+      where.mediaPosts = { some: {} };
     }
 
     await Promise.all(promises);

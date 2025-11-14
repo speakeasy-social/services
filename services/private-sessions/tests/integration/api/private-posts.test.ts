@@ -828,4 +828,117 @@ describe('Private Posts API Tests', () => {
       });
     });
   });
+
+  describe('GET /xrpc/social.spkeasy.privatePost.getPosts - Filtering', () => {
+    it('should filter posts with hasReplies=true', async () => {
+      const session = await prisma.session.create({
+        data: {
+          authorDid,
+          expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+          sessionKeys: {
+            create: {
+              recipientDid: authorDid,
+              userKeyPairId: '00000000-0000-0000-0000-000000000001',
+              encryptedDek: Buffer.from('key'),
+            },
+          },
+        },
+      });
+
+      // Create a parent post (no reply)
+      const parentUri = `at://${authorDid}/social.spkeasy.feed.privatePost/parent`;
+      await prisma.encryptedPost.create({
+        data: {
+          uri: parentUri,
+          rkey: 'parent',
+          authorDid,
+          sessionId: session.id,
+          langs: ['en'],
+          encryptedContent: Buffer.from('parent-content'),
+          replyUri: null,
+          replyRootUri: null,
+        },
+      });
+
+      // Create a reply post
+      const replyUri = `at://${authorDid}/social.spkeasy.feed.privatePost/reply`;
+      await prisma.encryptedPost.create({
+        data: {
+          uri: replyUri,
+          rkey: 'reply',
+          authorDid,
+          sessionId: session.id,
+          langs: ['en'],
+          encryptedContent: Buffer.from('reply-content'),
+          replyUri: parentUri,
+          replyRootUri: parentUri,
+        },
+      });
+
+      const response = await request(server.express)
+        .get('/xrpc/social.spkeasy.privatePost.getPosts')
+        .set('Authorization', `Bearer ${validToken}`)
+        .query({ hasReplies: 'true' })
+        .expect(200);
+
+      expect(response.body.encryptedPosts).toHaveLength(1);
+      expect(response.body.encryptedPosts[0].uri).toBe(replyUri);
+    });
+
+    it('should filter posts with hasMedia=true', async () => {
+      const session = await prisma.session.create({
+        data: {
+          authorDid,
+          expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+          sessionKeys: {
+            create: {
+              recipientDid: authorDid,
+              userKeyPairId: '00000000-0000-0000-0000-000000000001',
+              encryptedDek: Buffer.from('key'),
+            },
+          },
+        },
+      });
+
+      // Create a post without media
+      const postWithoutMediaUri = `at://${authorDid}/social.spkeasy.feed.privatePost/no-media`;
+      await prisma.encryptedPost.create({
+        data: {
+          uri: postWithoutMediaUri,
+          rkey: 'no-media',
+          authorDid,
+          sessionId: session.id,
+          langs: ['en'],
+          encryptedContent: Buffer.from('content-no-media'),
+        },
+      });
+
+      // Create a post with media
+      const postWithMediaUri = `at://${authorDid}/social.spkeasy.feed.privatePost/with-media`;
+      await prisma.encryptedPost.create({
+        data: {
+          uri: postWithMediaUri,
+          rkey: 'with-media',
+          authorDid,
+          sessionId: session.id,
+          langs: ['en'],
+          encryptedContent: Buffer.from('content-with-media'),
+          mediaPosts: {
+            create: {
+              mediaKey: 'test-media-key',
+            },
+          },
+        },
+      });
+
+      const response = await request(server.express)
+        .get('/xrpc/social.spkeasy.privatePost.getPosts')
+        .set('Authorization', `Bearer ${validToken}`)
+        .query({ hasMedia: 'true' })
+        .expect(200);
+
+      expect(response.body.encryptedPosts).toHaveLength(1);
+      expect(response.body.encryptedPosts[0].uri).toBe(postWithMediaUri);
+    });
+  });
 });
