@@ -55,7 +55,7 @@ export class SessionJobHandlers {
     // Handle update session keys job
     worker.work<UpdateSessionKeysJob>(
       getServiceJobName(this.serviceName, JOB_NAMES.UPDATE_SESSION_KEYS),
-      async (job) => {
+      async (job: any) => {
         const { prevKeyId, newKeyId, prevPrivateKey, newPublicKey } = job.data;
         const BATCH_SIZE = 100;
         let hasMore = true;
@@ -99,7 +99,7 @@ export class SessionJobHandlers {
     // Handle add recipient to session job
     worker.work<AddRecipientToSessionJob>(
       getServiceJobName(this.serviceName, JOB_NAMES.ADD_RECIPIENT_TO_SESSION),
-      async (job) => {
+      async (job: any) => {
         worker.logger.info(`Adding recipient to (${this.serviceName}) session`);
 
         const { authorDid, recipientDid } = job.data;
@@ -250,7 +250,7 @@ export class SessionJobHandlers {
     // Handle revoke session job
     worker.work<RevokeSessionJob>(
       getServiceJobName(this.serviceName, JOB_NAMES.REVOKE_SESSION),
-      async (job) => {
+      async (job: any) => {
         const { authorDid, recipientDid } = job.data;
 
         // Revoke all active sessions for the author
@@ -280,7 +280,7 @@ export class SessionJobHandlers {
     // Handle delete session keys job
     worker.work<DeleteSessionKeysJob>(
       getServiceJobName(this.serviceName, JOB_NAMES.DELETE_SESSION_KEYS),
-      async (job) => {
+      async (job: any) => {
         const { authorDid, recipientDid } = job.data;
 
         // Check if the recipient is still trusted

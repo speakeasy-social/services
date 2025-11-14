@@ -15,8 +15,10 @@ export class SessionService extends SharedSessionService<
 > {
   constructor() {
     // Cast the Prisma client to the expected interface and pass service name
+    // Using 'unknown' intermediate cast because property names differ (profileSession vs session)
+    // but the structure is compatible
     super(
-      getPrismaClient() as SessionPrismaClient<
+      getPrismaClient() as unknown as SessionPrismaClient<
         ProfileSession,
         ProfileSessionKey
       >,
