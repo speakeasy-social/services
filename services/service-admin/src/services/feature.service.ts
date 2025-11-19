@@ -90,22 +90,29 @@ export class FeatureService {
     });
   }
 
-  async donate(unitAmount: number, mode: Mode): Promise<string | Error> {
+  async donate(
+    unitAmount: number,
+    mode: Mode,
+    currency: string,
+    donorEmail?: string
+  ): Promise<string | Error> {
+    const normalizedCurrency = currency.toLowerCase();
+
     const paymentPriceData = {
-      currency: 'nzd',
+      currency: normalizedCurrency,
       unit_amount: unitAmount,
       product_data: { name: 'One-time Donation' },
     }
     const subscriptionPriceData = {
-      currency: 'nzd',
+      currency: normalizedCurrency,
       unit_amount: unitAmount,
       product_data: { name: 'Monthly Donation' },
-      recurring: { interval: 'month', interval_count: 1 }
+      recurring: { interval: 'month' as const, interval_count: 1 }
     }
     const price_data = mode === 'payment' ? paymentPriceData : subscriptionPriceData
 
     const stripe = new Stripe(config.STRIPE_SECRET_KEY);
-    const session = await stripe.checkout.sessions.create({
+    const sessionParams: Stripe.Checkout.SessionCreateParams = {
       mode,
       ui_mode: 'embedded',
       return_url: `${config.SPKEASY_HOST}/donate/thanks`,
@@ -113,7 +120,13 @@ export class FeatureService {
         price_data,
         quantity: 1,
       }],
-    });
+    };
+
+    if (donorEmail) {
+      sessionParams.customer_email = donorEmail;
+    }
+
+    const session = await stripe.checkout.sessions.create(sessionParams);
     if (!session.client_secret) {
        throw new Error("Stripe API call did not return a client secret");
     }

@@ -4,7 +4,8 @@ import {
   getSessionDid,
   RequestHandler,
   RequestHandlerReturn,
-  validateAgainstLexicon
+  validateAgainstLexicon,
+  ValidationError
 } from '@speakeasy-services/common';
 import {
   applyInviteCodeDef,
@@ -14,6 +15,7 @@ import {
 import { FeatureService } from '../services/feature.service.js';
 import { Mode } from '../types.js';
 import { toFeaturesListView } from '../views/feature.views.js';
+import { z } from 'zod';
 
 const featureService = new FeatureService();
 
@@ -55,12 +57,33 @@ const methodHandlers = {
   'social.spkeasy.actor.donate': async (
     req: ExtendedRequest,
   ): RequestHandlerReturn => {
-    const { unit_amount: unitAmount, mode } = req.body;
-
     // Validate input against lexicon
     validateAgainstLexicon(donateDef, req.body);
 
-    const clientSecret = await featureService.donate(unitAmount as number, mode as Mode);
+    const { unitAmount, mode, currency, donorEmail } = req.body;
+
+    // Validate currency is a 3-letter code
+    const currencySchema = z.string().length(3).toUpperCase();
+    const currencyResult = currencySchema.safeParse(currency);
+    if (!currencyResult.success) {
+      throw new ValidationError('Currency must be a 3-letter ISO code (e.g., USD, NZD, EUR)');
+    }
+
+    // Validate donorEmail if provided
+    if (donorEmail !== undefined) {
+      const emailSchema = z.string().email();
+      const emailResult = emailSchema.safeParse(donorEmail);
+      if (!emailResult.success) {
+        throw new ValidationError('Invalid email address format');
+      }
+    }
+
+    const clientSecret = await featureService.donate(
+      unitAmount as number,
+      mode as Mode,
+      currencyResult.data,
+      donorEmail as string | undefined
+    );
 
     return {
       body: {
