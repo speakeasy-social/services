@@ -60,7 +60,7 @@ const methodHandlers = {
     // Validate input against lexicon
     validateAgainstLexicon(donateDef, req.body);
 
-    const { unit_amount: unitAmount, mode, currency, donor_email: donorEmail } = req.body;
+    const { unitAmount, mode, currency, donorEmail } = req.body;
 
     // Validate currency is a 3-letter code
     const currencySchema = z.string().length(3).toUpperCase();
@@ -69,7 +69,7 @@ const methodHandlers = {
       throw new ValidationError('Currency must be a 3-letter ISO code (e.g., USD, NZD, EUR)');
     }
 
-    // Validate donor_email if provided
+    // Validate donorEmail if provided
     if (donorEmail !== undefined) {
       const emailSchema = z.string().email();
       const emailResult = emailSchema.safeParse(donorEmail);
