@@ -95,7 +95,7 @@ export const donateDef: LexiconDoc = {
         encoding: 'application/json',
         schema: {
           type: 'object',
-          required: ['unit_amount', 'mode'],
+          required: ['unit_amount', 'mode', 'currency'],
           properties: {
             unit_amount: {
               type: 'integer',
@@ -104,6 +104,14 @@ export const donateDef: LexiconDoc = {
             mode: {
               type: 'string',
               description: "Must be either 'payment' or 'subscription'",
+            },
+            currency: {
+              type: 'string',
+              description: 'Three-letter ISO currency code (e.g., USD, NZD, EUR)',
+            },
+            donor_email: {
+              type: 'string',
+              description: 'Optional email address of the donor for receipt delivery',
             },
           },
         },
