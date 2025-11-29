@@ -44,7 +44,7 @@ export class NotificationService {
     did: string;
     cursor?: string;
     limit?: number;
-    priority?: string;
+    priority?: boolean;
   }): Promise<{
     notifications: (Notification & {
       post?: (EncryptedPost & { _count: { reactions: number } }) | null;
