@@ -532,4 +532,300 @@ describe('Private Posts API Tests', () => {
         .expect(401);
     });
   });
+
+  describe('Authorization Boundary Tests', () => {
+    const otherUserDid = 'did:example:bob-other-user';
+    const otherUserToken = generateTestToken(otherUserDid);
+
+    describe('Cross-user post access control', () => {
+      it('should not allow user to delete another user\'s post', async () => {
+        // Mock Bluesky session for otherUserDid who will try to delete
+        mockBlueskySession({ did: otherUserDid, host: 'http://localhost:2583' });
+
+        // Create session and post owned by authorDid
+        const session = await prisma.session.create({
+          data: {
+            authorDid,
+            expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+            sessionKeys: {
+              create: {
+                recipientDid: authorDid,
+                userKeyPairId: '00000000-0000-0000-0000-000000000001',
+                encryptedDek: Buffer.from('key'),
+              },
+            },
+          },
+        });
+
+        await prisma.encryptedPost.create({
+          data: {
+            uri: testPostUri,
+            rkey: 'test-post',
+            authorDid,
+            sessionId: session.id,
+            langs: ['en'],
+            encryptedContent: Buffer.from('content'),
+            createdAt: new Date(),
+          },
+        });
+
+        // Try to delete with otherUserDid's token
+        await request(server.express)
+          .post('/xrpc/social.spkeasy.privatePost.deletePost')
+          .set('Authorization', `Bearer ${otherUserToken}`)
+          .set('Content-Type', 'application/json')
+          .send({ uri: testPostUri })
+          .expect(403); // Should be forbidden - user cannot delete another user's post
+
+        // Verify post still exists
+        const post = await prisma.encryptedPost.findUnique({
+          where: { uri: testPostUri },
+        });
+        expect(post).not.toBeNull();
+      });
+
+      it('should not return posts from sessions user is not a member of', async () => {
+        // Mock Bluesky session for otherUserDid who will try to read
+        mockBlueskySession({ did: otherUserDid, host: 'http://localhost:2583' });
+
+        // Create session WITHOUT otherUserDid as a recipient
+        const session = await prisma.session.create({
+          data: {
+            authorDid,
+            expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+            sessionKeys: {
+              create: {
+                recipientDid: authorDid, // Only authorDid, not otherUserDid
+                userKeyPairId: '00000000-0000-0000-0000-000000000001',
+                encryptedDek: Buffer.from('key'),
+              },
+            },
+          },
+        });
+
+        await prisma.encryptedPost.create({
+          data: {
+            uri: testPostUri,
+            rkey: 'test-post',
+            authorDid,
+            sessionId: session.id,
+            langs: ['en'],
+            encryptedContent: Buffer.from('content'),
+            createdAt: new Date(),
+          },
+        });
+
+        // Try to fetch posts as otherUserDid
+        const response = await request(server.express)
+          .get('/xrpc/social.spkeasy.privatePost.getPosts')
+          .set('Authorization', `Bearer ${otherUserToken}`)
+          .query({ limit: '10' })
+          .expect(200);
+
+        // Should return empty list - no session keys for otherUserDid
+        expect(response.body.encryptedPosts).toHaveLength(0);
+        expect(response.body.encryptedSessionKeys).toHaveLength(0);
+      });
+
+      it('should not return post thread if user is not in session', async () => {
+        // Mock Bluesky session for otherUserDid who will try to read thread
+        mockBlueskySession({ did: otherUserDid, host: 'http://localhost:2583' });
+
+        // Create session and post WITHOUT otherUserDid
+        const session = await prisma.session.create({
+          data: {
+            authorDid,
+            expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+            sessionKeys: {
+              create: {
+                recipientDid: authorDid,
+                userKeyPairId: '00000000-0000-0000-0000-000000000001',
+                encryptedDek: Buffer.from('key'),
+              },
+            },
+          },
+        });
+
+        const uri = `at://${authorDid}/social.spkeasy.feed.privatePost/thread-post`;
+        await prisma.encryptedPost.create({
+          data: {
+            uri,
+            rkey: 'thread-post',
+            authorDid,
+            sessionId: session.id,
+            langs: ['en'],
+            encryptedContent: Buffer.from('content'),
+            createdAt: new Date(),
+          },
+        });
+
+        // Try to fetch thread as otherUserDid
+        const response = await request(server.express)
+          .get('/xrpc/social.spkeasy.privatePost.getPostThread')
+          .set('Authorization', `Bearer ${otherUserToken}`)
+          .query({ uri })
+          .expect(404); // Should not find post
+      });
+    });
+
+    describe('Session state validation', () => {
+      it('should not return posts from expired sessions', async () => {
+        // Create expired session
+        const expiredSession = await prisma.session.create({
+          data: {
+            authorDid,
+            expiresAt: new Date(Date.now() - 24 * 60 * 60 * 1000), // Expired yesterday
+            sessionKeys: {
+              create: {
+                recipientDid: authorDid,
+                userKeyPairId: '00000000-0000-0000-0000-000000000001',
+                encryptedDek: Buffer.from('key'),
+              },
+            },
+          },
+        });
+
+        await prisma.encryptedPost.create({
+          data: {
+            uri: testPostUri,
+            rkey: 'test-post',
+            authorDid,
+            sessionId: expiredSession.id,
+            langs: ['en'],
+            encryptedContent: Buffer.from('content'),
+            createdAt: new Date(),
+          },
+        });
+
+        const response = await request(server.express)
+          .get('/xrpc/social.spkeasy.privatePost.getPosts')
+          .set('Authorization', `Bearer ${validToken}`)
+          .query({ limit: '10' })
+          .expect(200);
+
+        // Should not return posts from expired session
+        expect(response.body.encryptedPosts).toHaveLength(0);
+      });
+
+      it('should not return posts from revoked sessions', async () => {
+        // Create revoked session
+        const revokedSession = await prisma.session.create({
+          data: {
+            authorDid,
+            expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+            revokedAt: new Date(), // Revoked
+            sessionKeys: {
+              create: {
+                recipientDid: authorDid,
+                userKeyPairId: '00000000-0000-0000-0000-000000000001',
+                encryptedDek: Buffer.from('key'),
+              },
+            },
+          },
+        });
+
+        await prisma.encryptedPost.create({
+          data: {
+            uri: testPostUri,
+            rkey: 'test-post',
+            authorDid,
+            sessionId: revokedSession.id,
+            langs: ['en'],
+            encryptedContent: Buffer.from('content'),
+            createdAt: new Date(),
+          },
+        });
+
+        const response = await request(server.express)
+          .get('/xrpc/social.spkeasy.privatePost.getPosts')
+          .set('Authorization', `Bearer ${validToken}`)
+          .query({ limit: '10' })
+          .expect(200);
+
+        // Should not return posts from revoked session
+        expect(response.body.encryptedPosts).toHaveLength(0);
+      });
+    });
+
+    describe('DID extraction and URI validation', () => {
+      it('should reject posts with mismatched author DID in URI', async () => {
+        const session = await prisma.session.create({
+          data: {
+            authorDid,
+            expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+            sessionKeys: {
+              create: {
+                recipientDid,
+                userKeyPairId: '00000000-0000-0000-0000-000000000001',
+                encryptedDek: Buffer.from('session-key'),
+              },
+            },
+          },
+        });
+
+        // URI with different DID than authenticated user
+        const mismatchedUri = `at://${otherUserDid}/social.spkeasy.feed.privatePost/test-post`;
+        const postData = {
+          sessionId: session.id,
+          encryptedPosts: [
+            {
+              uri: mismatchedUri,
+              rkey: 'test-post',
+              langs: ['en'],
+              encryptedContent: 'encrypted-post-content',
+              media: [],
+            },
+          ],
+        };
+
+        // Should fail validation or authorization
+        const response = await request(server.express)
+          .post('/xrpc/social.spkeasy.privatePost.createPosts')
+          .set('Authorization', `Bearer ${validToken}`)
+          .set('Content-Type', 'application/json')
+          .send(postData);
+
+        // Expect either 400 (validation) or 403 (authorization)
+        expect([400, 403, 500]).toContain(response.status);
+      });
+
+      it('should handle invalid URI format gracefully', async () => {
+        const session = await prisma.session.create({
+          data: {
+            authorDid,
+            expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+            sessionKeys: {
+              create: {
+                recipientDid: authorDid,
+                userKeyPairId: '00000000-0000-0000-0000-000000000001',
+                encryptedDek: Buffer.from('key'),
+              },
+            },
+          },
+        });
+
+        const postData = {
+          sessionId: session.id,
+          encryptedPosts: [
+            {
+              uri: 'invalid-uri-format',
+              rkey: 'test-post',
+              langs: ['en'],
+              encryptedContent: 'encrypted-post-content',
+              media: [],
+            },
+          ],
+        };
+
+        const response = await request(server.express)
+          .post('/xrpc/social.spkeasy.privatePost.createPosts')
+          .set('Authorization', `Bearer ${validToken}`)
+          .set('Content-Type', 'application/json')
+          .send(postData);
+
+        // Should return error (400 or 500)
+        expect(response.status).toBeGreaterThanOrEqual(400);
+      });
+    });
+  });
 });

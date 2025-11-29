@@ -82,7 +82,7 @@ const methodHandlers = {
       authorDid,
     );
 
-    authorize(req, 'revoke', 'private_session', sessionKey);
+    authorize(req, 'get', 'private_session', sessionKey);
 
     return {
       body: { encryptedSessionKey: toSessionKeyView(sessionKey) },
