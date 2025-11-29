@@ -94,7 +94,7 @@ export class SessionService {
    * @returns Promise containing the session details
    */
   async getSession(authorDid: string): Promise<SessionKey> {
-    // Fetch session key from database
+    // Fetch session key from database, including session for authorization checks
     const sessionKey = await prisma.sessionKey.findFirst({
       where: {
         recipientDid: authorDid,
@@ -105,6 +105,9 @@ export class SessionService {
             gt: new Date(),
           },
         },
+      },
+      include: {
+        session: true, // Include session for authorization (session.authorDid)
       },
     });
 
