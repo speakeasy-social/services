@@ -219,6 +219,10 @@ const userAbilities = [
     userProperty: 'did',
     matchesRecordProperty: 'authorDid',
   }),
+  canIf('add_recipient', 'private_session', {
+    userProperty: 'did',
+    matchesRecordProperty: 'authorDid',
+  }),
   // For getting a session via sessionKey (which has nested session.authorDid)
   canIf('get', 'private_session', {
     userProperty: 'did',
