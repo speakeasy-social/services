@@ -1,16 +1,20 @@
 import { createSessionLexicons } from '@speakeasy-services/session-management';
-import { getPostsDef, createPostsDef, deletePostDef } from './types/posts.js';
+import {
+  getProfileDef,
+  profileViewDef,
+  putProfileDef,
+} from './types/profile.js';
 
 // Get session lexicons as an array
 const sessionLexiconsArray = Object.values(
-  createSessionLexicons('social.spkeasy.privateSession'),
+  createSessionLexicons('social.spkeasy.profileSession'),
 );
 
 export const lexicons = [
   ...sessionLexiconsArray,
-  getPostsDef,
-  createPostsDef,
-  deletePostDef,
+  getProfileDef,
+  profileViewDef,
+  putProfileDef,
 ];
 
 export type LexiconDefs = typeof lexicons;

@@ -155,14 +155,13 @@ describe('Private Session API Tests', () => {
         },
       });
 
-      // The request fails because route expects sessionId as parameter per lexicon
-      // but test is sending authorDid in body - mismatch between lexicon and implementation
+      // Revoke the session
       await request(server.express)
         .post('/xrpc/social.spkeasy.privateSession.revoke')
         .set('Authorization', `Bearer ${validToken}`)
         .set('Content-Type', 'application/json')
         .send({ authorDid })
-        .expect(400);
+        .expect(200);
     });
 
     it('should require authentication', async () => {
@@ -239,13 +238,13 @@ describe('Private Session API Tests', () => {
         userKeyPairId: '00000000-0000-0000-0000-000000000003',
       };
 
-      // The request fails because sessionId is missing (required by lexicon)
+      // Add the new recipient to the session
       await request(server.express)
         .post('/xrpc/social.spkeasy.privateSession.addUser')
         .set('Authorization', `Bearer ${validToken}`)
         .set('Content-Type', 'application/json')
         .send(newRecipientData)
-        .expect(400);
+        .expect(200);
     });
 
     it('should require authentication', async () => {
