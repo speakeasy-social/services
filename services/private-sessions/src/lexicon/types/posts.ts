@@ -38,6 +38,14 @@ export const getPostsDef: LexiconDoc = {
             description:
               'Set to "follows" to only get posts from people you follow',
           },
+          hasReplies: {
+            type: 'boolean',
+            description: 'If true, only return posts that are replies',
+          },
+          hasMedia: {
+            type: 'boolean',
+            description: 'If true, only return posts with media attachments',
+          },
         },
       },
       output: {

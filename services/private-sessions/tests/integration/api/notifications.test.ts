@@ -191,39 +191,6 @@ describe('Notifications API Tests', () => {
       expect(response.body).toHaveProperty('cursor');
     });
 
-    it('should return validation error for unsupported priority filter', async () => {
-      // Create notifications
-      await Promise.all([
-        prisma.notification.create({
-          data: {
-            id: '00000000-0000-0000-0000-00000000000b',
-            userDid,
-            reason: 'POST',
-            authorDid: otherUserDid,
-            reasonSubject: `at://${otherUserDid}/social.spkeasy.privatePost/post1`,
-            updatedAt: new Date()
-          },
-        }),
-        prisma.notification.create({
-          data: {
-            id: '00000000-0000-0000-0000-00000000000c',
-            userDid,
-            reason: 'REACTION',
-            authorDid: otherUserDid,
-            reasonSubject: `at://${userDid}/social.spkeasy.privatePost/post2`,
-            updatedAt: new Date()
-          },
-        }),
-      ]);
-
-      // Priority parameter as boolean is not supported by the schema
-      await request(server.express)
-        .get('/xrpc/social.spkeasy.notification.listNotifications')
-        .set('Authorization', `Bearer ${validToken}`)
-        .query({ priority: 'true' })
-        .expect(400);
-    });
-
     it('should require authentication', async () => {
       await request(server.express)
         .get('/xrpc/social.spkeasy.notification.listNotifications')
