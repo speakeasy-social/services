@@ -205,6 +205,9 @@ export class SessionService<
           },
         },
       },
+      include: {
+        session: true, // Include session for authorization (session.authorDid)
+      },
     });
 
     if (!sessionKey) {
