@@ -6,6 +6,10 @@
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "private": true,
+  "exports": {
+    ".": "./dist/index.js",
+    "./lexicon": "./dist/lexicon/index.js"
+  },
   "scripts": {
     "prebuild": "prisma generate",
     "build": "prisma generate && tsc --build && cp -r src/generated dist",
