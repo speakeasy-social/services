@@ -103,7 +103,7 @@ model Notification {
 
   @@index([userDid, createdAt], name: "idx_notifications_user_did_created_at_index")
   @@index([userDid, readAt], name: "idx_notifications_user_did_read_at_index")
-  @@unique([authorDid, reasonSubject, reason], name: "idx_notifications_user_did_read_at_index")
+  @@unique([userDid, authorDid, reasonSubject, reason], name: "idx_notifications_user_author_subject_reason_unique")
   @@map("notifications")
 }
 
