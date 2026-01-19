@@ -1,4 +1,12 @@
-import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach } from 'vitest';
+import {
+  describe,
+  it,
+  expect,
+  beforeAll,
+  afterAll,
+  beforeEach,
+  afterEach,
+} from 'vitest';
 import { LexiconDoc } from '@atproto/lexicon';
 import { PrismaClient } from '../../../src/generated/prisma-client/index.js';
 import { createUpdateUserKeysHandler } from '../../../src/handlers/updateUserKeys.js';
@@ -9,7 +17,7 @@ import {
 } from '@speakeasy-services/test-utils';
 import { v4 as uuidv4 } from 'uuid';
 
-const userDid = 'did:example:user';
+const authorDid = 'did:example:user';
 
 // Define updateKeys lexicon for testing
 const updateKeysDef: LexiconDoc = {
@@ -74,20 +82,21 @@ describe('updateUserKeys handler', () => {
     const prevKeyId = uuidv4();
     const newKeyId = uuidv4();
 
-    // Create test keys
+    // Create test keys - the prev key is marked as deleted (as happens during rotation)
     await prisma.userKey.createMany({
       data: [
         {
           id: prevKeyId,
-          userDid,
-          publicKey: 'prev-public-key',
-          privateKey: 'prev-private-key',
+          authorDid,
+          publicKey: Buffer.from('prev-public-key'),
+          privateKey: Buffer.from('prev-private-key'),
+          deletedAt: new Date(), // Old key is soft-deleted during rotation
         },
         {
           id: newKeyId,
-          userDid,
-          publicKey: 'new-public-key',
-          privateKey: 'new-private-key',
+          authorDid,
+          publicKey: Buffer.from('new-public-key'),
+          privateKey: Buffer.from('new-private-key'),
         },
       ],
     });
@@ -117,9 +126,9 @@ describe('updateUserKeys handler', () => {
     await prisma.userKey.create({
       data: {
         id: newKeyId,
-        userDid,
-        publicKey: 'new-public-key',
-        privateKey: 'new-private-key',
+        authorDid,
+        publicKey: Buffer.from('new-public-key'),
+        privateKey: Buffer.from('new-private-key'),
       },
     });
 
@@ -138,9 +147,9 @@ describe('updateUserKeys handler', () => {
     await prisma.userKey.create({
       data: {
         id: prevKeyId,
-        userDid,
-        publicKey: 'prev-public-key',
-        privateKey: 'prev-private-key',
+        authorDid,
+        publicKey: Buffer.from('prev-public-key'),
+        privateKey: Buffer.from('prev-private-key'),
       },
     });
 
@@ -157,20 +166,21 @@ describe('updateUserKeys handler', () => {
     const prevPrivateKey = 'test-prev-private-key';
     const newPublicKey = 'test-new-public-key';
 
-    // Create test keys
+    // Create test keys - the prev key is marked as deleted (as happens during rotation)
     await prisma.userKey.createMany({
       data: [
         {
           id: prevKeyId,
-          userDid,
-          publicKey: 'prev-public-key',
-          privateKey: prevPrivateKey,
+          authorDid,
+          publicKey: Buffer.from('prev-public-key'),
+          privateKey: Buffer.from(prevPrivateKey),
+          deletedAt: new Date(), // Old key is soft-deleted during rotation
         },
         {
           id: newKeyId,
-          userDid,
-          publicKey: newPublicKey,
-          privateKey: 'new-private-key',
+          authorDid,
+          publicKey: Buffer.from(newPublicKey),
+          privateKey: Buffer.from('new-private-key'),
         },
       ],
     });

@@ -45,15 +45,22 @@ export function generateTestToken(
  * @returns A service token that can be used for testing
  */
 export function generateTestServiceToken(serviceName: string): string {
-  const serviceKeys = {
-    "private-sessions": "red",
-    "trusted-users": "yellow",
-    "user-keys": "green",
+  const envKeyMap: Record<string, string> = {
+    "private-sessions": "PRIVATE_SESSIONS_API_KEY",
+    "trusted-users": "TRUSTED_USERS_API_KEY",
+    "user-keys": "USER_KEYS_API_KEY",
+    "media": "MEDIA_API_KEY",
+    "service-admin": "SERVICE_ADMIN_API_KEY",
   };
 
-  const key = serviceKeys[serviceName as keyof typeof serviceKeys];
-  if (!key) {
+  const envKey = envKeyMap[serviceName];
+  if (!envKey) {
     throw new Error(`Unknown service name: ${serviceName}`);
+  }
+
+  const key = process.env[envKey];
+  if (!key) {
+    throw new Error(`Missing environment variable: ${envKey}`);
   }
 
   return `api-key:${serviceName}:${key}`;

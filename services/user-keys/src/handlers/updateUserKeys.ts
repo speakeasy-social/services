@@ -39,9 +39,9 @@ export function createUpdateUserKeysHandler(prisma: PrismaClient) {
         prevKeyId,
         newKeyId,
         // We pass it the old private key so it can decrypt the session key
-        prevPrivateKey: prevKey.privateKey,
+        prevPrivateKey: Buffer.from(prevKey.privateKey).toString('base64'),
         // We pass it the new public key so it can encrypt the session key
-        newPublicKey: newKey.publicKey,
+        newPublicKey: Buffer.from(newKey.publicKey).toString('base64'),
       },
     );
   };
