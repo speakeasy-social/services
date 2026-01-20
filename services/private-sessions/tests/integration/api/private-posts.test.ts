@@ -941,4 +941,248 @@ describe('Private Posts API Tests', () => {
       expect(response.body.encryptedPosts[0].uri).toBe(postWithMediaUri);
     });
   });
+
+  describe('Recipient (Non-Author) Access Tests', () => {
+    // These tests verify that recipients who have session keys but are NOT the author
+    // can properly access posts shared with them
+    const recipientToken = generateTestToken(recipientDid);
+
+    const thirdUserDid = 'did:example:charlie-third-user';
+
+    describe('GET /xrpc/social.spkeasy.privatePost.getPosts - Recipient Access', () => {
+      it('should allow recipient to view posts shared with them', async () => {
+        // Mock Bluesky session for recipient (not the author)
+        mockBlueskySession({ did: recipientDid, host: 'http://localhost:2583' });
+
+        // Create a session where authorDid is author, with multiple recipients
+        // This tests that authorization works correctly with 3+ session keys
+        const session = await prisma.session.create({
+          data: {
+            authorDid,
+            expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+            sessionKeys: {
+              create: [
+                {
+                  recipientDid: authorDid, // Author's own key
+                  userKeyPairId: '00000000-0000-0000-0000-000000000001',
+                  encryptedDek: Buffer.from('author-key'),
+                },
+                {
+                  recipientDid, // Recipient's key
+                  userKeyPairId: '00000000-0000-0000-0000-000000000002',
+                  encryptedDek: Buffer.from('recipient-key'),
+                },
+                {
+                  recipientDid: thirdUserDid, // Third user's key
+                  userKeyPairId: '00000000-0000-0000-0000-000000000003',
+                  encryptedDek: Buffer.from('third-user-key'),
+                },
+              ],
+            },
+          },
+        });
+
+        // Author creates a post
+        const postUri = `at://${authorDid}/social.spkeasy.feed.privatePost/shared-post`;
+        await prisma.encryptedPost.create({
+          data: {
+            uri: postUri,
+            rkey: 'shared-post',
+            authorDid,
+            sessionId: session.id,
+            langs: ['en'],
+            encryptedContent: Buffer.from('content-shared-with-recipient'),
+          },
+        });
+
+        // Recipient should be able to view the post
+        const response = await request(server.express)
+          .get('/xrpc/social.spkeasy.privatePost.getPosts')
+          .set('Authorization', `Bearer ${recipientToken}`)
+          .query({ limit: '10' })
+          .expect(200);
+
+        expect(response.body.encryptedPosts).toHaveLength(1);
+        expect(response.body.encryptedPosts[0].uri).toBe(postUri);
+        expect(response.body.encryptedPosts[0].authorDid).toBe(authorDid);
+        expect(response.body.encryptedSessionKeys).toHaveLength(1);
+        expect(response.body.encryptedSessionKeys[0].recipientDid).toBe(recipientDid);
+      });
+
+      it('should return session keys for recipient, not author keys', async () => {
+        mockBlueskySession({ did: recipientDid, host: 'http://localhost:2583' });
+
+        const session = await prisma.session.create({
+          data: {
+            authorDid,
+            expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+            sessionKeys: {
+              create: [
+                {
+                  recipientDid: authorDid,
+                  userKeyPairId: '00000000-0000-0000-0000-000000000001',
+                  encryptedDek: Buffer.from('author-key'),
+                },
+                {
+                  recipientDid,
+                  userKeyPairId: '00000000-0000-0000-0000-000000000002',
+                  encryptedDek: Buffer.from('recipient-key'),
+                },
+                {
+                  recipientDid: thirdUserDid,
+                  userKeyPairId: '00000000-0000-0000-0000-000000000003',
+                  encryptedDek: Buffer.from('third-user-key'),
+                },
+              ],
+            },
+          },
+        });
+
+        await prisma.encryptedPost.create({
+          data: {
+            uri: `at://${authorDid}/social.spkeasy.feed.privatePost/test`,
+            rkey: 'test',
+            authorDid,
+            sessionId: session.id,
+            langs: ['en'],
+            encryptedContent: Buffer.from('content'),
+          },
+        });
+
+        const response = await request(server.express)
+          .get('/xrpc/social.spkeasy.privatePost.getPosts')
+          .set('Authorization', `Bearer ${recipientToken}`)
+          .query({ limit: '10' })
+          .expect(200);
+
+        // Should only return the recipient's session key, not the author's
+        expect(response.body.encryptedSessionKeys).toHaveLength(1);
+        expect(response.body.encryptedSessionKeys[0].recipientDid).toBe(recipientDid);
+      });
+    });
+
+    describe('GET /xrpc/social.spkeasy.privatePost.getPostThread - Recipient Access', () => {
+      it('should allow recipient to view post thread shared with them', async () => {
+        mockBlueskySession({ did: recipientDid, host: 'http://localhost:2583' });
+
+        const session = await prisma.session.create({
+          data: {
+            authorDid,
+            expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+            sessionKeys: {
+              create: [
+                {
+                  recipientDid: authorDid,
+                  userKeyPairId: '00000000-0000-0000-0000-000000000001',
+                  encryptedDek: Buffer.from('author-key'),
+                },
+                {
+                  recipientDid,
+                  userKeyPairId: '00000000-0000-0000-0000-000000000002',
+                  encryptedDek: Buffer.from('recipient-key'),
+                },
+                {
+                  recipientDid: thirdUserDid,
+                  userKeyPairId: '00000000-0000-0000-0000-000000000003',
+                  encryptedDek: Buffer.from('third-user-key'),
+                },
+              ],
+            },
+          },
+        });
+
+        // Create parent post
+        const parentUri = `at://${authorDid}/social.spkeasy.feed.privatePost/parent`;
+        await prisma.encryptedPost.create({
+          data: {
+            uri: parentUri,
+            rkey: 'parent',
+            authorDid,
+            sessionId: session.id,
+            langs: ['en'],
+            encryptedContent: Buffer.from('parent-content'),
+          },
+        });
+
+        // Create reply post
+        const replyUri = `at://${authorDid}/social.spkeasy.feed.privatePost/reply`;
+        await prisma.encryptedPost.create({
+          data: {
+            uri: replyUri,
+            rkey: 'reply',
+            authorDid,
+            sessionId: session.id,
+            langs: ['en'],
+            encryptedContent: Buffer.from('reply-content'),
+            replyUri: parentUri,
+            replyRootUri: parentUri,
+          },
+        });
+
+        // Recipient should be able to view the thread
+        const response = await request(server.express)
+          .get('/xrpc/social.spkeasy.privatePost.getPostThread')
+          .set('Authorization', `Bearer ${recipientToken}`)
+          .query({ uri: parentUri })
+          .expect(200);
+
+        expect(response.body.encryptedPost).not.toBeNull();
+        expect(response.body.encryptedPost.uri).toBe(parentUri);
+        expect(response.body.encryptedReplyPosts).toHaveLength(1);
+        expect(response.body.encryptedReplyPosts[0].uri).toBe(replyUri);
+      });
+
+      it('should allow recipient to view a single post by URI', async () => {
+        mockBlueskySession({ did: recipientDid, host: 'http://localhost:2583' });
+
+        const session = await prisma.session.create({
+          data: {
+            authorDid,
+            expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+            sessionKeys: {
+              create: [
+                {
+                  recipientDid: authorDid,
+                  userKeyPairId: '00000000-0000-0000-0000-000000000001',
+                  encryptedDek: Buffer.from('author-key'),
+                },
+                {
+                  recipientDid,
+                  userKeyPairId: '00000000-0000-0000-0000-000000000002',
+                  encryptedDek: Buffer.from('recipient-key'),
+                },
+                {
+                  recipientDid: thirdUserDid,
+                  userKeyPairId: '00000000-0000-0000-0000-000000000003',
+                  encryptedDek: Buffer.from('third-user-key'),
+                },
+              ],
+            },
+          },
+        });
+
+        const postUri = `at://${authorDid}/social.spkeasy.feed.privatePost/single`;
+        await prisma.encryptedPost.create({
+          data: {
+            uri: postUri,
+            rkey: 'single',
+            authorDid,
+            sessionId: session.id,
+            langs: ['en'],
+            encryptedContent: Buffer.from('single-post-content'),
+          },
+        });
+
+        const response = await request(server.express)
+          .get('/xrpc/social.spkeasy.privatePost.getPostThread')
+          .set('Authorization', `Bearer ${recipientToken}`)
+          .query({ uri: postUri })
+          .expect(200);
+
+        expect(response.body.encryptedPost).not.toBeNull();
+        expect(response.body.encryptedPost.uri).toBe(postUri);
+        expect(response.body.encryptedPost.authorDid).toBe(authorDid);
+      });
+    });
+  });
 });
