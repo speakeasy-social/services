@@ -4,6 +4,7 @@ import { User, Service, ExtendedRequest } from '../express-extensions.js';
 /**
  * Resolve a potentially nested property path on an object.
  * Supports dot notation for traversing nested objects.
+ * When encountering arrays, extracts values from all array elements.
  *
  * @example
  * getNestedValue({ session: { authorDid: 'did:example' } }, 'session.authorDid')
@@ -12,20 +13,63 @@ import { User, Service, ExtendedRequest } from '../express-extensions.js';
  * @example
  * getNestedValue({ authorDid: 'did:example' }, 'authorDid')
  * // Returns: 'did:example'
+ *
+ * @example
+ * getNestedValue({ recipients: [{ did: 'did:1' }, { did: 'did:2' }] }, 'recipients.did')
+ * // Returns: ['did:1', 'did:2']
  */
 const getNestedValue = (obj: Record<string, any>, path: string): any => {
-  return path.split('.').reduce((acc, key) => acc?.[key], obj);
+  const parts = path.split('.');
+  let current: any = obj;
+
+  for (let i = 0; i < parts.length; i++) {
+    const key = parts[i];
+    
+    // If current is an array, map over each element and continue traversal
+    if (Array.isArray(current)) {
+      const remainingPath = parts.slice(i).join('.');
+      return current.flatMap((item) => {
+        if (remainingPath) {
+          const result = getNestedValue(item, remainingPath);
+          return Array.isArray(result) ? result : [result];
+        }
+        return item;
+      }).filter((item) => item !== undefined && item !== null);
+    }
+
+    // Normal traversal
+    if (current === null || current === undefined) {
+      return undefined;
+    }
+    
+    current = current[key];
+  }
+
+  return current;
 };
 
 /**
  * Check if a nested property path exists on an object.
  * Returns true if all segments of the path exist and are not undefined.
+ * When encountering arrays, checks that all elements have the remaining path segments.
  */
 const hasNestedProperty = (obj: Record<string, any>, path: string): boolean => {
   const parts = path.split('.');
   let current: any = obj;
 
-  for (const part of parts) {
+  for (let i = 0; i < parts.length; i++) {
+    const part = parts[i];
+    
+    // If current is an array, check that all elements have the remaining path
+    if (Array.isArray(current)) {
+      if (current.length === 0) {
+        return false; // Empty arrays don't have any properties
+      }
+      const remainingPath = parts.slice(i).join('.');
+      return current.every((item) => hasNestedProperty(item, remainingPath));
+    }
+
+    // Normal traversal
     if (current === null || current === undefined || !(part in current)) {
       return false;
     }
@@ -179,10 +223,10 @@ const userAbilities = [
   }),
 
   // Recipients can read posts shared with them
-  // user.did must match record.recipientDid (user is the recipient)
+  // user.did must match one of record.session.sessionKeys.recipientDid (user is a recipient)
   canIf('list', 'private_post', {
     userProperty: 'did',
-    matchesRecordProperty: 'recipientDid',
+    matchesRecordProperty: 'session.sessionKeys.recipientDid',
   }),
   canIf('list', 'session_key', {
     userProperty: 'did',
@@ -406,12 +450,28 @@ function isAuthorized(
 
           // If the condition is prefixed with =, check if user[key] has that exact value
           // Otherwise, check if user[key] matches record[value] (supports nested paths via dot notation)
-          let expectedValue = value.startsWith('=')
+          const expectedValue = value.startsWith('=')
             ? value.slice(1)
             : getNestedValue(record, value);
 
           const userValue = user[key as keyof (User | Service)];
-          const matches = userValue === expectedValue;
+          
+          // If expectedValue is an array, ALL elements must match the user's value.
+          // Empty arrays fail authorization (no elements to match).
+          //
+          // IMPORTANT: We use `every()` intentionally, NOT `some()`. Using `some()` would be
+          // a security risk - it would allow access if ANY element matches, potentially
+          // leaking records where only some nested values are permitted. If you need to
+          // check membership in an array, ensure the query/include filters the array to
+          // only contain the relevant user's entries BEFORE authorization, then use a
+          // direct property match (e.g., add `recipientDid` directly to the record).
+          let matches: boolean;
+          if (Array.isArray(expectedValue)) {
+            matches = expectedValue.length > 0 && expectedValue.every((val) => userValue === val);
+          } else {
+            matches = userValue === expectedValue;
+          }
+          
           if (process.env.DEBUG_AUTH) console.log(`Comparing: user.${key}="${userValue}" vs expected="${expectedValue}" => ${matches}`);
           return matches;
         })
