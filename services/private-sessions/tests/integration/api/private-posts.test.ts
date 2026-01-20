@@ -669,8 +669,10 @@ describe('Private Posts API Tests', () => {
     });
 
     describe('Session state validation', () => {
-      it('should not return posts from expired sessions', async () => {
+      it('should return posts from expired sessions (historical posts remain visible)', async () => {
         // Create expired session
+        // Session expiry controls whether NEW posts can use the session,
+        // but OLD posts remain visible as long as user has session_key
         const expiredSession = await prisma.session.create({
           data: {
             authorDid,
@@ -703,12 +705,14 @@ describe('Private Posts API Tests', () => {
           .query({ limit: '10' })
           .expect(200);
 
-        // Should not return posts from expired session
-        expect(response.body.encryptedPosts).toHaveLength(0);
+        // Should return posts from expired session (user still has session_key)
+        expect(response.body.encryptedPosts).toHaveLength(1);
       });
 
-      it('should not return posts from revoked sessions', async () => {
+      it('should return posts from revoked sessions (historical posts remain visible)', async () => {
         // Create revoked session
+        // Session revocation controls whether NEW posts can use the session,
+        // but OLD posts remain visible as long as user has session_key
         const revokedSession = await prisma.session.create({
           data: {
             authorDid,
@@ -742,8 +746,8 @@ describe('Private Posts API Tests', () => {
           .query({ limit: '10' })
           .expect(200);
 
-        // Should not return posts from revoked session
-        expect(response.body.encryptedPosts).toHaveLength(0);
+        // Should return posts from revoked session (user still has session_key)
+        expect(response.body.encryptedPosts).toHaveLength(1);
       });
     });
 
