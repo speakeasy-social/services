@@ -198,10 +198,11 @@ export class PrivatePostsService {
       options.authorDids = [...(options.authorDids || []), ...followingDids];
     }
     // Fetch posts from database
+    // Post visibility is determined by session_key presence, not session state.
+    // Session expiry/revocation controls whether NEW posts can use the session,
+    // but OLD posts remain visible as long as the user has a session_key.
     const where: Prisma.EncryptedPostWhereInput = {
       session: {
-        expiresAt: { gt: new Date() },
-        revokedAt: null,
         sessionKeys: {
           some: {
             recipientDid: recipientDid,
@@ -381,8 +382,6 @@ export class PrivatePostsService {
         .findFirst({
           where: {
             session: {
-              expiresAt: { gt: new Date() },
-              revokedAt: null,
               sessionKeys: {
                 some: {
                   recipientDid: recipientDid,
@@ -404,8 +403,6 @@ export class PrivatePostsService {
         .findMany({
           where: {
             session: {
-              expiresAt: { gt: new Date() },
-              revokedAt: null,
               sessionKeys: {
                 some: {
                   recipientDid: recipientDid,
@@ -425,8 +422,6 @@ export class PrivatePostsService {
             const nestedReplies = await prisma.encryptedPost.findMany({
               where: {
                 session: {
-                  expiresAt: { gt: new Date() },
-                  revokedAt: null,
                   sessionKeys: {
                     some: {
                       recipientDid: recipientDid,
@@ -462,18 +457,12 @@ export class PrivatePostsService {
                 ))::int as reaction_count,
                 1 as depth
               FROM encrypted_posts ep
-              JOIN sessions s ON ep."sessionId" = s.id
               WHERE ep.uri = ${canonicalUri}
               AND ep."sessionId" IN (
                 SELECT sk."sessionId"
                 FROM session_keys sk
-                JOIN sessions s2 ON sk."sessionId" = s2.id
                 WHERE sk."recipientDid" = ${recipientDid}
-                  AND s2."expiresAt" > NOW()
-                  AND s2."revokedAt" IS NULL
               )
-              AND s."expiresAt" > NOW()
-              AND s."revokedAt" IS NULL
 
               UNION ALL
 
@@ -486,18 +475,12 @@ export class PrivatePostsService {
                 ))::int as reaction_count,
                 pc.depth + 1
               FROM encrypted_posts parent
-              JOIN sessions s ON parent."sessionId" = s.id
               INNER JOIN post_chain pc ON parent.uri = pc."replyUri"
               WHERE parent."sessionId" IN (
                 SELECT sk."sessionId"
                 FROM session_keys sk
-                JOIN sessions s2 ON sk."sessionId" = s2.id
                 WHERE sk."recipientDid" = ${recipientDid}
-                  AND s2."expiresAt" > NOW()
-                  AND s2."revokedAt" IS NULL
               )
-              AND s."expiresAt" > NOW()
-              AND s."revokedAt" IS NULL
               AND pc.depth < 30
             )
             SELECT * FROM post_chain
