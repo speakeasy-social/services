@@ -180,7 +180,7 @@ export class PrivatePostsService {
   }> {
     const token = (req.user as User).token as string;
 
-    let promises: Promise<void>[] = [];
+    const promises: Promise<void>[] = [];
 
     if (options.filter === 'follows') {
       let followingDids;
@@ -258,7 +258,7 @@ export class PrivatePostsService {
         },
       ],
       include: {
-        ...postCountInclude(recipientDid),
+        ...postIncludeForViewer(recipientDid),
         // Include parent and root posts to get their session IDs
         parent: {
           select: {
@@ -390,7 +390,7 @@ export class PrivatePostsService {
             },
             uri: canonicalUri,
           },
-          include: postCountInclude(recipientDid),
+          include: postIncludeForViewer(recipientDid),
         })
         .then((p) => {
           if (!p) {
@@ -412,7 +412,7 @@ export class PrivatePostsService {
             OR: [{ replyRootUri: canonicalUri }, { replyUri: canonicalUri }],
           },
           take: limit || 20,
-          include: postCountInclude(recipientDid),
+          include: postIncludeForViewer(recipientDid),
           orderBy: {
             createdAt: 'desc',
           },
@@ -432,7 +432,7 @@ export class PrivatePostsService {
                 uri: { notIn: replies.map((post) => post.uri) },
               },
               take: limit - replies.length,
-              include: postCountInclude(recipientDid),
+              include: postIncludeForViewer(recipientDid),
               orderBy: {
                 createdAt: 'desc',
               },
@@ -518,19 +518,45 @@ export class PrivatePostsService {
       ...parentPosts.map((post) => post.sessionId),
     ].filter((id): id is string => id !== undefined);
 
-    const sessionKeys = await prisma.sessionKey.findMany({
-      where: {
-        sessionId: { in: sessionIds },
-        recipientDid,
-      },
-    });
+    // Fetch session keys and sessions with their sessionKeys for authorization
+    const [sessionKeys, sessions] = await Promise.all([
+      prisma.sessionKey.findMany({
+        where: {
+          sessionId: { in: sessionIds },
+          recipientDid,
+        },
+      }),
+      prisma.session.findMany({
+        where: {
+          id: { in: sessionIds },
+        },
+        select: {
+          id: true,
+          sessionKeys: {
+            where: { recipientDid },
+            select: {
+              recipientDid: true,
+            },
+          },
+        },
+      }),
+    ]);
+
+    // Create a map of sessionId to session for easy lookup
+    const sessionMap = new Map(sessions.map((s) => [s.id, s]));
+
+    // Enrich parent posts with session info (they come from raw SQL without it)
+    const enrichedParentPosts = parentPosts.map((p) => ({
+      ...p,
+      session: sessionMap.get(p.sessionId),
+    }));
 
     return {
       // FIXME: Send cursor if there are more replies
       cursor: undefined,
       encryptedPost: annotatePost(post),
       encryptedReplyPosts: replyPosts.map(annotatePost),
-      encryptedParentPosts: parentPosts.map(annotatePost),
+      encryptedParentPosts: enrichedParentPosts.map(annotatePost),
       encryptedSessionKeys: sessionKeys,
     };
   }
@@ -613,7 +639,7 @@ async function loadPrivatePost(
       },
       uri: cannonicalUri,
     },
-    include: postCountInclude(recipientDid),
+    include: postIncludeForViewer(recipientDid),
   });
 }
 
@@ -723,10 +749,28 @@ function annotatePost(
   };
 }
 
-function postCountInclude(recipientDid: string) {
+/**
+ * Prisma include clause for post queries that provides viewer-specific data.
+ * Includes:
+ * - Reaction count for the viewer (to show if they've liked the post)
+ * - Session with the viewer's session key (for authorization checks)
+ *
+ * @param recipientDid - The DID of the user viewing the posts
+ */
+function postIncludeForViewer(recipientDid: string) {
   return {
     _count: {
       select: { reactions: { where: { userDid: recipientDid } } },
+    },
+    session: {
+      select: {
+        sessionKeys: {
+          where: { recipientDid },
+          select: {
+            recipientDid: true,
+          },
+        },
+      },
     },
   };
 }
