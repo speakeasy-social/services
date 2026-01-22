@@ -2,7 +2,7 @@ import { NotFoundError, ValidationError } from '@speakeasy-services/common';
 import { safeAtob } from '@speakeasy-services/common';
 import { Queue, getServiceJobName, JOB_NAMES } from '@speakeasy-services/queue';
 
-const DEFAULT_EXPIRATION_HOURS = 24 * 7;
+const DEFAULT_EXPIRATION_HOURS = 24 * 365 * 2;
 
 // Define the shape of session models
 export interface SessionModel {
@@ -50,6 +50,7 @@ export interface SessionPrismaClient<
       include?: any;
       take?: number;
       select?: any;
+      orderBy?: any;
     }) => Promise<any[]>;
     deleteMany: (args: { where: any }) => Promise<any>;
   };
@@ -261,6 +262,6 @@ export class SessionService<
       JOB_NAMES.UPDATE_SESSION_KEYS,
     );
 
-    await Queue.publish(jobName, params);
+    await Queue.publishDynamic(jobName, params as unknown as Record<string, unknown>);
   }
 }

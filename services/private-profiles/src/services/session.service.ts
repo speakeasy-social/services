@@ -8,15 +8,23 @@ import {
   ProfileSessionKey,
 } from '../generated/prisma-client/index.js';
 
-// Create a new instance of the shared session service with our Prisma client
+/**
+ * Session service for private-profiles, using the shared SessionService.
+ *
+ * Note: The double cast (as unknown as SessionPrismaClient) is required because
+ * SessionPrismaClient expects `session` and `sessionKey` property names, but
+ * this service's Prisma client uses `profileSession` and `profileSessionKey`
+ * (due to model naming in schema.prisma). The structures are compatible at
+ * runtime, but TypeScript cannot verify this without the intermediate cast.
+ *
+ * Alternative: Rename Prisma models to Session/SessionKey with @@map() to keep
+ * table names. See spkeasy-xve for investigation details.
+ */
 export class SessionService extends SharedSessionService<
   ProfileSession,
   ProfileSessionKey
 > {
   constructor() {
-    // Cast the Prisma client to the expected interface and pass service name
-    // Using 'unknown' intermediate cast because property names differ (profileSession vs session)
-    // but the structure is compatible
     super(
       getPrismaClient() as unknown as SessionPrismaClient<
         ProfileSession,

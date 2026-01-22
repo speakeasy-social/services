@@ -5,10 +5,18 @@ import {
 import { getPrismaClient } from '../db.js';
 import { Session, SessionKey } from '../generated/prisma-client/index.js';
 
-// Create a new instance of the shared session service with our Prisma client
+/**
+ * Session service for private-sessions, using the shared SessionService.
+ *
+ * Note: The double cast (as unknown as SessionPrismaClient) is required because
+ * SessionPrismaClient expects `session` and `sessionKey` property names, which
+ * this service's Prisma client provides. The cast ensures type compatibility
+ * with the generic interface while maintaining runtime correctness.
+ *
+ * See spkeasy-xve for investigation details on alternative approaches.
+ */
 export class SessionService extends SharedSessionService<Session, SessionKey> {
   constructor() {
-    // Use the Prisma client directly - the interface is now flexible enough
     super(
       getPrismaClient() as unknown as SessionPrismaClient<Session, SessionKey>,
       'private-sessions',

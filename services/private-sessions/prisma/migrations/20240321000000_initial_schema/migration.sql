@@ -1,5 +1,8 @@
--- CreateExtension
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+-- CreateExtension (may already exist from create-schemas.sh)
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp" SCHEMA public;
+
+-- Set search_path to include public for uuid_generate_v4()
+SET search_path TO private_sessions, public;
 
 -- CreateTable
 CREATE TABLE "sessions" (

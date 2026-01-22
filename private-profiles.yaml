@@ -1,0 +1,402 @@
+# Branch: feature/private-profiles
+# Purpose: Add private-profiles service with shared session management
+#
+# This DSL describes all functionality in the branch (committed + uncommitted)
+# Use this during rebase to verify no functionality is lost
+
+branch:
+  name: feature/private-profiles
+  base: main
+  commits: 11
+
+# =============================================================================
+# SERVICE: private-profiles
+# =============================================================================
+services:
+  private-profiles:
+    description: "Encrypted user profile storage with session-based access control"
+    port: 3005
+    worker_port: 4005
+    database_schema: private_profiles
+
+    # Database schema (new migration: 20251130104528_init)
+    database:
+      tables:
+        profile_sessions:
+          columns:
+            - id: UUID (PK, auto-generated)
+            - authorDid: TEXT (profile owner)
+            - createdAt: TIMESTAMP (default: now)
+            - expiresAt: TIMESTAMP
+            - revokedAt: TIMESTAMP (nullable)
+          indexes:
+            - idx_profile_sessions_current: [authorDid, createdAt DESC]
+
+        profile_session_keys:
+          columns:
+            - sessionId: UUID (FK -> profile_sessions.id)
+            - userKeyPairId: UUID (encryption key ID)
+            - recipientDid: TEXT (who can decrypt)
+            - encryptedDek: BYTEA (encrypted data encryption key)
+            - createdAt: TIMESTAMP
+          primary_key: [sessionId, recipientDid]
+          indexes:
+            - idx_profile_session_keys_by_recipient_session_created_at: [recipientDid, sessionId, createdAt]
+            - idx_profile_session_keys_with_session_created_at: [sessionId, createdAt]
+            - idx_profile_session_keys_with_user_key_pair_id: [userKeyPairId]
+
+        private_profiles:
+          columns:
+            - id: UUID (PK, auto-generated)
+            - sessionId: UUID (FK -> profile_sessions.id)
+            - authorDid: TEXT (profile owner)
+            - encryptedContent: BYTEA (encrypted profile data)
+            - avatarUri: TEXT (nullable, plaintext)
+            - bannerUri: TEXT (nullable, plaintext)
+            - createdAt: TIMESTAMP
+            - updatedAt: TIMESTAMP
+          indexes:
+            - idx_private_profiles_author: [authorDid]
+            - idx_private_profiles_session: [sessionId]
+
+    # API Endpoints
+    api:
+      endpoints:
+        social.spkeasy.actor.getProfile:
+          method: GET
+          auth: required
+          description: "Get single profile by DID (caller must have session key)"
+          input:
+            params:
+              did: string (required, target profile DID)
+          output:
+            profile: ProfileView
+            encryptedSessionKey: SessionKeyView
+          behavior:
+            - Fetch profile by authorDid
+            - Verify caller has session key for profile's sessionId
+            - Return 404 if no profile OR no session key (no info leak)
+            - Return profile + session key for decryption
+
+        social.spkeasy.actor.getProfiles:
+          method: GET
+          auth: required
+          description: "Get multiple profiles by DIDs (filters to accessible only)"
+          input:
+            params:
+              dids: string[] (required)
+          output:
+            profiles: ProfileView[]
+            encryptedSessionKeys: SessionKeyView[]
+          behavior:
+            - Fetch all profiles matching DIDs
+            - Filter to only profiles where caller has session key
+            - Return filtered profiles + matching session keys
+            - Empty arrays if no accessible profiles (no info leak)
+
+        social.spkeasy.actor.putProfile:
+          method: POST
+          auth: required
+          description: "Create or update caller's profile"
+          input:
+            body:
+              sessionId: string (required)
+              encryptedContent: string (required, base64)
+              avatarUri: string (optional)
+              bannerUri: string (optional)
+          output:
+            profile: ProfileView
+          behavior:
+            - If profile exists for authorDid: update
+            - If not exists: create
+            - Author is always caller's DID
+
+        social.spkeasy.actor.deleteProfile:
+          method: POST
+          auth: required
+          description: "Delete caller's profile"
+          output:
+            success: boolean
+          behavior:
+            - Find profile by caller's DID
+            - Return 404 if not found
+            - Delete and return success
+
+    # Session endpoints (from shared session-management)
+    session_endpoints:
+      inherited_from: "@speakeasy-services/session-management"
+      includes:
+        - social.spkeasy.session.createSession
+        - social.spkeasy.session.getSessionKey
+        - social.spkeasy.session.rotateSession
+
+    # Worker configuration
+    worker:
+      uses_shared_handler: true
+      handler_class: SessionJobHandlers
+      handler_package: "@speakeasy-services/session-management"
+      options:
+        usePrefixedJobNames: true
+        currentSessionOnly: true  # CRITICAL: Only grant access to CURRENT session (not historical)
+      jobs_handled:
+        - private-profiles.add-recipient-to-session
+        - private-profiles.revoke-session
+        - private-profiles.delete-session-keys
+        - private-profiles.update-session-keys
+
+    # Views (response serialization)
+    views:
+      profile.views.ts:
+        toProfileView:
+          fields: [id, sessionId, authorDid, encryptedContent, avatarUri, bannerUri, createdAt, updatedAt]
+          transforms:
+            encryptedContent: "Uint8Array -> base64 string"
+            createdAt: "Date -> ISO string"
+            updatedAt: "Date -> ISO string"
+        toProfileListView: "array wrapper for toProfileView"
+
+      # Session views imported from session-management
+      imported_views:
+        from: "@speakeasy-services/session-management"
+        exports:
+          - toSessionKeyView
+          - toSessionKeyListView
+
+    # Lexicon definitions
+    lexicon:
+      new_definitions:
+        - getProfileDef (social.spkeasy.actor.getProfile)
+        - getProfilesDef (social.spkeasy.actor.getProfiles)
+        - putProfileDef (social.spkeasy.actor.putProfile)
+        - deleteProfileDef (social.spkeasy.actor.deleteProfile)
+        - profileViewDef (social.spkeasy.actor.profileView)
+      imported_from_session_management:
+        - createSessionLexicons (array of session lexicons)
+
+    # Tests
+    tests:
+      integration:
+        profile.test.ts:
+          test_cases:
+            getProfile:
+              - "should require did parameter"
+              - "should return 404 when profile not found"
+              - "should return 404 when caller has no session key (not trusted)"
+              - "should return profile with session key when trusted"
+              - "should require authentication"
+            getProfiles:
+              - "should require dids parameter"
+              - "should return empty arrays when no profiles found"
+              - "should only return profiles where caller has session key"
+              - "should require authentication"
+            putProfile:
+              - "should create a new profile"
+              - "should update existing profile"
+              - "should require authentication"
+              - "should validate required fields"
+            deleteProfile:
+              - "should delete existing profile"
+              - "should return 404 when no profile exists"
+              - "should require authentication"
+            health:
+              - "should return healthy status"
+        session.test.ts:
+          description: "Session management tests (inherited from session-management)"
+
+    # Files deleted (cleanup)
+    deleted_files:
+      - src/lexicon/types/media.ts
+      - src/lexicon/types/notifications.ts
+      - src/lexicon/types/posts.ts
+      - src/lexicon/types/reactions.ts
+      - src/lexicon/types/session.ts
+      - src/views/private-sessions.views.ts
+
+# =============================================================================
+# PACKAGE: session-management
+# =============================================================================
+packages:
+  session-management:
+    changes:
+      session.service.ts:
+        - DEFAULT_EXPIRATION_HOURS: "7 days -> 2 years"
+        - SessionPrismaClient interface: added orderBy support
+
+      worker.ts:
+        description: "SessionJobHandlers class for shared job handling"
+        changes:
+          - WINDOW_FOR_NEW_TRUSTED_USER: "365 days -> 730 days (2 years)"
+          - Added SessionJobHandlersOptions interface
+          - Added usePrefixedJobNames option (default: false)
+          - Added currentSessionOnly option (default: false)
+          - getJobName method: conditionally prefixes job names
+          - addRecipientToSession handler:
+              - When currentSessionOnly=false: grant access to all sessions in 2-year window
+              - When currentSessionOnly=true: grant access to ONLY the most recent session
+              - Includes expired sessions (profile content may still be valid)
+              - Orders by createdAt DESC, takes 1 when currentSessionOnly
+
+# =============================================================================
+# SERVICE: trusted-users
+# =============================================================================
+  trusted-users:
+    changes:
+      trust.service.ts:
+        description: "Publish jobs to BOTH session services"
+        SESSION_SERVICES: ["private-sessions", "private-profiles"]
+        affected_methods:
+          addTrustedUsers:
+            - "Publishes ADD_RECIPIENT_TO_SESSION to both services"
+            - "Uses getServiceJobName for prefixed job names"
+          trustUser:
+            - "Publishes ADD_RECIPIENT_TO_SESSION to both services"
+          untrustUser:
+            - "Publishes REVOKE_SESSION to both services"
+          removeAllTrustedUsers:
+            - "Publishes REVOKE_SESSION to both services"
+            - "Publishes DELETE_SESSION_KEYS to both services"
+
+      # Worker file deleted (was already commented out/unused)
+      deleted_files:
+        - src/worker.ts
+
+# =============================================================================
+# SERVICE: private-sessions
+# =============================================================================
+  private-sessions:
+    changes:
+      worker.ts:
+        description: "CONFLICT - needs reconciliation"
+        target_state:
+          - "Use SessionJobHandlers for session jobs (DRY)"
+          - "Use factory handlers for service-specific jobs (testability)"
+          - usePrefixedJobNames: true
+          - currentSessionOnly: false  # Posts ARE historical - need 2 year lookback
+        session_jobs_via_shared_handler:
+          - add-recipient-to-session
+          - revoke-session
+          - delete-session-keys
+          - update-session-keys
+        service_specific_jobs_via_factory:
+          - populate-did-cache
+          - notify-reaction
+          - notify-reply
+          - delete-media
+
+      session.service.ts:
+        - Minor comment clarification
+
+      privatePosts.routes.ts:
+        - Minor change
+
+      deleted_files:
+        - src/views/private-sessions.views.ts
+
+# =============================================================================
+# SCRIPTS
+# =============================================================================
+scripts:
+  create-schemas.sh:
+    - "Added private_profiles schema creation"
+  run-migrations.sh:
+    - "Added private-profiles service to migration list"
+
+# =============================================================================
+# KEY BEHAVIORAL DIFFERENCES
+# =============================================================================
+behavioral_notes:
+  session_lookback_windows:
+    private-sessions:
+      description: "Posts are historical - users need to see old posts"
+      lookback_window: "2 years"
+      currentSessionOnly: false
+    private-profiles:
+      description: "Profiles are NOT historical - only one current profile"
+      lookback_window: "N/A - only current session"
+      currentSessionOnly: true
+
+  job_name_prefixing:
+    trusted-users_publishes: "private-sessions.add-recipient-to-session"
+    private-sessions_listens: "usePrefixedJobNames: true -> prefixed job names"
+    private-profiles_listens: "usePrefixedJobNames: true -> prefixed job names"
+
+  access_control:
+    profile_access:
+      - "Caller must have session key for profile's session"
+      - "404 returned for both 'not found' and 'no access' (no info leak)"
+      - "getProfiles silently filters inaccessible profiles"
+
+# =============================================================================
+# VERIFICATION CHECKLIST
+# =============================================================================
+verification_checklist:
+  - "[ ] private-profiles service creates schema in database"
+  - "[ ] private-profiles migrations run successfully"
+  - "[ ] getProfile returns profile + session key when authorized"
+  - "[ ] getProfile returns 404 when unauthorized (no info leak)"
+  - "[ ] getProfiles filters to only accessible profiles"
+  - "[ ] putProfile creates new profile"
+  - "[ ] putProfile updates existing profile"
+  - "[ ] deleteProfile removes profile"
+  - "[ ] Worker handles all session job types"
+  - "[ ] Worker uses currentSessionOnly=true (only current session for profiles)"
+  - "[ ] trusted-users publishes jobs to BOTH services"
+  - "[ ] private-sessions worker uses SessionJobHandlers + factory handlers"
+  - "[ ] All tests pass"
+
+# =============================================================================
+# SUCCESS CRITERIA
+# =============================================================================
+success_criteria:
+  description: "Rebase is complete when ALL criteria are met"
+
+  criterion_1:
+    name: "All tests from origin/main pass"
+    rule: "Tests must pass WITHOUT modifying them"
+    action_on_failure: |
+      If a test fails and you believe the test requires changing:
+      1. STOP immediately
+      2. Ask the user to confirm test modification is acceptable
+      3. Wait for explicit user approval before proceeding
+      4. Document why the test needed to change
+    verification_command: "pnpm test"
+
+  criterion_2:
+    name: "Rebased code meets private-profiles.yaml specification"
+    rule: "All functionality documented in this YAML must be preserved"
+    checks:
+      database:
+        - "All tables exist with correct columns and indexes"
+        - "Foreign key relationships intact"
+      api:
+        - "All 4 profile endpoints work as specified"
+        - "Session endpoints inherited from session-management work"
+        - "Access control behavior unchanged (404 for unauthorized)"
+      worker:
+        - "SessionJobHandlers attached with correct options"
+        - "usePrefixedJobNames: true"
+        - "currentSessionOnly: true for private-profiles"
+        - "currentSessionOnly: false for private-sessions"
+      packages:
+        - "session-management exports SessionJobHandlers with options"
+        - "session-management exports view functions"
+        - "2-year lookback window (730 days)"
+      trusted-users:
+        - "Publishes to BOTH private-sessions and private-profiles"
+        - "Uses prefixed job names"
+      private-sessions:
+        - "Uses SessionJobHandlers for session jobs (DRY)"
+        - "Uses factory handlers for service-specific jobs (testability)"
+
+  workflow:
+    step_1: "Resolve conflicts per rebase-plan.md"
+    step_2: "Run pnpm build to verify compilation"
+    step_3: "Run pnpm test to verify all tests pass"
+    step_4: "If tests fail, diagnose root cause"
+    step_5: |
+      If test change is needed:
+        - STOP and ask user
+        - Explain why test needs to change
+        - Wait for approval
+    step_6: "Verify all verification_checklist items"
+    step_7: "Confirm both success criteria are met"

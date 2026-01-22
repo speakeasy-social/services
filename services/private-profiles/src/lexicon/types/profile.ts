@@ -6,16 +6,30 @@ export const getProfileDef: LexiconDoc = {
   defs: {
     main: {
       type: 'query',
-      description: 'Returns encrypted private profile',
+      description: 'Returns encrypted private profile for a specific user',
+      parameters: {
+        type: 'params',
+        required: ['did'],
+        properties: {
+          did: {
+            type: 'string',
+            description: 'DID of the profile owner',
+          },
+        },
+      },
       output: {
         encoding: 'application/json',
         schema: {
           type: 'object',
-          required: ['profile'],
+          required: ['profile', 'encryptedSessionKey'],
           properties: {
             profile: {
               type: 'ref',
               ref: 'social.spkeasy.actor.profileView#profileView',
+            },
+            encryptedSessionKey: {
+              type: 'string',
+              description: 'Session key encrypted to the caller',
             },
           },
         },
@@ -74,6 +88,70 @@ export const putProfileDef: LexiconDoc = {
               type: 'ref',
               ref: 'social.spkeasy.actor.profileView#profileView',
             },
+          },
+        },
+      },
+    },
+  },
+};
+
+export const getProfilesDef: LexiconDoc = {
+  lexicon: 1,
+  id: 'social.spkeasy.actor.getProfiles',
+  defs: {
+    main: {
+      type: 'query',
+      description: 'Returns encrypted private profiles for multiple users',
+      parameters: {
+        type: 'params',
+        required: ['dids'],
+        properties: {
+          dids: {
+            type: 'array',
+            items: { type: 'string' },
+            description: 'DIDs of the profile owners',
+          },
+        },
+      },
+      output: {
+        encoding: 'application/json',
+        schema: {
+          type: 'object',
+          required: ['profiles', 'encryptedSessionKeys'],
+          properties: {
+            profiles: {
+              type: 'array',
+              items: {
+                type: 'ref',
+                ref: 'social.spkeasy.actor.profileView#profileView',
+              },
+            },
+            encryptedSessionKeys: {
+              type: 'array',
+              items: { type: 'string' },
+              description: 'Session keys encrypted to the caller',
+            },
+          },
+        },
+      },
+    },
+  },
+};
+
+export const deleteProfileDef: LexiconDoc = {
+  lexicon: 1,
+  id: 'social.spkeasy.actor.deleteProfile',
+  defs: {
+    main: {
+      type: 'procedure',
+      description: 'Delete the current user private profile',
+      output: {
+        encoding: 'application/json',
+        schema: {
+          type: 'object',
+          required: ['success'],
+          properties: {
+            success: { type: 'boolean' },
           },
         },
       },

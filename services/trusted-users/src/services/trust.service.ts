@@ -4,7 +4,9 @@ import {
   TrustedUser,
 } from '../generated/prisma-client/index.js';
 import { NotFoundError, RateLimitError } from '@speakeasy-services/common';
-import { Queue, JOB_NAMES } from '@speakeasy-services/queue';
+import { Queue, JOB_NAMES, getServiceJobName } from '@speakeasy-services/queue';
+
+const SESSION_SERVICES = ['private-sessions', 'private-profiles'] as const;
 import { getPrismaClient } from '../db.js';
 
 const prisma = getPrismaClient();
@@ -121,17 +123,22 @@ export class TrustService {
         })),
       });
 
-      await Queue.bulkPublish(
-        {
-          name: JOB_NAMES.ADD_RECIPIENT_TO_SESSION,
-          startAfter: new Date(
-            Date.now() + DEFER_BULK_ADD_TRUSTED_SECONDS * 1000,
+      // Publish to both session services
+      await Promise.all(
+        SESSION_SERVICES.map((service) =>
+          Queue.bulkPublishDynamic(
+            {
+              name: getServiceJobName(service, JOB_NAMES.ADD_RECIPIENT_TO_SESSION),
+              startAfter: new Date(
+                Date.now() + DEFER_BULK_ADD_TRUSTED_SECONDS * 1000,
+              ),
+            },
+            newRecipientDids.map((recipientDid) => ({
+              authorDid,
+              recipientDid,
+            })),
           ),
-        },
-        newRecipientDids.map((recipientDid) => ({
-          authorDid,
-          recipientDid,
-        })),
+        ),
       );
 
       return newRecipientDids;
@@ -168,10 +175,15 @@ export class TrustService {
         });
       }
 
-      await Queue.publish(JOB_NAMES.ADD_RECIPIENT_TO_SESSION, {
-        authorDid,
-        recipientDid,
-      });
+      // Publish to both session services
+      await Promise.all(
+        SESSION_SERVICES.map((service) =>
+          Queue.publishDynamic(
+            getServiceJobName(service, JOB_NAMES.ADD_RECIPIENT_TO_SESSION),
+            { authorDid, recipientDid },
+          ),
+        ),
+      );
     });
   }
 
@@ -193,10 +205,15 @@ export class TrustService {
       }
     });
 
-    await Queue.publish(JOB_NAMES.REVOKE_SESSION, {
-      authorDid,
-      recipientDid,
-    });
+    // Publish to both session services
+    await Promise.all(
+      SESSION_SERVICES.map((service) =>
+        Queue.publishDynamic(
+          getServiceJobName(service, JOB_NAMES.REVOKE_SESSION),
+          { authorDid, recipientDid },
+        ),
+      ),
+    );
   }
 
   /**
@@ -234,19 +251,31 @@ export class TrustService {
         },
       });
 
-      await Queue.publish(JOB_NAMES.REVOKE_SESSION, { authorDid });
-
-      await Queue.bulkPublish(
-        {
-          name: JOB_NAMES.DELETE_SESSION_KEYS,
-          startAfter: new Date(
-            Date.now() + DEFER_BULK_ADD_TRUSTED_SECONDS * 1000,
+      // Publish to both session services
+      await Promise.all(
+        SESSION_SERVICES.map((service) =>
+          Queue.publishDynamic(
+            getServiceJobName(service, JOB_NAMES.REVOKE_SESSION),
+            { authorDid },
           ),
-        },
-        removedRecipientDids.map((recipientDid) => ({
-          authorDid,
-          recipientDid,
-        })),
+        ),
+      );
+
+      await Promise.all(
+        SESSION_SERVICES.map((service) =>
+          Queue.bulkPublishDynamic(
+            {
+              name: getServiceJobName(service, JOB_NAMES.DELETE_SESSION_KEYS),
+              startAfter: new Date(
+                Date.now() + DEFER_BULK_ADD_TRUSTED_SECONDS * 1000,
+              ),
+            },
+            removedRecipientDids.map((recipientDid) => ({
+              authorDid,
+              recipientDid,
+            })),
+          ),
+        ),
       );
 
       return removedRecipientDids;
