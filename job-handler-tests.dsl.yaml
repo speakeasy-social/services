@@ -1,0 +1,853 @@
+# Job Handler Test Suite DSL
+# Goal: Lightweight isolated tests for happy path verification during refactoring
+# Strategy: Use real test database, mock only external/inter-service calls
+
+---
+meta:
+  name: Job Handler Test Suite
+  description: |
+    Isolated unit tests for job handlers across microservices.
+    Uses real test database (no Prisma mocking).
+    Mocks only inter-service HTTP calls and external APIs.
+    Focus on happy path verification to enable confident refactoring.
+  services:
+    - user-keys
+    - private-sessions
+
+---
+# =============================================================================
+# SHARED TEST HARNESS
+# =============================================================================
+
+harness:
+  # ---------------------------------------------------------------------------
+  # EXISTING UTILITIES (reuse from packages/test-utils)
+  # ---------------------------------------------------------------------------
+  existing:
+    location: packages/test-utils/src/
+
+    testTokens:
+      file: test-token.ts
+      exports:
+        - name: generateTestToken
+          usage: "generateTestToken(did, { handle, pdsUrl, expired })"
+        - name: generateTestServiceToken
+          usage: "generateTestServiceToken('private-sessions')"
+
+    blueskyMocks:
+      file: mock-bearer-tokens.ts
+      note: Uses nock to intercept Bluesky PDS calls - same pattern for inter-service
+      exports:
+        - name: mockBlueskySession
+          usage: "mockBlueskySession({ did, host })"
+        - name: mockMultiUserBlueskySession
+          usage: "mockMultiUserBlueskySession({ users: Map })"
+        - name: cleanupBlueskySessionMocks
+          usage: "afterEach(() => cleanupBlueskySessionMocks())"
+
+  # ---------------------------------------------------------------------------
+  # EXISTING PATTERNS
+  # ---------------------------------------------------------------------------
+  existingPatterns:
+    database: |
+      Real test database with Prisma. No mocking.
+      Cleanup via deleteMany() in beforeEach.
+
+    httpMocking: |
+      nock for all HTTP interception (Bluesky, inter-service).
+      Already used in mock-bearer-tokens.ts and common/tests/bsky.test.ts.
+
+  # ---------------------------------------------------------------------------
+  # NEW UTILITIES NEEDED
+  # ---------------------------------------------------------------------------
+  newUtilities:
+    # -------------------------------------------------------------------------
+    # 1. Extend lexicon validation (packages/common)
+    # -------------------------------------------------------------------------
+    lexiconValidation:
+      file: packages/common/src/lexicon/lexicon-validation.ts
+      action: EXTEND
+      description: |
+        Add input/output-specific validation functions.
+        Existing validateAgainstLexicon() handles input but not output.
+      additions:
+        - name: validateLexiconInput
+          description: Validates against lexicon's parameters (query) or input.schema (procedure)
+        - name: validateLexiconOutput
+          description: Validates against lexicon's output.schema
+
+    # -------------------------------------------------------------------------
+    # 2. Inter-service mock with lexicon validation
+    # -------------------------------------------------------------------------
+    mockInterService:
+      file: packages/test-utils/src/mock-inter-service.ts
+      action: NEW
+      description: |
+        Mock for speakeasyApiRequest() with automatic lexicon validation.
+        Validates BOTH request (input) AND mock response (output) against lexicons.
+        Catches contract drift at test time - wrong field names, missing params, type mismatches.
+
+      implementation: |
+        import nock from 'nock';
+        import { validateLexiconInput, validateLexiconOutput } from '@speakeasy-services/common';
+        import type { LexiconDoc } from '@atproto/lexicon';
+
+        const SERVICE_HOSTS = {
+          'private-sessions': () => process.env.PRIVATE_SESSIONS_HOST,
+          'trusted-users': () => process.env.TRUSTED_USERS_HOST,
+          'user-keys': () => process.env.USER_KEYS_HOST,
+          'media': () => process.env.MEDIA_HOST,
+          'service-admin': () => process.env.SERVICE_ADMIN_HOST,
+        } as const;
+
+        type ServiceName = keyof typeof SERVICE_HOSTS;
+
+        // Lazy-load lexicons to avoid circular deps
+        const serviceLexicons: Record<ServiceName, () => Record<string, LexiconDoc>> = {
+          'trusted-users': () => require('@speakeasy-services/trusted-users/lexicon').lexicons,
+          'user-keys': () => require('@speakeasy-services/user-keys/lexicon').lexicons,
+          'private-sessions': () => require('@speakeasy-services/private-sessions/lexicon').lexicons,
+          'media': () => require('@speakeasy-services/media/lexicon').lexicons,
+          'service-admin': () => require('@speakeasy-services/service-admin/lexicon').lexicons,
+        };
+
+        function getLexicon(service: ServiceName, path: string): LexiconDoc | undefined {
+          const lexicons = serviceLexicons[service]?.();
+          return lexicons?.[path];
+        }
+
+        export function mockInterServiceCall(options: {
+          toService: ServiceName;
+          path: string;
+          method?: 'GET' | 'POST';
+          response: unknown;
+          skipValidation?: boolean;  // escape hatch for edge cases
+        }) {
+          const host = SERVICE_HOSTS[options.toService]();
+          const method = (options.method?.toLowerCase() ?? 'post') as 'get' | 'post';
+          const lexicon = getLexicon(options.toService, options.path);
+
+          // Validate mock response at setup time (fail fast)
+          if (lexicon && !options.skipValidation) {
+            validateLexiconOutput(lexicon, options.response);
+          }
+
+          return nock(host)[method](`/xrpc/${options.path}`)
+            .reply(function(uri, requestBody) {
+              // Validate request against lexicon input schema
+              if (lexicon && !options.skipValidation) {
+                validateLexiconInput(lexicon, requestBody);
+              }
+              return [200, options.response];
+            });
+        }
+
+        export function cleanupInterServiceMocks() {
+          nock.cleanAll();
+        }
+
+      usage: |
+        import { mockInterServiceCall, cleanupInterServiceMocks } from '@speakeasy-services/test-utils';
+
+        // Mock a service response - both request and response are validated against lexicon
+        mockInterServiceCall({
+          toService: 'trusted-users',
+          path: 'social.spkeasy.trust.isTrusted',
+          response: { trusted: [{ userDid: 'did:plc:recipient' }] },
+        });
+
+        // If request shape is wrong → throws at call time
+        // If response shape is wrong → throws at mock setup time (fail fast)
+
+        // Cleanup in afterEach
+        afterEach(() => cleanupInterServiceMocks());
+
+      benefits:
+        - Validates request matches what service expects (input schema)
+        - Validates mock response matches what service returns (output schema)
+        - Catches contract drift early without running actual services
+        - Fail-fast: response validated at setup, request validated at call time
+
+  # ---------------------------------------------------------------------------
+  # STANDARD TEST STRUCTURE
+  # ---------------------------------------------------------------------------
+  testStructure: |
+    import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+    import { getPrismaClient } from '../src/db.js';
+    import { mockInterServiceCall, cleanupInterServiceMocks } from '@speakeasy-services/test-utils';
+    import { handleJobName } from '../src/handlers/jobName.js';
+
+    const prisma = getPrismaClient();
+
+    describe('JOB_NAME handler', () => {
+      beforeEach(async () => {
+        await prisma.relevantTable.deleteMany();
+      });
+
+      afterEach(() => {
+        cleanupInterServiceMocks();
+      });
+
+      it('happy path', async () => {
+        // Arrange: database
+        await prisma.session.create({ data: {...} });
+
+        // Arrange: inter-service mocks (if needed)
+        mockInterServiceCall({
+          toService: 'trusted-users',
+          path: 'social.spkeasy.trust.isTrusted',
+          response: { trusted: [...] },
+        });
+
+        // Act
+        const result = await handleJobName({
+          id: 'test-job-1',
+          name: 'job-name',
+          data: { authorDid: 'did:plc:author' },
+        });
+
+        // Assert
+        expect(result).toEqual({ success: true });
+        const records = await prisma.relevantTable.findMany();
+        expect(records).toHaveLength(1);
+      });
+    });
+
+---
+# =============================================================================
+# USER-KEYS SERVICE HANDLERS
+# =============================================================================
+
+services:
+  user-keys:
+    handlers:
+      UPDATE_USER_KEYS:
+        description: |
+          Triggered when user rotates encryption keys.
+          Fetches old and new keys from database, then calls private-sessions
+          service to re-encrypt all session keys with the new key material.
+
+        inputType:
+          prevKeyId: string
+          newKeyId: string
+
+        dependencies:
+          database:
+            - userKey.findUnique (x2 - prev and new keys)
+          interService:
+            - private-sessions: social.spkeasy.privateSession.updateKeys
+
+        tests:
+          happy_path:
+            name: "Successfully orchestrates key update to private-sessions"
+            setup:
+              database:
+                userKeys:
+                  - id: "key-old"
+                    userDid: "did:plc:user1"
+                    privateKey: "old-private-key-material"
+                  - id: "key-new"
+                    userDid: "did:plc:user1"
+                    publicKey: "new-public-key-material"
+              mocks:
+                interService:
+                  - toService: private-sessions
+                    path: social.spkeasy.privateSession.updateKeys
+                    response: { success: true }
+            input:
+              prevKeyId: "key-old"
+              newKeyId: "key-new"
+            assertions:
+              - interServiceCalled:
+                  toService: private-sessions
+                  body:
+                    prevKeyId: "key-old"
+                    newKeyId: "key-new"
+                    prevPrivateKey: "old-private-key-material"
+                    newPublicKey: "new-public-key-material"
+              - returned: { success: true }
+
+          key_not_found:
+            name: "Throws error if previous key not found"
+            setup:
+              database:
+                userKeys: []  # empty
+            input:
+              prevKeyId: "nonexistent"
+              newKeyId: "key-new"
+            assertions:
+              - throws: NotFoundError
+
+---
+# =============================================================================
+# PRIVATE-SESSIONS SERVICE HANDLERS
+# =============================================================================
+
+  private-sessions:
+    handlers:
+      ADD_RECIPIENT_TO_SESSION:
+        description: |
+          When a new user is trusted, grant them access to the author's
+          recent sessions (within 30-day window). Re-encrypts DEKs with
+          recipient's public key.
+
+        inputType:
+          authorDid: string
+          recipientDid: string
+
+        dependencies:
+          database:
+            - session.findMany (recent sessions)
+            - sessionKey.findMany (author's keys)
+            - sessionKey.create (recipient keys)
+          interService:
+            - trusted-users: social.spkeasy.trust.isTrusted
+            - user-keys: social.spkeasy.userKey.getKeyPair
+
+        tests:
+          happy_path:
+            name: "Grants recipient access to recent sessions"
+            setup:
+              database:
+                sessions:
+                  - id: "session-1"
+                    authorDid: "did:plc:author"
+                    createdAt: "within 30 days"
+                sessionKeys:
+                  - sessionId: "session-1"
+                    userDid: "did:plc:author"
+                    encryptedDek: "encrypted-dek-1"
+              mocks:
+                interService:
+                  - toService: trusted-users
+                    path: social.spkeasy.trust.isTrusted
+                    response: { trusted: [{ userDid: "did:plc:recipient" }] }
+                  - toService: user-keys
+                    path: social.spkeasy.userKey.getKeyPair
+                    response: { privateKey: "author-priv", publicKey: "recipient-pub" }
+            input:
+              authorDid: "did:plc:author"
+              recipientDid: "did:plc:recipient"
+            assertions:
+              - databaseContains:
+                  sessionKey:
+                    sessionId: "session-1"
+                    userDid: "did:plc:recipient"
+              - returned: { success: true }
+
+          recipient_no_longer_trusted:
+            name: "Aborts if recipient was untrusted before job ran"
+            setup:
+              mocks:
+                interService:
+                  - toService: trusted-users
+                    path: social.spkeasy.trust.isTrusted
+                    response: { trusted: [] }
+            input:
+              authorDid: "did:plc:author"
+              recipientDid: "did:plc:recipient"
+            assertions:
+              - returned: { abortReason: "Recipient no longer trusted" }
+              - interServiceNotCalled: user-keys
+
+          no_recent_sessions:
+            name: "Completes successfully with no work when no recent sessions"
+            setup:
+              database:
+                sessions: []
+              mocks:
+                interService:
+                  - toService: trusted-users
+                    response: { trusted: [{ userDid: "did:plc:recipient" }] }
+            input:
+              authorDid: "did:plc:author"
+              recipientDid: "did:plc:recipient"
+            assertions:
+              - returned: { success: true }
+              - databaseCount:
+                  sessionKey: 0
+
+      # ---------------------------------------------------------------------
+
+      REVOKE_SESSION:
+        description: |
+          Marks sessions as revoked. If recipientDid provided, also deletes
+          that recipient's session keys.
+
+        inputType:
+          authorDid: string
+          recipientDid: string | undefined
+
+        dependencies:
+          database:
+            - session.updateMany (mark revoked)
+            - sessionKey.deleteMany (if recipientDid)
+          interService: none
+
+        tests:
+          revoke_all_sessions:
+            name: "Revokes all active sessions for author"
+            setup:
+              database:
+                sessions:
+                  - id: "session-1"
+                    authorDid: "did:plc:author"
+                    isRevoked: false
+                  - id: "session-2"
+                    authorDid: "did:plc:author"
+                    isRevoked: false
+            input:
+              authorDid: "did:plc:author"
+              recipientDid: null
+            assertions:
+              - databaseState:
+                  session:
+                    where: { authorDid: "did:plc:author" }
+                    allMatch: { isRevoked: true }
+
+          revoke_and_delete_recipient_keys:
+            name: "Revokes sessions and deletes specific recipient's keys"
+            setup:
+              database:
+                sessions:
+                  - id: "session-1"
+                    authorDid: "did:plc:author"
+                sessionKeys:
+                  - sessionId: "session-1"
+                    userDid: "did:plc:removed-user"
+            input:
+              authorDid: "did:plc:author"
+              recipientDid: "did:plc:removed-user"
+            assertions:
+              - databaseCount:
+                  sessionKey:
+                    where: { userDid: "did:plc:removed-user" }
+                    count: 0
+
+      # ---------------------------------------------------------------------
+
+      DELETE_SESSION_KEYS:
+        description: |
+          Cleanup job that deletes a recipient's session keys after they've
+          been untrusted. Validates they're still untrusted to handle race
+          conditions where user re-trusts quickly.
+
+        inputType:
+          authorDid: string
+          recipientDid: string
+
+        dependencies:
+          database:
+            - sessionKey.deleteMany
+          interService:
+            - trusted-users: social.spkeasy.trust.isTrusted
+
+        tests:
+          happy_path:
+            name: "Deletes session keys when recipient still untrusted"
+            setup:
+              database:
+                sessions:
+                  - id: "session-1"
+                    authorDid: "did:plc:author"
+                sessionKeys:
+                  - sessionId: "session-1"
+                    userDid: "did:plc:removed-user"
+              mocks:
+                interService:
+                  - toService: trusted-users
+                    response: { trusted: [] }
+            input:
+              authorDid: "did:plc:author"
+              recipientDid: "did:plc:removed-user"
+            assertions:
+              - databaseCount:
+                  sessionKey:
+                    where: { userDid: "did:plc:removed-user" }
+                    count: 0
+
+          recipient_re_trusted:
+            name: "Aborts without deletion if recipient was re-trusted"
+            setup:
+              database:
+                sessionKeys:
+                  - userDid: "did:plc:removed-user"
+              mocks:
+                interService:
+                  - toService: trusted-users
+                    response: { trusted: [{ userDid: "did:plc:removed-user" }] }
+            input:
+              authorDid: "did:plc:author"
+              recipientDid: "did:plc:removed-user"
+            assertions:
+              - returned: { abortReason: "Recipient is now trusted" }
+              - databaseCount:
+                  sessionKey:
+                    where: { userDid: "did:plc:removed-user" }
+                    count: 1  # not deleted
+
+      # ---------------------------------------------------------------------
+
+      UPDATE_SESSION_KEYS:
+        description: |
+          Batch re-encrypts session keys when a user rotates their encryption
+          keys. Processes in batches of 100 with cursor-based resumption.
+
+        inputType:
+          prevKeyId: string
+          newKeyId: string
+          prevPrivateKey: string
+          newPublicKey: string
+
+        dependencies:
+          database:
+            - sessionKey.findMany (batch query)
+            - sessionKey.update (per key)
+          interService: none
+
+        tests:
+          happy_path_single_batch:
+            name: "Re-encrypts all keys in single batch"
+            setup:
+              database:
+                sessions:
+                  - id: "session-1"
+                    authorDid: "did:plc:user"
+                sessionKeys:
+                  - id: "key-1"
+                    sessionId: "session-1"
+                    keyPairId: "old-keypair"
+                    encryptedDek: "old-dek-1"
+                  - id: "key-2"
+                    sessionId: "session-1"
+                    keyPairId: "old-keypair"
+                    encryptedDek: "old-dek-2"
+            input:
+              prevKeyId: "old-keypair"
+              newKeyId: "new-keypair"
+              prevPrivateKey: "old-private"
+              newPublicKey: "new-public"
+            assertions:
+              - databaseState:
+                  sessionKey:
+                    where: { id: "key-1" }
+                    matches: { keyPairId: "new-keypair" }
+              - databaseState:
+                  sessionKey:
+                    where: { id: "key-2" }
+                    matches: { keyPairId: "new-keypair" }
+
+          no_keys_to_update:
+            name: "Completes successfully when no keys match old keypair"
+            setup:
+              database:
+                sessionKeys: []
+            input:
+              prevKeyId: "old-keypair"
+              newKeyId: "new-keypair"
+              prevPrivateKey: "old-private"
+              newPublicKey: "new-public"
+            assertions:
+              - returned: { success: true }
+
+      # ---------------------------------------------------------------------
+
+      POPULATE_DID_CACHE:
+        description: |
+          Fetches Bluesky profiles for given DIDs and caches the handle
+          mappings locally. Used to resolve handles for notification display.
+
+        inputType:
+          dids: string[]
+          host: string
+
+        dependencies:
+          database:
+            - userDidCache.findMany (check existing)
+            - userDidCache.create (cache new)
+          externalApi:
+            - fetchBlueskyProfile (use existing mockBlueskySession patterns)
+
+        tests:
+          happy_path:
+            name: "Fetches and caches uncached DIDs"
+            setup:
+              database:
+                userDidCache:
+                  - did: "did:plc:existing"
+                    handle: "existing.bsky.social"
+              mocks:
+                bluesky:
+                  profiles:
+                    "did:plc:new1": { handle: "new1.bsky.social" }
+                    "did:plc:new2": { handle: "new2.bsky.social" }
+            input:
+              dids:
+                - "did:plc:existing"
+                - "did:plc:new1"
+                - "did:plc:new2"
+              host: "bsky.social"
+            assertions:
+              - databaseContains:
+                  userDidCache:
+                    - { did: "did:plc:new1", handle: "new1.bsky.social" }
+                    - { did: "did:plc:new2", handle: "new2.bsky.social" }
+
+          all_cached:
+            name: "Skips fetch when all DIDs already cached"
+            setup:
+              database:
+                userDidCache:
+                  - did: "did:plc:cached1"
+                  - did: "did:plc:cached2"
+            input:
+              dids:
+                - "did:plc:cached1"
+                - "did:plc:cached2"
+              host: "bsky.social"
+            assertions:
+              - blueskyApiNotCalled: true
+
+      # ---------------------------------------------------------------------
+
+      NOTIFY_REACTION:
+        description: |
+          Creates a notification when someone likes/reacts to a post.
+          Skips if the reactor is the post author (self-like).
+
+        inputType:
+          authorDid: string
+          uri: string
+
+        dependencies:
+          database:
+            - notification.create
+          interService: none
+
+        tests:
+          happy_path:
+            name: "Creates like notification for post author"
+            input:
+              authorDid: "did:plc:reactor"
+              uri: "at://did:plc:post-author/app.bsky.feed.post/abc123"
+            assertions:
+              - databaseContains:
+                  notification:
+                    userDid: "did:plc:post-author"
+                    reason: "like"
+                    uri: "at://did:plc:post-author/app.bsky.feed.post/abc123"
+
+          skip_self_like:
+            name: "Does not notify when user likes their own post"
+            input:
+              authorDid: "did:plc:same-user"
+              uri: "at://did:plc:same-user/app.bsky.feed.post/abc123"
+            assertions:
+              - databaseCount:
+                  notification: 0
+
+          idempotent_duplicate:
+            name: "Silently handles duplicate notification"
+            setup:
+              database:
+                notifications:
+                  - userDid: "did:plc:post-author"
+                    uri: "at://did:plc:post-author/app.bsky.feed.post/abc123"
+                    reason: "like"
+            input:
+              authorDid: "did:plc:reactor"
+              uri: "at://did:plc:post-author/app.bsky.feed.post/abc123"
+            assertions:
+              - noErrorThrown: true
+              - databaseCount:
+                  notification: 1  # still just one
+
+      # ---------------------------------------------------------------------
+
+      NOTIFY_REPLY:
+        description: |
+          Complex handler that notifies all participants in a thread when
+          someone replies. Traverses up the reply chain to find all authors,
+          validates permissions (can reply author see each post?), and creates
+          notifications for eligible recipients.
+
+        inputType:
+          uri: string
+          token: string
+
+        dependencies:
+          database:
+            - encryptedPost.findUnique (reply + parent posts)
+            - sessionKey.findMany (permission check)
+            - notification.createMany
+          externalApi:
+            - fetchBlueskyPosts (for posts not in local DB)
+
+        tests:
+          happy_path_direct_reply:
+            name: "Notifies parent post author on direct reply"
+            setup:
+              database:
+                sessions:
+                  - id: "session-1"
+                    authorDid: "did:plc:replier"
+                sessionKeys:
+                  - sessionId: "session-1"
+                    userDid: "did:plc:parent"
+                encryptedPosts:
+                  - uri: "at://did:plc:replier/post/reply1"
+                    authorDid: "did:plc:replier"
+                    replyParent: "at://did:plc:parent/post/original"
+                    sessionId: "session-1"
+                  - uri: "at://did:plc:parent/post/original"
+                    authorDid: "did:plc:parent"
+                    replyParent: null
+            input:
+              uri: "at://did:plc:replier/post/reply1"
+              token: "auth-token"
+            assertions:
+              - databaseContains:
+                  notification:
+                    userDid: "did:plc:parent"
+                    reason: "reply"
+
+          excludes_reply_author:
+            name: "Does not notify the reply author themselves"
+            setup:
+              database:
+                encryptedPosts:
+                  - uri: "reply1"
+                    authorDid: "did:plc:replier"
+                    replyParent: "original"
+                  - uri: "original"
+                    authorDid: "did:plc:replier"  # same person
+            input:
+              uri: "reply1"
+              token: "auth-token"
+            assertions:
+              - databaseCount:
+                  notification: 0
+
+          respects_session_key_access:
+            name: "Only notifies authors who have session key for reply post"
+            setup:
+              database:
+                sessions:
+                  - id: "session-1"
+                sessionKeys:
+                  # Only author-with-access has a key
+                  - sessionId: "session-1"
+                    userDid: "did:plc:author-with-access"
+                encryptedPosts:
+                  - uri: "reply"
+                    sessionId: "session-1"
+                    replyParent: "post-a"
+                  - uri: "post-a"
+                    authorDid: "did:plc:author-with-access"
+                    replyParent: "post-b"
+                  - uri: "post-b"
+                    authorDid: "did:plc:author-without-access"
+            input:
+              uri: "reply"
+              token: "auth-token"
+            assertions:
+              - databaseContains:
+                  notification:
+                    userDid: "did:plc:author-with-access"
+              - databaseNotContains:
+                  notification:
+                    userDid: "did:plc:author-without-access"
+
+      # ---------------------------------------------------------------------
+
+      DELETE_MEDIA:
+        description: |
+          Deletes media files from storage when an encrypted post is deleted.
+          Delegates to media service via inter-service call.
+
+        inputType:
+          key: string
+
+        dependencies:
+          database: none
+          interService:
+            - media: social.spkeasy.media.delete
+
+        tests:
+          happy_path:
+            name: "Calls media service to delete object"
+            setup:
+              mocks:
+                interService:
+                  - toService: media
+                    path: social.spkeasy.media.delete
+                    response: { success: true }
+            input:
+              key: "media/abc123/image.jpg"
+            assertions:
+              - interServiceCalled:
+                  toService: media
+                  body:
+                    key: "media/abc123/image.jpg"
+
+---
+# =============================================================================
+# IMPLEMENTATION NOTES
+# =============================================================================
+
+implementation:
+  fileStructure:
+    newUtilities:
+      - packages/common/src/lexicon/lexicon-validation.ts  # EXTEND with input/output
+      - packages/test-utils/src/mock-inter-service.ts      # NEW
+    tests:
+      - services/user-keys/tests/integration/jobs/updateUserKeys.test.ts
+      - services/private-sessions/tests/integration/jobs/addRecipientToSession.test.ts
+      - services/private-sessions/tests/integration/jobs/revokeSession.test.ts
+      - services/private-sessions/tests/integration/jobs/deleteSessionKeys.test.ts
+      - services/private-sessions/tests/integration/jobs/updateSessionKeys.test.ts
+      - services/private-sessions/tests/integration/jobs/populateDidCache.test.ts
+      - services/private-sessions/tests/integration/jobs/notifyReaction.test.ts
+      - services/private-sessions/tests/integration/jobs/notifyReply.test.ts
+      - services/private-sessions/tests/integration/jobs/deleteMedia.test.ts
+
+  priorityOrder:
+    tier1_no_mocks_needed:
+      - NOTIFY_REACTION       # Database only, simple logic
+      - REVOKE_SESSION        # Database only
+    tier2_needs_inter_service_mock:
+      - DELETE_MEDIA          # Single mock, simple
+      - DELETE_SESSION_KEYS   # Single mock
+      - UPDATE_USER_KEYS      # Single mock
+    tier3_complex:
+      - ADD_RECIPIENT_TO_SESSION  # Multiple mocks + crypto
+      - UPDATE_SESSION_KEYS       # Batch processing
+      - POPULATE_DID_CACHE        # Bluesky API mock (existing patterns)
+      - NOTIFY_REPLY              # Complex traversal + permissions
+
+  handlerExtraction:
+    note: |
+      Handlers are currently inline in worker.ts. Extract to separate
+      files for direct import in tests.
+    before: |
+      // worker.ts
+      worker.work(JOB_NAMES.NOTIFY_REACTION, async (job) => {
+        // handler logic inline
+      });
+    after: |
+      // handlers/notifyReaction.ts
+      export async function handleNotifyReaction(job: Job<NotifyReactionJob>) {
+        // handler logic
+      }
+
+      // worker.ts
+      import { handleNotifyReaction } from './handlers/notifyReaction.js';
+      worker.work(JOB_NAMES.NOTIFY_REACTION, handleNotifyReaction);
+
+  verification:
+    steps:
+      - Write NOTIFY_REACTION test (Tier 1, no mocks)
+      - Write DELETE_MEDIA test (Tier 2, uses mockInterServiceCall with lexicon validation)
+      - Intentionally pass wrong request shape - verify validation throws
+      - Intentionally pass wrong response shape - verify validation throws at setup
+      - Run tests in private-sessions service
