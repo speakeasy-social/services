@@ -1,25 +1,3 @@
-export interface AddRecipientToSessionJob {
-  authorDid: string;
-  recipientDid: string;
-}
-
-export interface RevokeSessionJob {
-  authorDid: string;
-  recipientDid?: string;
-}
-
-export interface DeleteSessionKeysJob {
-  authorDid: string;
-  recipientDid: string;
-}
-
-export interface UpdateSessionKeysJob {
-  prevKeyId: string;
-  newKeyId: string;
-  prevPrivateKey: string;
-  newPublicKey: string;
-}
-
 export interface PopulateDidCacheJob {
   dids: string[];
   host: string;

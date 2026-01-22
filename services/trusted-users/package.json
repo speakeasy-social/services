@@ -17,7 +17,6 @@
     "dev": "tsx watch src/api.ts",
     "dev:prisma": "prisma generate --watch",
     "dev:api": "tsx watch src/api.ts",
-    "dev:worker": "tsx watch src/worker.ts",
     "clean": "rm -rf dist",
     "lint": "eslint src",
     "test": "vitest run",

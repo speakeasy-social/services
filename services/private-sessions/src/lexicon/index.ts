@@ -1,16 +1,13 @@
-import {
-  revokeSessionDef,
-  addUserDef,
-  createSessionDef,
-  updateSessionKeysDef,
-} from './types/session.js';
+import { createSessionLexicons } from '@speakeasy-services/session-management';
 import { getPostsDef, createPostsDef, deletePostDef } from './types/posts.js';
 
+// Get session lexicons as an array
+const sessionLexiconsArray = Object.values(
+  createSessionLexicons('social.spkeasy.privateSession'),
+);
+
 export const lexicons = [
-  revokeSessionDef,
-  addUserDef,
-  createSessionDef,
-  updateSessionKeysDef,
+  ...sessionLexiconsArray,
   getPostsDef,
   createPostsDef,
   deletePostDef,

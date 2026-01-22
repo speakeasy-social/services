@@ -17,7 +17,7 @@ import {
   toEncryptedPostsListView,
   toEncryptedPostView,
 } from '../views/private-posts.views.js';
-import { toSessionKeyListView } from '../views/private-sessions.views.js';
+import { toSessionKeyListView } from '@speakeasy-services/session-management';
 import {
   getDIDFromUri,
   PrivatePostsService,

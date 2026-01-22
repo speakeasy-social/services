@@ -17,6 +17,22 @@ export const JOB_NAMES = {
   NOTIFY_REPLY: 'notify-reply',
 } as const;
 
+// Re-export types
+export type { Job, JobName } from './types.js';
+
+/**
+ * Generate a service-specific job name by prefixing the base job name with the service name
+ * @param serviceName - The name of the service (e.g., 'private-sessions', 'private-profiles')
+ * @param baseJobName - The base job name from JOB_NAMES
+ * @returns A service-specific job name
+ */
+export function getServiceJobName(
+  serviceName: string,
+  baseJobName: string,
+): string {
+  return `${serviceName}.${baseJobName}`;
+}
+
 const queueConfigSchema = z.object({
   connectionString: z.string(),
   schema: z.string().default('pgboss'),
@@ -98,6 +114,45 @@ export class Queue {
   static async bulkPublish<K extends keyof JobDataMap>(
     config: JobInsert & { name: K },
     datas: JobDataMap[K][],
+  ): Promise<void> {
+    const queue = this.getInstance();
+    await queue.insert(
+      datas.map((data) => ({
+        data,
+        ...DEFAULT_RETRY_CONFIG,
+        ...config,
+      })),
+    );
+  }
+
+  /**
+   * Publish a job with a dynamic (service-prefixed) job name.
+   * Use this for jobs that need to be routed to specific services.
+   * @param jobName - The full job name (e.g., 'private-sessions.add-recipient-to-session')
+   * @param data - The job data
+   * @param config - Optional send configuration
+   */
+  static async publishDynamic<T extends Record<string, unknown>>(
+    jobName: string,
+    data: T,
+    config?: SendOptions,
+  ): Promise<void> {
+    const queue = this.getInstance();
+    await queue.send(jobName, data, {
+      ...DEFAULT_RETRY_CONFIG,
+      ...config,
+    });
+  }
+
+  /**
+   * Bulk publish jobs with a dynamic (service-prefixed) job name.
+   * Use this for jobs that need to be routed to specific services.
+   * @param config - Job configuration including the full job name
+   * @param datas - Array of job data objects
+   */
+  static async bulkPublishDynamic<T extends Record<string, unknown>>(
+    config: JobInsert & { name: string },
+    datas: T[],
   ): Promise<void> {
     const queue = this.getInstance();
     await queue.insert(
