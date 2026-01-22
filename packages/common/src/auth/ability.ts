@@ -1,3 +1,4 @@
+import { Response, NextFunction } from 'express';
 import { AuthorizationError } from '../errors.js';
 import { User, Service, ExtendedRequest } from '../express-extensions.js';
 
@@ -18,19 +19,19 @@ import { User, Service, ExtendedRequest } from '../express-extensions.js';
  * getNestedValue({ recipients: [{ did: 'did:1' }, { did: 'did:2' }] }, 'recipients.did')
  * // Returns: ['did:1', 'did:2']
  */
-const getNestedValue = (obj: Record<string, any>, path: string): any => {
+const getNestedValue = (obj: Record<string, unknown>, path: string): unknown => {
   const parts = path.split('.');
-  let current: any = obj;
+  let current: unknown = obj;
 
   for (let i = 0; i < parts.length; i++) {
     const key = parts[i];
-    
+
     // If current is an array, map over each element and continue traversal
     if (Array.isArray(current)) {
       const remainingPath = parts.slice(i).join('.');
       return current.flatMap((item) => {
         if (remainingPath) {
-          const result = getNestedValue(item, remainingPath);
+          const result = getNestedValue(item as Record<string, unknown>, remainingPath);
           return Array.isArray(result) ? result : [result];
         }
         return item;
@@ -38,11 +39,16 @@ const getNestedValue = (obj: Record<string, any>, path: string): any => {
     }
 
     // Normal traversal
-    if (current === null || current === undefined) {
+    if (current === null || current === undefined || typeof current !== 'object') {
       return undefined;
     }
-    
-    current = current[key];
+
+    const currentObj = current as Record<string, unknown>;
+    if (!(key in currentObj)) {
+      return undefined;
+    }
+
+    current = currentObj[key];
   }
 
   return current;
@@ -53,27 +59,27 @@ const getNestedValue = (obj: Record<string, any>, path: string): any => {
  * Returns true if all segments of the path exist and are not undefined.
  * When encountering arrays, checks that all elements have the remaining path segments.
  */
-const hasNestedProperty = (obj: Record<string, any>, path: string): boolean => {
+const hasNestedProperty = (obj: Record<string, unknown>, path: string): boolean => {
   const parts = path.split('.');
-  let current: any = obj;
+  let current: unknown = obj;
 
   for (let i = 0; i < parts.length; i++) {
     const part = parts[i];
-    
+
     // If current is an array, check that all elements have the remaining path
     if (Array.isArray(current)) {
       if (current.length === 0) {
         return false; // Empty arrays don't have any properties
       }
       const remainingPath = parts.slice(i).join('.');
-      return current.every((item) => hasNestedProperty(item, remainingPath));
+      return current.every((item) => hasNestedProperty(item as Record<string, unknown>, remainingPath));
     }
 
     // Normal traversal
-    if (current === null || current === undefined || !(part in current)) {
+    if (current === null || current === undefined || typeof current !== 'object' || !(part in current)) {
       return false;
     }
-    current = current[part];
+    current = (current as Record<string, unknown>)[part];
   }
 
   return true;
@@ -111,7 +117,7 @@ export type Subject =
 export type Ability = {
   action: Action;
   subject: Subject;
-  conditions?: Record<string, any>;
+  conditions?: Record<string, string>;
 };
 
 /**
@@ -129,7 +135,7 @@ export type Ability = {
 const can = (
   action: Action,
   subject: Subject,
-  conditions?: Record<string, any>,
+  conditions?: Record<string, string>,
 ) => ({
   action,
   subject,
@@ -310,7 +316,7 @@ const serviceAbilities = [
  * Middleware that sets up the ability based on whether the request is from a user or service.
  * Attaches the appropriate set of authorization abilities to the request
  */
-export async function authorizationMiddleware(req: any, res: any, next: any) {
+export async function authorizationMiddleware(req: ExtendedRequest, res: Response, next: NextFunction) {
   // Check if this is a user or service authenticated request
   if (req.user?.type === 'user') {
     req.abilities = userAbilities;
@@ -355,7 +361,7 @@ export function authorize(
   req: ExtendedRequest,
   action: Action,
   subject: Subject,
-  record?: Record<string, any>,
+  record?: Record<string, unknown> | Array<Record<string, unknown>>,
 ): void {
   if (!req.abilities) {
     throw new AuthorizationError('Internal authorization error');
@@ -386,7 +392,7 @@ function isAuthorized(
   user: User | Service,
   action: Action,
   subject: Subject,
-  record?: Record<string, any>,
+  record?: Record<string, unknown>,
 ): boolean {
   if (!user) {
     return false;
@@ -455,7 +461,7 @@ function isAuthorized(
             : getNestedValue(record, value);
 
           const userValue = user[key as keyof (User | Service)];
-          
+
           // If expectedValue is an array, ALL elements must match the user's value.
           // Empty arrays fail authorization (no elements to match).
           //
@@ -471,7 +477,7 @@ function isAuthorized(
           } else {
             matches = userValue === expectedValue;
           }
-          
+
           if (process.env.DEBUG_AUTH) console.log(`Comparing: user.${key}="${userValue}" vs expected="${expectedValue}" => ${matches}`);
           return matches;
         })
