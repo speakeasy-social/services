@@ -3,6 +3,7 @@ import fs from 'fs';
 import PgBoss, { SendOptions, JobInsert } from 'pg-boss';
 import { z } from 'zod';
 import { ValidationError } from '@speakeasy-services/common';
+import type { JobDataMap } from './types.js';
 
 export const JOB_NAMES = {
   ADD_RECIPIENT_TO_SESSION: 'add-recipient-to-session',
@@ -82,9 +83,9 @@ export class Queue {
     }
   }
 
-  static async publish(
-    jobName: string,
-    data: any,
+  static async publish<K extends keyof JobDataMap>(
+    jobName: K,
+    data: JobDataMap[K],
     config?: SendOptions,
   ): Promise<void> {
     const queue = this.getInstance();
@@ -94,7 +95,10 @@ export class Queue {
     });
   }
 
-  static async bulkPublish(config: JobInsert, datas: any[]): Promise<void> {
+  static async bulkPublish<K extends keyof JobDataMap>(
+    config: JobInsert & { name: K },
+    datas: JobDataMap[K][],
+  ): Promise<void> {
     const queue = this.getInstance();
     await queue.insert(
       datas.map((data) => ({
