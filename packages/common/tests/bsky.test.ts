@@ -30,9 +30,9 @@ describe('Enhanced JWT Authentication - fetchBlueskySession', () => {
         { algorithm: 'HS256', expiresIn: '1h' }
       );
       
-      // Should proceed to PDS call (will return error response, but that's expected)
-      const result = await fetchBlueskySession(tokenWithoutIss) as any;
-      expect(result.error).toBeDefined(); // PDS will return error for test token
+      // Should proceed to PDS call, which will reject invalid test token
+      await expect(fetchBlueskySession(tokenWithoutIss)).rejects.toThrow(AuthenticationError);
+      await expect(fetchBlueskySession(tokenWithoutIss)).rejects.toThrow('PDS session verification failed');
     });
 
     test('should reject JWT without subject (sub)', async () => {
@@ -73,9 +73,9 @@ describe('Enhanced JWT Authentication - fetchBlueskySession', () => {
         { algorithm: 'HS256' }
       );
 
-      // PDS returns error response for test tokens (without iss claim)
-      const result = await fetchBlueskySession(expiredToken) as any;
-      expect(result.error).toBeDefined(); // Could be 'BadJwt' or other error without iss
+      // PDS returns error response for invalid test tokens, function throws AuthenticationError
+      await expect(fetchBlueskySession(expiredToken)).rejects.toThrow(AuthenticationError);
+      await expect(fetchBlueskySession(expiredToken)).rejects.toThrow('PDS session verification failed');
     });
   });
 
@@ -127,9 +127,9 @@ describe('Enhanced JWT Authentication - fetchBlueskySession', () => {
         { algorithm: 'HS256', expiresIn: '1h' }
       );
 
-      // PDS may return error response for invalid tokens
-      const result = await fetchBlueskySession(validToken) as any;
-      expect(result.error).toBeDefined(); // Could be 'BadJwtLexiconMethod' or other error
+      // PDS returns error response for invalid test tokens, function throws AuthenticationError
+      await expect(fetchBlueskySession(validToken)).rejects.toThrow(AuthenticationError);
+      await expect(fetchBlueskySession(validToken)).rejects.toThrow('PDS session verification failed');
     });
 
     test('should handle network errors to PDS', async () => {
@@ -168,9 +168,9 @@ describe('Enhanced JWT Authentication - fetchBlueskySession', () => {
         { algorithm: 'HS256', expiresIn: '1h' }
       );
 
-      // Function should return error responses from PDS without throwing
-      const result = await fetchBlueskySession(testToken) as any;
-      expect(result.error).toBeDefined(); // PDS returns error for test tokens
+      // Function throws AuthenticationError when PDS returns error responses
+      await expect(fetchBlueskySession(testToken)).rejects.toThrow(AuthenticationError);
+      await expect(fetchBlueskySession(testToken)).rejects.toThrow('PDS session verification failed');
     });
   });
 

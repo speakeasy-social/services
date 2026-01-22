@@ -101,6 +101,8 @@ export function getServiceApiKey(serviceName: string): string {
     'private-sessions': process.env.PRIVATE_SESSIONS_API_KEY,
     'trusted-users': process.env.TRUSTED_USERS_API_KEY,
     'user-keys': process.env.USER_KEYS_API_KEY,
+    'media': process.env.MEDIA_API_KEY,
+    'service-admin': process.env.SERVICE_ADMIN_API_KEY,
   };
 
   const key = serviceKeys[serviceName as keyof typeof serviceKeys];

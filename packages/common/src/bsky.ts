@@ -136,7 +136,7 @@ export async function fetchBlueskySession(
     throw new AuthenticationError('Unknown JWT audience, cannot authenticate');
   }
 
-  let pdsHost = audMatch[1];
+  const pdsHost = audMatch[1];
   const userDid = decoded.sub;
 
   // Check if this is a trusted server
@@ -149,10 +149,16 @@ export async function fetchBlueskySession(
   if (!isTrusted) {
     // For untrusted servers, verify the user's handle matches the PDS domain
     try {
+      interface ProfileResponse {
+        handle: string;
+        did: string;
+        [key: string]: unknown;
+      }
+
       const profile = (await blueskyFetch('app.bsky.actor.getProfile', {
         token,
         query: { actor: userDid },
-      })) as any;
+      })) as ProfileResponse;
 
       // Extract handle from alsoKnownAs field (format: at://handle)
       const userHandle = profile.handle;
@@ -196,14 +202,16 @@ export async function fetchBlueskySession(
     host: getHostOrLocalhost(`https://${pdsHost}`, decoded.aud),
   });
 
-  // If PDS returned an error, return it as-is
+  // If PDS returned an error, throw it
   if (response && typeof response === 'object' && 'error' in response) {
-    return response as any;
+    throw new AuthenticationError(
+      `PDS session verification failed: ${JSON.stringify(response)}`,
+    );
   }
 
   // For successful responses, ensure accessJwt is set
   return {
-    ...(response as any),
+    ...(response as BlueskySession),
     accessJwt: token,
   } as BlueskySession;
 }
@@ -292,13 +300,13 @@ export async function fetchFollowingDids(
 export interface PostView {
   uri: string;
   cid: string;
-  author: any;
+  author: Record<string, unknown>;
   record: {
     $type: string;
     text: string;
     createdAt: string;
     langs: string[];
-    facets: any[];
+    facets: Array<Record<string, unknown>>;
     embed: {
       $type: string;
       record: {
@@ -317,15 +325,15 @@ export interface PostView {
       };
     };
   };
-  embed?: any;
+  embed?: Record<string, unknown>;
   replyCount?: number;
   repostCount?: number;
   likeCount?: number;
   quoteCount?: number;
   indexedAt: string;
-  viewer?: any;
-  labels?: any;
-  threadgate?: any;
+  viewer?: Record<string, unknown>;
+  labels?: Array<Record<string, unknown>>;
+  threadgate?: Record<string, unknown>;
   [k: string]: unknown;
 }
 
@@ -340,12 +348,16 @@ export async function fetchBlueskyPosts(
   uris: string[],
   token: string,
 ): Promise<PostView[]> {
+  interface GetPostsResponse {
+    posts: PostView[];
+  }
+
   const response = (await blueskyFetch('app.bsky.feed.getPosts', {
     token,
     query: {
       uris,
     },
-  })) as { posts: any[] };
+  })) as GetPostsResponse;
 
-  return response.posts as PostView[];
+  return response.posts;
 }
