@@ -151,9 +151,8 @@ export class PrivatePostsService {
         const match = uri!.match(/at:\/\/([^/]+)\/[^?]+/);
         return match ? match[1] : null;
       })
-      // We already know the author did, so no need to look
-      // that up
-      .filter((did) => did !== authorDid);
+      // Filter out null values and the author did
+      .filter((did): did is string => did !== null && did !== authorDid);
 
     if (allReplyDids.length) {
       await Queue.publish(JOB_NAMES.POPULATE_DID_CACHE, {

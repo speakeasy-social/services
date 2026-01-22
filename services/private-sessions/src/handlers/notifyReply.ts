@@ -44,9 +44,13 @@ async function fetchPost(
   }
 
   const post = await fetchBlueskyPosts([uri], token);
+  const authorDid = post[0].author.did;
+  if (typeof authorDid !== 'string') {
+    throw new Error('Post author did is not a string');
+  }
   return {
     uri: post[0].uri,
-    authorDid: post[0].author.did,
+    authorDid,
     replyUri: post[0].record.reply?.parent.uri,
     replyRootUri: post[0].record.reply?.root.uri,
   };
