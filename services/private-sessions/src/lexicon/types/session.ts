@@ -7,11 +7,14 @@ export const revokeSessionDef: LexiconDoc = {
     main: {
       type: 'procedure',
       description: 'Revoke a private session',
-      parameters: {
-        type: 'params',
-        required: ['sessionId'],
-        properties: {
-          sessionId: { type: 'string' },
+      input: {
+        encoding: 'application/json',
+        schema: {
+          type: 'object',
+          required: ['authorDid'],
+          properties: {
+            authorDid: { type: 'string' },
+          },
         },
       },
       output: {
@@ -35,14 +38,16 @@ export const addUserDef: LexiconDoc = {
     main: {
       type: 'procedure',
       description: 'Add a user to a private session',
-      parameters: {
-        type: 'params',
-        required: ['sessionId', 'recipientDid'],
-        properties: {
-          sessionId: { type: 'string' },
-          recipientDid: { type: 'string' },
-          encryptedDek: { type: 'string' },
-          userKeyPairId: { type: 'string' },
+      input: {
+        encoding: 'application/json',
+        schema: {
+          type: 'object',
+          required: ['recipientDid', 'encryptedDek', 'userKeyPairId'],
+          properties: {
+            recipientDid: { type: 'string' },
+            encryptedDek: { type: 'string' },
+            userKeyPairId: { type: 'string' },
+          },
         },
       },
       output: {
