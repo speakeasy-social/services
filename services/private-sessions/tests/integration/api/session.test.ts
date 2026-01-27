@@ -62,7 +62,7 @@ describe('Private Session API Tests', () => {
       const sessionData = {
         sessionKeys: [
           {
-            recipientDid,
+            recipientDid: authorDid, // Author MUST be included as recipient
             encryptedDek: 'encrypted-session-key-data',
             userKeyPairId: '00000000-0000-0000-0000-000000000001',
           },
@@ -70,34 +70,76 @@ describe('Private Session API Tests', () => {
         expirationHours: 24,
       };
 
-      // The request fails because author is not included as recipient
-      // Service validation requires author to be among session recipients
-      await request(server.express)
+      const response = await request(server.express)
         .post('/xrpc/social.spkeasy.privateSession.create')
         .set('Authorization', `Bearer ${validToken}`)
         .set('Content-Type', 'application/json')
         .send(sessionData)
-        .expect(400);
+        .expect(200);
+
+      expect(response.body).toHaveProperty('sessionId');
+
+      // Verify session was created in DB
+      const session = await prisma.session.findFirst({
+        where: { authorDid },
+        include: { sessionKeys: true },
+      });
+      expect(session).not.toBeNull();
+      expect(session?.sessionKeys).toHaveLength(1);
+      expect(session?.sessionKeys[0].recipientDid).toBe(authorDid);
     });
 
     it('should create session with multiple recipients', async () => {
       const sessionData = {
         sessionKeys: [
           {
+            recipientDid: authorDid, // Author MUST be included
+            encryptedDek: 'encrypted-session-key-author',
+            userKeyPairId: '00000000-0000-0000-0000-000000000001',
+          },
+          {
             recipientDid,
             encryptedDek: 'encrypted-session-key-1',
-            userKeyPairId: '00000000-0000-0000-0000-000000000001',
+            userKeyPairId: '00000000-0000-0000-0000-000000000002',
           },
           {
             recipientDid: 'did:example:bob-recipient',
             encryptedDek: 'encrypted-session-key-2',
-            userKeyPairId: '00000000-0000-0000-0000-000000000002',
+            userKeyPairId: '00000000-0000-0000-0000-000000000003',
           },
         ],
         expirationHours: 48,
       };
 
-      // The request fails because author is not included as recipient
+      const response = await request(server.express)
+        .post('/xrpc/social.spkeasy.privateSession.create')
+        .set('Authorization', `Bearer ${validToken}`)
+        .set('Content-Type', 'application/json')
+        .send(sessionData)
+        .expect(200);
+
+      expect(response.body).toHaveProperty('sessionId');
+
+      // Verify all recipients have session keys
+      const session = await prisma.session.findFirst({
+        where: { authorDid },
+        include: { sessionKeys: true },
+      });
+      expect(session?.sessionKeys).toHaveLength(3);
+    });
+
+    it('should reject session creation when author is not in recipients', async () => {
+      const sessionData = {
+        sessionKeys: [
+          {
+            recipientDid, // Author NOT included - should fail
+            encryptedDek: 'encrypted-session-key-data',
+            userKeyPairId: '00000000-0000-0000-0000-000000000001',
+          },
+        ],
+        expirationHours: 24,
+      };
+
       await request(server.express)
         .post('/xrpc/social.spkeasy.privateSession.create')
         .set('Authorization', `Bearer ${validToken}`)
@@ -140,14 +182,14 @@ describe('Private Session API Tests', () => {
 
   describe('POST /xrpc/social.spkeasy.privateSession.revoke', () => {
     it('should revoke an existing session', async () => {
-      // First create a session
-      const session = await prisma.session.create({
+      // Create a session with author's own key
+      await prisma.session.create({
         data: {
           authorDid,
           expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
           sessionKeys: {
             create: {
-              recipientDid,
+              recipientDid: authorDid,
               encryptedDek: Buffer.from('test-key'),
               userKeyPairId: '00000000-0000-0000-0000-000000000001',
             },
@@ -155,14 +197,18 @@ describe('Private Session API Tests', () => {
         },
       });
 
-      // The request fails because route expects sessionId as parameter per lexicon
-      // but test is sending authorDid in body - mismatch between lexicon and implementation
-      await request(server.express)
+      const response = await request(server.express)
         .post('/xrpc/social.spkeasy.privateSession.revoke')
         .set('Authorization', `Bearer ${validToken}`)
         .set('Content-Type', 'application/json')
         .send({ authorDid })
-        .expect(400);
+        .expect(200);
+
+      expect(response.body).toEqual({ success: true });
+
+      // Verify session was revoked
+      const session = await prisma.session.findFirst({ where: { authorDid } });
+      expect(session?.revokedAt).not.toBeNull();
     });
 
     it('should require authentication', async () => {
@@ -173,12 +219,12 @@ describe('Private Session API Tests', () => {
         .expect(401);
     });
 
-    it('should validate sessionId parameter', async () => {
+    it('should validate authorDid parameter', async () => {
       await request(server.express)
         .post('/xrpc/social.spkeasy.privateSession.revoke')
         .set('Authorization', `Bearer ${validToken}`)
         .set('Content-Type', 'application/json')
-        .send({}) // Missing sessionId
+        .send({}) // Missing authorDid
         .expect(400);
     });
   });
@@ -217,17 +263,17 @@ describe('Private Session API Tests', () => {
   });
 
   describe('POST /xrpc/social.spkeasy.privateSession.addUser', () => {
-    it('should add a user to existing session', async () => {
-      // Create an existing session
-      const session = await prisma.session.create({
+    it('should add a user to an existing session', async () => {
+      // Create an existing session with author's key
+      await prisma.session.create({
         data: {
           authorDid,
           expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
           sessionKeys: {
             create: {
-              recipientDid,
+              recipientDid: authorDid,
               encryptedDek: Buffer.from('existing-key'),
-              userKeyPairId: '00000000-0000-0000-0000-000000000001', // Use proper UUID format
+              userKeyPairId: '00000000-0000-0000-0000-000000000001',
             },
           },
         },
@@ -239,13 +285,21 @@ describe('Private Session API Tests', () => {
         userKeyPairId: '00000000-0000-0000-0000-000000000003',
       };
 
-      // The request fails because sessionId is missing (required by lexicon)
-      await request(server.express)
+      const response = await request(server.express)
         .post('/xrpc/social.spkeasy.privateSession.addUser')
         .set('Authorization', `Bearer ${validToken}`)
         .set('Content-Type', 'application/json')
         .send(newRecipientData)
-        .expect(400);
+        .expect(200);
+
+      expect(response.body).toEqual({ success: true });
+
+      // Verify recipient was added
+      const session = await prisma.session.findFirst({
+        where: { authorDid },
+        include: { sessionKeys: true },
+      });
+      expect(session?.sessionKeys).toHaveLength(2);
     });
 
     it('should require authentication', async () => {
@@ -262,42 +316,24 @@ describe('Private Session API Tests', () => {
   });
 
   describe('POST /xrpc/social.spkeasy.privateSession.updateKeys', () => {
-    it('should update session keys', async () => {
-      // Create a session first
-      const session = await prisma.session.create({
-        data: {
-          authorDid,
-          expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
-          sessionKeys: {
-            create: {
-              recipientDid,
-              encryptedDek: Buffer.from('old-key'),
-              userKeyPairId: '00000000-0000-0000-0000-000000000001', // Use proper UUID format
-            },
-          },
-        },
-      });
-
+    // NOTE: This endpoint requires service authentication (user-keys service only)
+    // Regular user auth is forbidden - this is a service-to-service call
+    it('should reject user auth (requires service auth from user-keys)', async () => {
       const updateData = {
-        sessionId: session.id,
-        sessionKeys: [
-          {
-            recipientDid,
-            encryptedDek: 'updated-key',
-            userKeyPairId: '00000000-0000-0000-0000-000000000005',
-          },
-        ],
+        prevKeyId: '00000000-0000-0000-0000-000000000001',
+        newKeyId: '00000000-0000-0000-0000-000000000002',
+        prevPrivateKey: 'base64-encoded-previous-private-key',
+        newPublicKey: 'base64-encoded-new-public-key',
       };
 
-      // The request fails because data format doesn't match lexicon
-      // Lexicon expects prevKeyId, newKeyId, prevPrivateKey, newPublicKey
-      // but test is sending sessionId and sessionKeys
+      // This endpoint is only callable by user-keys service
+      // Regular user auth should be forbidden
       await request(server.express)
         .post('/xrpc/social.spkeasy.privateSession.updateKeys')
         .set('Authorization', `Bearer ${validToken}`)
         .set('Content-Type', 'application/json')
         .send(updateData)
-        .expect(400);
+        .expect(403); // Forbidden - requires service auth
     });
 
     it('should require authentication', async () => {
@@ -305,10 +341,21 @@ describe('Private Session API Tests', () => {
         .post('/xrpc/social.spkeasy.privateSession.updateKeys')
         .set('Content-Type', 'application/json')
         .send({
-          sessionId: 'test-session',
-          sessionKeys: [],
+          prevKeyId: '00000000-0000-0000-0000-000000000001',
+          newKeyId: '00000000-0000-0000-0000-000000000002',
+          prevPrivateKey: 'key',
+          newPublicKey: 'key',
         })
         .expect(401);
+    });
+
+    it('should validate required fields', async () => {
+      await request(server.express)
+        .post('/xrpc/social.spkeasy.privateSession.updateKeys')
+        .set('Authorization', `Bearer ${validToken}`)
+        .set('Content-Type', 'application/json')
+        .send({}) // Missing required fields
+        .expect(400);
     });
   });
 
