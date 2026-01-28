@@ -84,6 +84,76 @@ export const applyInviteCodeDef: LexiconDoc = {
   },
 };
 
+export const generateInviteCodeDef: LexiconDoc = {
+  lexicon: 1,
+  id: 'social.spkeasy.actor.generateInviteCode',
+  defs: {
+    main: {
+      type: 'procedure',
+      description: 'Generate a new invite code for the private-posts feature',
+      input: {
+        encoding: 'application/json',
+        schema: {
+          type: 'object',
+          properties: {},
+        },
+      },
+      output: {
+        encoding: 'application/json',
+        schema: {
+          type: 'object',
+          required: ['code', 'remainingUses'],
+          properties: {
+            code: { type: 'string' },
+            remainingUses: { type: 'integer' },
+          },
+        },
+      },
+    },
+  },
+};
+
+export const listInviteCodesDef: LexiconDoc = {
+  lexicon: 1,
+  id: 'social.spkeasy.actor.listInviteCodes',
+  defs: {
+    main: {
+      type: 'query',
+      description: 'List all invite codes created by the authenticated user',
+      parameters: {
+        type: 'params',
+        properties: {},
+      },
+      output: {
+        encoding: 'application/json',
+        schema: {
+          type: 'object',
+          required: ['inviteCodes'],
+          properties: {
+            inviteCodes: {
+              type: 'array',
+              items: {
+                type: 'ref',
+                ref: '#inviteCode',
+              },
+            },
+          },
+        },
+      },
+    },
+    inviteCode: {
+      type: 'object',
+      required: ['code', 'remainingUses', 'totalUses', 'createdAt'],
+      properties: {
+        code: { type: 'string' },
+        remainingUses: { type: 'integer' },
+        totalUses: { type: 'integer' },
+        createdAt: { type: 'string', format: 'datetime' },
+      },
+    },
+  },
+};
+
 export const donateDef: LexiconDoc = {
   lexicon: 1,
   id: 'social.spkeasy.actor.donate',
