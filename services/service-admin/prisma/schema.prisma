@@ -14,9 +14,10 @@ datasource db {
 model InviteCode {
   id            String   @id @default(uuid()) @db.Uuid
   code          String   @unique
+  creatorDid    String?  // null for admin-created codes
   totalUses     Int      @default(1)
   remainingUses Int      @default(1)
-  key           String   
+  key           String
   value         String   @default("true")
   createdAt     DateTime @default(now())
   updatedAt     DateTime?
@@ -24,6 +25,7 @@ model InviteCode {
   // Relationships
   uses     InviteCodeUse[]
 
+  @@index([creatorDid, createdAt], name: "idx_creator_did_created_at")
   @@map("invite_codes")
 }
 

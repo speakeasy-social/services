@@ -249,6 +249,14 @@ const userAbilities = [
     userProperty: 'did',
     matchesRecordProperty: 'userDid',
   }),
+  canIf('create', 'invite_code', {
+    userProperty: 'did',
+    matchesRecordProperty: 'creatorDid',
+  }),
+  canIf('list', 'invite_code', {
+    userProperty: 'did',
+    matchesRecordProperty: 'creatorDid',
+  }),
   canIf('*', 'notification', {
     userProperty: 'did',
     matchesRecordProperty: 'userDid',
