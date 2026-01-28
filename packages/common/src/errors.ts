@@ -10,13 +10,17 @@ export class ServiceError extends Error {
 }
 
 export class ValidationError extends ServiceError {
+  public code?: string;
+
   constructor(
     message: string,
     public details?: Record<string, any>,
+    code?: string,
   ) {
     super(message, 400);
     this.name = 'ValidationError';
     this.details = details;
+    this.code = code;
   }
 }
 

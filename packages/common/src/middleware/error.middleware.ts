@@ -103,6 +103,9 @@ export const errorHandler: ErrorRequestHandler = async (
       };
       // Remove message field for AuthorizationError to match test expectations  
       delete (responseObject as any).message;
+    } else if (error.name === 'ValidationError' && error.code) {
+      // Include code from ValidationError if present
+      responseObject.code = error.code;
     }
   }
 
