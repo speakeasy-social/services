@@ -43,7 +43,12 @@ describe('Private Session API Tests', () => {
   });
 
   beforeEach(async () => {
-    // Clear test data before each test
+    // Clear test data before each test (order matters due to FK constraints)
+    await prisma.reaction.deleteMany();
+    await prisma.mediaPost.deleteMany();
+    await prisma.notification.deleteMany();
+    await prisma.seenNotifications.deleteMany();
+    await prisma.encryptedPost.deleteMany();
     await prisma.sessionKey.deleteMany();
     await prisma.session.deleteMany();
     
