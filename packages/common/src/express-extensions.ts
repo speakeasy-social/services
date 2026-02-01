@@ -17,8 +17,15 @@ export interface Service {
   name: string;
 }
 
+export interface PublicUser {
+  type: 'public';
+  did: 'unauthenticated';
+}
+
+export type RequestUser = User | Service | PublicUser;
+
 export interface ExtendedRequest extends Request {
-  user?: User | Service;
+  user?: RequestUser;
   abilities?: Ability[];
   logger: ReturnType<typeof createLogger>;
   startTime: number;
