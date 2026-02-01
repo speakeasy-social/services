@@ -13,7 +13,7 @@
   "scripts": {
     "prebuild": "prisma generate",
     "build": "prisma generate && tsc --build && cp -r src/generated dist",
-    "postbuild": "chmod +x dist/cli/addInvite.js && chmod +x dist/cli/addSupporter.js",
+    "postbuild": "chmod +x dist/cli/addInvite.js && chmod +x dist/cli/addContribution.js",
     "typecheck": "tsc --noEmit",
     "dev": "tsx watch src/api.ts",
     "dev:prisma": "prisma generate --watch",
@@ -26,11 +26,11 @@
     "prisma:migrate": "prisma migrate deploy",
     "prisma:generate": "prisma generate",
     "cli:addInvite": "node dist/cli/addInvite.js",
-    "cli:addSupporter": "node dist/cli/addSupporter.js"
+    "cli:addContribution": "node dist/cli/addContribution.js"
   },
   "bin": {
     "addInvite": "./dist/cli/addInvite.js",
-    "addSupporter": "./dist/cli/addSupporter.js"
+    "addContribution": "./dist/cli/addContribution.js"
   },
   "dependencies": {
     "@atproto/lexicon": "^0.4.9",
@@ -39,6 +39,7 @@
     "@speakeasy-services/common": "workspace:^",
     "@speakeasy-services/service-base": "workspace:^",
     "dotenv": "^16.4.7",
+    "express": "^4.21.2",
     "pino": "^9.6.0",
     "pino-pretty": "^13.0.0",
     "prisma": "^6.5.0",

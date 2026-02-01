@@ -94,7 +94,8 @@ export class FeatureService {
     unitAmount: number,
     mode: Mode,
     currency: string,
-    donorEmail?: string
+    donorEmail?: string,
+    donorDid?: string
   ): Promise<string | Error> {
     const normalizedCurrency = currency.toLowerCase();
 
@@ -124,6 +125,13 @@ export class FeatureService {
 
     if (donorEmail) {
       sessionParams.customer_email = donorEmail;
+    }
+
+    // Store donor DID in metadata for webhook processing
+    if (donorDid) {
+      sessionParams.metadata = {
+        donorDid,
+      };
     }
 
     const session = await stripe.checkout.sessions.create(sessionParams);

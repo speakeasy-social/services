@@ -501,6 +501,9 @@ importers:
       dotenv:
         specifier: ^16.4.7
         version: 16.6.1
+      express:
+        specifier: ^4.21.2
+        version: 4.21.2
       pino:
         specifier: ^9.6.0
         version: 9.9.4

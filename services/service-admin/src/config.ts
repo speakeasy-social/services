@@ -28,7 +28,12 @@ const serviceSchema = {
   STRIPE_SECRET_KEY: z
     .string()
     .min(1)
-    .describe('Secret key for conneting to Stripe API'),
+    .describe('Secret key for connecting to Stripe API'),
+
+  STRIPE_WEBHOOK_SECRET: z
+    .string()
+    .min(1)
+    .describe('Webhook secret for verifying Stripe webhook signatures'),
   } as const;
 
 // Create and validate the config
