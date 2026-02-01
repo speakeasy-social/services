@@ -48,7 +48,8 @@
     },
     "test": {
       "dependsOn": ["^build", "prisma:generate"],
-      "inputs": ["src/**/*.tsx", "src/**/*.ts", "test/**/*.ts", "test/**/*.tsx"]
+      "inputs": ["src/**/*.tsx", "src/**/*.ts", "test/**/*.ts", "test/**/*.tsx"],
+      "cache": false
     },
     "setup:db": {
       "cache": false,

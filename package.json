@@ -21,7 +21,7 @@
     "dev:user-keys": "turbo run dev:prisma dev:api dev:worker --filter=@speakeasy-services/user-keys",
     "invite:add": "node services/service-admin/dist/cli/addInvite.js",
     "lint": "turbo run lint",
-    "test": "turbo run test --continue",
+    "test": "turbo run test --continue --concurrency=1",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "db:migrate": "prisma migrate deploy",
     "db:generate": "prisma generate",
