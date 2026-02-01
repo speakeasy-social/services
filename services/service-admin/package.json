@@ -13,7 +13,7 @@
   "scripts": {
     "prebuild": "prisma generate",
     "build": "prisma generate && tsc --build && cp -r src/generated dist",
-    "postbuild": "chmod +x dist/cli/addInvite.js",
+    "postbuild": "chmod +x dist/cli/addInvite.js && chmod +x dist/cli/addSupporter.js",
     "typecheck": "tsc --noEmit",
     "dev": "tsx watch src/api.ts",
     "dev:prisma": "prisma generate --watch",
@@ -25,10 +25,12 @@
     "test:watch": "vitest",
     "prisma:migrate": "prisma migrate deploy",
     "prisma:generate": "prisma generate",
-    "cli:addInvite": "node dist/cli/addInvite.js"
+    "cli:addInvite": "node dist/cli/addInvite.js",
+    "cli:addSupporter": "node dist/cli/addSupporter.js"
   },
   "bin": {
-    "addInvite": "./dist/cli/addInvite.js"
+    "addInvite": "./dist/cli/addInvite.js",
+    "addSupporter": "./dist/cli/addSupporter.js"
   },
   "dependencies": {
     "@atproto/lexicon": "^0.4.9",
@@ -45,6 +47,7 @@
   },
   "devDependencies": {
     "@speakeasy-services/test-utils": "workspace:^",
+    "@types/express": "^4.17.23",
     "@types/node": "^22.13.11",
     "@types/supertest": "^6.0.2",
     "@typescript-eslint/eslint-plugin": "^7.0.1",
