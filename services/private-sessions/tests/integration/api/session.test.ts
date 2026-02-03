@@ -133,6 +133,51 @@ describe('Private Session API Tests', () => {
       expect(session?.sessionKeys).toHaveLength(3);
     });
 
+    it('should dedupe recipients with same recipientDid', async () => {
+      const sessionData = {
+        sessionKeys: [
+          {
+            recipientDid: authorDid,
+            encryptedDek: 'encrypted-session-key-author-first',
+            userKeyPairId: '00000000-0000-0000-0000-000000000001',
+          },
+          {
+            recipientDid: authorDid, // Duplicate - should be ignored
+            encryptedDek: 'encrypted-session-key-author-duplicate',
+            userKeyPairId: '00000000-0000-0000-0000-000000000002',
+          },
+          {
+            recipientDid,
+            encryptedDek: 'encrypted-session-key-recipient',
+            userKeyPairId: '00000000-0000-0000-0000-000000000003',
+          },
+        ],
+        expirationHours: 24,
+      };
+
+      const response = await request(server.express)
+        .post('/xrpc/social.spkeasy.privateSession.create')
+        .set('Authorization', `Bearer ${validToken}`)
+        .set('Content-Type', 'application/json')
+        .send(sessionData)
+        .expect(200);
+
+      expect(response.body).toHaveProperty('sessionId');
+
+      // Verify only unique recipients have session keys (2, not 3)
+      const session = await prisma.session.findFirst({
+        where: { authorDid },
+        include: { sessionKeys: true },
+      });
+      expect(session?.sessionKeys).toHaveLength(2);
+
+      // Verify the first occurrence was kept (check userKeyPairId)
+      const authorKey = session?.sessionKeys.find(
+        (key) => key.recipientDid === authorDid,
+      );
+      expect(authorKey?.userKeyPairId).toBe('00000000-0000-0000-0000-000000000001');
+    });
+
     it('should reject session creation when author is not in recipients', async () => {
       const sessionData = {
         sessionKeys: [
