@@ -36,7 +36,15 @@ export class SessionService {
     }[];
     expirationHours?: number;
   }): Promise<{ sessionId: string }> {
-    const ownSessionKey = recipients.find(
+    // Dedupe recipients by recipientDid, keeping first occurrence
+    const seen = new Set<string>();
+    const uniqueRecipients = recipients.filter((recipient) => {
+      if (seen.has(recipient.recipientDid)) return false;
+      seen.add(recipient.recipientDid);
+      return true;
+    });
+
+    const ownSessionKey = uniqueRecipients.find(
       (recipient) => recipient.recipientDid === authorDid,
     );
     if (!ownSessionKey) {
@@ -73,7 +81,7 @@ export class SessionService {
           expiresAt: new Date(Date.now() + expirationHours * 60 * 60 * 1000),
 
           sessionKeys: {
-            create: recipients.map((recipient) => ({
+            create: uniqueRecipients.map((recipient) => ({
               userKeyPairId: recipient.userKeyPairId,
               recipientDid: recipient.recipientDid,
               encryptedDek: safeAtob(recipient.encryptedDek),
