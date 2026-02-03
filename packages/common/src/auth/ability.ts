@@ -111,7 +111,7 @@ export type Subject =
   | 'notification'
   | 'reaction'
   | 'testimonial'
-  | 'supporter'
+  | 'contribution'
   | 'invite_code'
   | 'media'
   | 'key';
@@ -279,8 +279,8 @@ const userAbilities = [
   can('list', 'testimonial'),
   can('get', 'testimonial'),
 
-  // Supporter - users can check their own supporter status
-  canIf('get', 'supporter', {
+  // Contribution - users can check their own contribution status
+  canIf('get', 'contribution', {
     userProperty: 'did',
     matchesRecordProperty: 'did',
   }),

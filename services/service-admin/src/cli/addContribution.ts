@@ -15,7 +15,7 @@ const VALID_CONTRIBUTIONS = ['founding_donor', 'donor', 'contributor'] as const;
 type ContributionType = (typeof VALID_CONTRIBUTIONS)[number];
 
 function printUsage(): void {
-  console.error('Usage: addSupporter <did> <contribution> [detail]');
+  console.error('Usage: addContribution <did> <contribution> [detail]');
   console.error('');
   console.error('Arguments:');
   console.error('  did           User DID (must start with "did:")');
@@ -24,9 +24,9 @@ function printUsage(): void {
   console.error('                Not allowed for founding_donor');
   console.error('');
   console.error('Examples:');
-  console.error('  addSupporter did:plc:abc123 founding_donor');
-  console.error('  addSupporter did:plc:abc123 donor 5000');
-  console.error('  addSupporter did:plc:abc123 contributor dark-mode');
+  console.error('  addContribution did:plc:abc123 founding_donor');
+  console.error('  addContribution did:plc:abc123 donor 5000');
+  console.error('  addContribution did:plc:abc123 contributor dark-mode');
   process.exit(1);
 }
 
@@ -72,13 +72,13 @@ function buildDetails(
   }
 }
 
-async function addSupporter(
+async function addContribution(
   did: string,
   contribution: ContributionType,
   details: object | null
 ): Promise<void> {
   try {
-    const supporter = await prisma.supporter.create({
+    const contributionEntry = await prisma.contribution.create({
       data: {
         did,
         contribution,
@@ -86,14 +86,14 @@ async function addSupporter(
       },
     });
 
-    console.log('Supporter entry created successfully:');
-    console.log(`- ID: ${supporter.id}`);
-    console.log(`- DID: ${supporter.did}`);
-    console.log(`- Contribution: ${supporter.contribution}`);
-    console.log(`- Details: ${supporter.details ? JSON.stringify(supporter.details) : 'null'}`);
-    console.log(`- Created: ${supporter.createdAt.toISOString()}`);
+    console.log('Contribution entry created successfully:');
+    console.log(`- ID: ${contributionEntry.id}`);
+    console.log(`- DID: ${contributionEntry.did}`);
+    console.log(`- Contribution: ${contributionEntry.contribution}`);
+    console.log(`- Details: ${contributionEntry.details ? JSON.stringify(contributionEntry.details) : 'null'}`);
+    console.log(`- Created: ${contributionEntry.createdAt.toISOString()}`);
   } catch (error) {
-    console.error('Error creating supporter entry:', error);
+    console.error('Error creating contribution entry:', error);
     process.exit(1);
   } finally {
     await prisma.$disconnect();
@@ -125,7 +125,7 @@ if (!validateContribution(contribution)) {
 const details = buildDetails(contribution, detail);
 
 // Execute
-addSupporter(did, contribution, details).catch((err) => {
+addContribution(did, contribution, details).catch((err) => {
   console.error('Unhandled error:', err);
   process.exit(1);
 });

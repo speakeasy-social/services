@@ -1,4 +1,3 @@
-import { ForbiddenError, NotFoundError } from '@speakeasy-services/common';
 import { getPrismaClient } from '../db.js';
 import { Prisma, Testimonial } from '../generated/prisma-client/index.js';
 
@@ -7,6 +6,15 @@ const prisma = getPrismaClient();
 type TestimonialContent = {
   text: string;
   facets?: unknown[];
+};
+
+export type ContributionInfo = {
+  createdAt: Date;
+  contribution: string;
+};
+
+export type TestimonialWithContributions = Testimonial & {
+  contributions: ContributionInfo[];
 };
 
 export class TestimonialService {
@@ -37,10 +45,10 @@ export class TestimonialService {
     did?: string;
     limit: number;
     cursor?: string;
-  }): Promise<{ testimonials: Testimonial[]; cursor: string | null }> {
+  }): Promise<{ testimonials: TestimonialWithContributions[]; cursor: string | null }> {
     const { did, limit, cursor } = options;
 
-    const where: Prisma.TestimonialWhereInput = {};
+    const where: Prisma.TestimonialWhereInput = { deletedAt: null };
     if (did) {
       where.did = did;
     }
@@ -59,35 +67,43 @@ export class TestimonialService {
     const results = hasMore ? testimonials.slice(0, limit) : testimonials;
     const nextCursor = hasMore ? results[results.length - 1].id : null;
 
+    // Fetch contributions for all testimonial DIDs
+    const dids = [...new Set(results.map((t) => t.did))];
+    const contributionRecords = await prisma.contribution.findMany({
+      where: {
+        did: { in: dids },
+        deletedAt: null,
+      },
+      select: {
+        did: true,
+        createdAt: true,
+        contribution: true,
+      },
+    });
+
+    // Group contributions by DID
+    const contributionsByDid = new Map<string, ContributionInfo[]>();
+    for (const record of contributionRecords) {
+      const contributions = contributionsByDid.get(record.did) || [];
+      contributions.push({
+        createdAt: record.createdAt,
+        contribution: record.contribution,
+      });
+      contributionsByDid.set(record.did, contributions);
+    }
+
+    // Attach contributions to each testimonial
+    const testimonialsWithContributions: TestimonialWithContributions[] = results.map(
+      (testimonial) => ({
+        ...testimonial,
+        contributions: contributionsByDid.get(testimonial.did) || [],
+      })
+    );
+
     return {
-      testimonials: results,
+      testimonials: testimonialsWithContributions,
       cursor: nextCursor,
     };
-  }
-
-  /**
-   * Deletes a testimonial by ID
-   * @param id - The ID of the testimonial to delete
-   * @param requesterDid - The DID of the user requesting deletion (for authorization)
-   * @throws NotFoundError if testimonial doesn't exist
-   * @throws ForbiddenError if requester is not the author
-   */
-  async deleteTestimonial(id: string, requesterDid: string): Promise<void> {
-    const testimonial = await prisma.testimonial.findUnique({
-      where: { id },
-    });
-
-    if (!testimonial) {
-      throw new NotFoundError('Testimonial not found');
-    }
-
-    if (testimonial.did !== requesterDid) {
-      throw new ForbiddenError('You can only delete your own testimonials');
-    }
-
-    await prisma.testimonial.delete({
-      where: { id },
-    });
   }
 
   /**
@@ -96,19 +112,20 @@ export class TestimonialService {
    * @returns The testimonial or null if not found
    */
   async getTestimonial(id: string): Promise<Testimonial | null> {
-    return prisma.testimonial.findUnique({
-      where: { id },
+    return prisma.testimonial.findFirst({
+      where: { id, deletedAt: null },
     });
   }
 
   /**
-   * Deletes a testimonial by ID without authorization checks.
+   * Soft deletes a testimonial by ID without authorization checks.
    * Authorization should be performed by the caller before invoking this method.
    * @param id - The ID of the testimonial to delete
    */
   async deleteTestimonialById(id: string): Promise<void> {
-    await prisma.testimonial.delete({
+    await prisma.testimonial.update({
       where: { id },
+      data: { deletedAt: new Date() },
     });
   }
 }

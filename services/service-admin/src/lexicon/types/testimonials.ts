@@ -122,20 +122,20 @@ export const deleteTestimonialDef: LexiconDoc = {
   },
 };
 
-export const checkSupporterDef: LexiconDoc = {
+export const checkContributionDef: LexiconDoc = {
   lexicon: 1,
-  id: 'social.spkeasy.actor.checkSupporter',
+  id: 'social.spkeasy.actor.checkContribution',
   defs: {
     main: {
       type: 'query',
-      description: 'Check if the authenticated user is a supporter',
+      description: 'Check if the authenticated user is a contributor',
       output: {
         encoding: 'application/json',
         schema: {
           type: 'object',
-          required: ['isSupporter', 'contributions'],
+          required: ['isContributor', 'contributions'],
           properties: {
-            isSupporter: { type: 'boolean' },
+            isContributor: { type: 'boolean' },
             contributions: {
               type: 'array',
               items: { type: 'string' },

@@ -1,8 +1,8 @@
 import {
-  AuthenticationError,
   authorize,
   ExtendedRequest,
   ForbiddenError,
+  getSessionDid,
   NotFoundError,
   RequestHandler,
   RequestHandlerReturn,
@@ -10,15 +10,17 @@ import {
   validateAgainstLexicon,
 } from '@speakeasy-services/common';
 import {
+  checkContributionDef,
   createTestimonialDef,
   deleteTestimonialDef,
   listTestimonialsDef,
 } from '../lexicon/types/testimonials.js';
-import { SupporterService } from '../services/supporter.service.js';
+import { ContributionService } from '../services/contribution.service.js';
 import { TestimonialService } from '../services/testimonial.service.js';
+import { toTestimonialListView } from '../views/testimonial.views.js';
 
 const testimonialService = new TestimonialService();
-const supporterService = new SupporterService();
+const contributionService = new ContributionService();
 
 type TestimonialContent = {
   text: string;
@@ -43,19 +45,15 @@ const methodHandlers = {
       throw new ValidationError('content.text must be under 300 characters');
     }
 
-    // Require authenticated user
-    if (req.user?.type !== 'user') {
-      throw new AuthenticationError('Authentication required');
-    }
-    const did = req.user.did;
+    const did = getSessionDid(req);
 
     // Check authorization (user can only create testimonials for themselves)
     authorize(req, 'create', 'testimonial', { did });
 
-    // Check if user is a supporter (business logic, separate from authorization)
-    const isSupporter = await supporterService.isSupporter(did);
-    if (!isSupporter) {
-      throw new ForbiddenError('You must be a supporter to create a testimonial');
+    // Check if user is a contributor (business logic, separate from authorization)
+    const isContributor = await contributionService.isContributor(did);
+    if (!isContributor) {
+      throw new ForbiddenError('You must be a contributor to create a testimonial');
     }
 
     const testimonial = await testimonialService.createTestimonial(did, content);
@@ -94,12 +92,7 @@ const methodHandlers = {
 
     return {
       body: {
-        testimonials: result.testimonials.map((t) => ({
-          id: t.id,
-          did: t.did,
-          content: t.content,
-          createdAt: t.createdAt.toISOString(),
-        })),
+        testimonials: toTestimonialListView(result.testimonials),
         cursor: result.cursor,
       },
     };
@@ -132,24 +125,23 @@ const methodHandlers = {
     };
   },
 
-  'social.spkeasy.actor.checkSupporter': async (
+  'social.spkeasy.actor.checkContribution': async (
     req: ExtendedRequest,
   ): RequestHandlerReturn => {
-    // Require authenticated user
-    if (req.user?.type !== 'user') {
-      throw new AuthenticationError('Authentication required');
-    }
-    const did = req.user.did;
+    // Validate input against lexicon (query has no params but validates structure)
+    validateAgainstLexicon(checkContributionDef, req.query);
 
-    // Authorize - user can only check their own supporter status
-    authorize(req, 'get', 'supporter', { did });
+    const did = getSessionDid(req);
 
-    const isSupporter = await supporterService.isSupporter(did);
-    const contributions = await supporterService.getContributions(did);
+    // Authorize - user can only check their own contribution status
+    authorize(req, 'get', 'contribution', { did });
+
+    const isContributor = await contributionService.isContributor(did);
+    const contributions = await contributionService.getContributions(did);
 
     return {
       body: {
-        isSupporter,
+        isContributor,
         contributions,
       },
     };
@@ -167,8 +159,8 @@ export const methods: Record<MethodName, { handler: RequestHandler }> = {
   'social.spkeasy.actor.deleteTestimonial': {
     handler: methodHandlers['social.spkeasy.actor.deleteTestimonial'],
   },
-  'social.spkeasy.actor.checkSupporter': {
-    handler: methodHandlers['social.spkeasy.actor.checkSupporter'],
+  'social.spkeasy.actor.checkContribution': {
+    handler: methodHandlers['social.spkeasy.actor.checkContribution'],
   },
 };
 

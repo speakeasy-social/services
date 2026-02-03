@@ -3,7 +3,7 @@ import {
   createTestimonialDef,
   listTestimonialsDef,
   deleteTestimonialDef,
-  checkSupporterDef,
+  checkContributionDef,
 } from './types/testimonials.js';
 
 export const lexicons = [
@@ -13,5 +13,5 @@ export const lexicons = [
   createTestimonialDef,
   listTestimonialsDef,
   deleteTestimonialDef,
-  checkSupporterDef,
+  checkContributionDef,
 ];

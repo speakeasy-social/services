@@ -1,12 +1,12 @@
 import { Request, Response } from 'express';
 import Stripe from 'stripe';
 import config from '../config.js';
-import { SupporterService } from '../services/supporter.service.js';
+import { ContributionService } from '../services/contribution.service.js';
 import { createLogger } from '@speakeasy-services/common';
 
 const logger = createLogger({ serviceName: 'service-admin' });
 const stripe = new Stripe(config.STRIPE_SECRET_KEY);
-const supporterService = new SupporterService();
+const contributionService = new ContributionService();
 
 /** Number of days to look back when checking for duplicate donations */
 const DONATION_DEDUP_WINDOW_DAYS = 30;
@@ -55,7 +55,7 @@ export async function handleStripeWebhook(req: Request, res: Response): Promise<
     const donationId = session.id;
 
     // Check for duplicate (same donationId in last 30 days)
-    const existingDonation = await supporterService.findRecentByDidAndDonationId(
+    const existingDonation = await contributionService.findRecentByDidAndDonationId(
       donorDid,
       donationId,
       DONATION_DEDUP_WINDOW_DAYS
@@ -67,8 +67,8 @@ export async function handleStripeWebhook(req: Request, res: Response): Promise<
       return;
     }
 
-    // Create supporter entry
-    const supporter = await supporterService.addSupporter(
+    // Create contribution entry
+    const contribution = await contributionService.addContribution(
       donorDid,
       'donor',
       {
@@ -78,8 +78,8 @@ export async function handleStripeWebhook(req: Request, res: Response): Promise<
     );
 
     logger.info(
-      { supporterId: supporter.id, donorDid, amount: amountTotal },
-      'Created supporter entry from Stripe donation'
+      { contributionId: contribution.id, donorDid, amount: amountTotal },
+      'Created contribution entry from Stripe donation'
     );
   }
 
