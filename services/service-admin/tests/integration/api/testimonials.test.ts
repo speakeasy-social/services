@@ -10,15 +10,15 @@ import {
 import request from 'supertest';
 
 // Use unique DIDs for this test file to avoid conflicts with parallel test execution
-const supporterDid = 'did:plc:testimonial-supporter';
-const nonSupporterDid = 'did:plc:testimonial-non-supporter';
-const anotherSupporterDid = 'did:plc:another-supporter';
+const contributorDid = 'did:plc:testimonial-contributor';
+const nonContributorDid = 'did:plc:testimonial-non-contributor';
+const anotherContributorDid = 'did:plc:another-contributor';
 
 describe('Testimonials API Tests', () => {
   let prisma: PrismaClient;
-  const supporterToken = generateTestToken(supporterDid);
-  const nonSupporterToken = generateTestToken(nonSupporterDid);
-  const anotherSupporterToken = generateTestToken(anotherSupporterDid);
+  const contributorToken = generateTestToken(contributorDid);
+  const nonContributorToken = generateTestToken(nonContributorDid);
+  const anotherContributorToken = generateTestToken(anotherContributorDid);
 
   beforeAll(async () => {
     prisma = new PrismaClient();
@@ -34,14 +34,14 @@ describe('Testimonials API Tests', () => {
   beforeEach(async () => {
     // Clear test data for DIDs used in this test file only (avoid conflicts with parallel tests)
     await prisma.testimonial.deleteMany({
-      where: { did: { in: [supporterDid, nonSupporterDid, anotherSupporterDid] } },
+      where: { did: { in: [contributorDid, nonContributorDid, anotherContributorDid] } },
     });
-    await prisma.supporter.deleteMany({
-      where: { did: { in: [supporterDid, nonSupporterDid, anotherSupporterDid] } },
+    await prisma.contribution.deleteMany({
+      where: { did: { in: [contributorDid, nonContributorDid, anotherContributorDid] } },
     });
 
     // Setup mock for Bluesky session validation
-    mockBlueskySession({ did: supporterDid, host: 'http://localhost:2583' });
+    mockBlueskySession({ did: contributorDid, host: 'http://localhost:2583' });
   });
 
   afterEach(() => {
@@ -50,29 +50,29 @@ describe('Testimonials API Tests', () => {
   });
 
   describe('createTestimonial endpoint', () => {
-    it('should return 403 for non-supporters', async () => {
-      mockBlueskySession({ did: nonSupporterDid, host: 'http://localhost:2583' });
+    it('should return 403 for non-contributors', async () => {
+      mockBlueskySession({ did: nonContributorDid, host: 'http://localhost:2583' });
 
       const response = await request(server.express)
         .post('/xrpc/social.spkeasy.actor.createTestimonial')
         .send({ content: { text: 'I love Speakeasy!' } })
-        .set('Authorization', `Bearer ${nonSupporterToken}`)
+        .set('Authorization', `Bearer ${nonContributorToken}`)
         .expect(403);
 
       expect(response.body.error).toBe('ForbiddenError');
-      expect(response.body.message).toBe('You must be a supporter to create a testimonial');
+      expect(response.body.message).toBe('You must be a contributor to create a testimonial');
     });
 
-    it('should succeed for supporters', async () => {
-      // Create supporter
-      await prisma.supporter.create({
-        data: { did: supporterDid, contribution: 'founding_donor' },
+    it('should succeed for contributors', async () => {
+      // Create contributor
+      await prisma.contribution.create({
+        data: { did: contributorDid, contribution: 'founding_donor' },
       });
 
       const response = await request(server.express)
         .post('/xrpc/social.spkeasy.actor.createTestimonial')
         .send({ content: { text: 'I love Speakeasy!' } })
-        .set('Authorization', `Bearer ${supporterToken}`)
+        .set('Authorization', `Bearer ${contributorToken}`)
         .expect(200);
 
       expect(response.body.id).toBeDefined();
@@ -80,44 +80,44 @@ describe('Testimonials API Tests', () => {
     });
 
     it('should validate content.text is required', async () => {
-      await prisma.supporter.create({
-        data: { did: supporterDid, contribution: 'founding_donor' },
+      await prisma.contribution.create({
+        data: { did: contributorDid, contribution: 'founding_donor' },
       });
 
       const response = await request(server.express)
         .post('/xrpc/social.spkeasy.actor.createTestimonial')
         .send({ content: {} })
-        .set('Authorization', `Bearer ${supporterToken}`)
+        .set('Authorization', `Bearer ${contributorToken}`)
         .expect(400);
 
       expect(response.body.error).toBe('ValidationError');
     });
 
     it('should validate content.text max length 300', async () => {
-      await prisma.supporter.create({
-        data: { did: supporterDid, contribution: 'founding_donor' },
+      await prisma.contribution.create({
+        data: { did: contributorDid, contribution: 'founding_donor' },
       });
 
       const longText = 'a'.repeat(301);
       const response = await request(server.express)
         .post('/xrpc/social.spkeasy.actor.createTestimonial')
         .send({ content: { text: longText } })
-        .set('Authorization', `Bearer ${supporterToken}`)
+        .set('Authorization', `Bearer ${contributorToken}`)
         .expect(400);
 
       expect(response.body.error).toBe('ValidationError');
     });
 
     it('should store facets when provided', async () => {
-      await prisma.supporter.create({
-        data: { did: supporterDid, contribution: 'founding_donor' },
+      await prisma.contribution.create({
+        data: { did: contributorDid, contribution: 'founding_donor' },
       });
 
       const facets = [{ index: { byteStart: 0, byteEnd: 5 }, features: [{ $type: 'app.bsky.richtext.facet#tag', tag: 'test' }] }];
       const response = await request(server.express)
         .post('/xrpc/social.spkeasy.actor.createTestimonial')
         .send({ content: { text: '#test post', facets } })
-        .set('Authorization', `Bearer ${supporterToken}`)
+        .set('Authorization', `Bearer ${contributorToken}`)
         .expect(200);
 
       const testimonial = await prisma.testimonial.findUnique({
@@ -138,16 +138,16 @@ describe('Testimonials API Tests', () => {
     });
 
     it('should return testimonials ordered by createdAt descending', async () => {
-      await prisma.supporter.create({
-        data: { did: supporterDid, contribution: 'donor', details: { amount: 1000 } },
+      await prisma.contribution.create({
+        data: { did: contributorDid, contribution: 'donor', details: { amount: 1000 } },
       });
 
       // Create testimonials with different times
       await prisma.testimonial.create({
-        data: { did: supporterDid, content: { text: 'First' }, createdAt: new Date('2024-01-01') },
+        data: { did: contributorDid, content: { text: 'First' }, createdAt: new Date('2024-01-01') },
       });
       await prisma.testimonial.create({
-        data: { did: supporterDid, content: { text: 'Second' }, createdAt: new Date('2024-01-02') },
+        data: { did: contributorDid, content: { text: 'Second' }, createdAt: new Date('2024-01-02') },
       });
 
       const response = await request(server.express)
@@ -160,14 +160,14 @@ describe('Testimonials API Tests', () => {
     });
 
     it('should support pagination with limit', async () => {
-      await prisma.supporter.create({
-        data: { did: supporterDid, contribution: 'donor', details: { amount: 1000 } },
+      await prisma.contribution.create({
+        data: { did: contributorDid, contribution: 'donor', details: { amount: 1000 } },
       });
 
       // Create 3 testimonials
       for (let i = 0; i < 3; i++) {
         await prisma.testimonial.create({
-          data: { did: supporterDid, content: { text: `Testimonial ${i}` } },
+          data: { did: contributorDid, content: { text: `Testimonial ${i}` } },
         });
       }
 
@@ -181,14 +181,14 @@ describe('Testimonials API Tests', () => {
     });
 
     it('should support pagination with cursor', async () => {
-      await prisma.supporter.create({
-        data: { did: supporterDid, contribution: 'donor', details: { amount: 1000 } },
+      await prisma.contribution.create({
+        data: { did: contributorDid, contribution: 'donor', details: { amount: 1000 } },
       });
 
       // Create 3 testimonials
       for (let i = 0; i < 3; i++) {
         await prisma.testimonial.create({
-          data: { did: supporterDid, content: { text: `Testimonial ${i}` } },
+          data: { did: contributorDid, content: { text: `Testimonial ${i}` } },
         });
       }
 
@@ -207,27 +207,27 @@ describe('Testimonials API Tests', () => {
     });
 
     it('should filter by did', async () => {
-      await prisma.supporter.createMany({
+      await prisma.contribution.createMany({
         data: [
-          { did: supporterDid, contribution: 'donor', details: { amount: 1000 } },
-          { did: anotherSupporterDid, contribution: 'donor', details: { amount: 500 } },
+          { did: contributorDid, contribution: 'donor', details: { amount: 1000 } },
+          { did: anotherContributorDid, contribution: 'donor', details: { amount: 500 } },
         ],
       });
 
       await prisma.testimonial.create({
-        data: { did: supporterDid, content: { text: 'From supporter 1' } },
+        data: { did: contributorDid, content: { text: 'From contributor 1' } },
       });
       await prisma.testimonial.create({
-        data: { did: anotherSupporterDid, content: { text: 'From supporter 2' } },
+        data: { did: anotherContributorDid, content: { text: 'From contributor 2' } },
       });
 
       const response = await request(server.express)
         .get('/xrpc/social.spkeasy.actor.listTestimonials')
-        .query({ did: supporterDid })
+        .query({ did: contributorDid })
         .expect(200);
 
       expect(response.body.testimonials).toHaveLength(1);
-      expect(response.body.testimonials[0].did).toBe(supporterDid);
+      expect(response.body.testimonials[0].did).toBe(contributorDid);
     });
   });
 
@@ -236,7 +236,7 @@ describe('Testimonials API Tests', () => {
       const response = await request(server.express)
         .post('/xrpc/social.spkeasy.actor.deleteTestimonial')
         .send({ id: '00000000-0000-0000-0000-000000000000' })
-        .set('Authorization', `Bearer ${supporterToken}`)
+        .set('Authorization', `Bearer ${contributorToken}`)
         .expect(404);
 
       expect(response.body.error).toBe('NotFoundError');
@@ -244,23 +244,23 @@ describe('Testimonials API Tests', () => {
     });
 
     it('should return 403 for non-author', async () => {
-      await prisma.supporter.createMany({
+      await prisma.contribution.createMany({
         data: [
-          { did: supporterDid, contribution: 'donor', details: { amount: 1000 } },
-          { did: anotherSupporterDid, contribution: 'donor', details: { amount: 500 } },
+          { did: contributorDid, contribution: 'donor', details: { amount: 1000 } },
+          { did: anotherContributorDid, contribution: 'donor', details: { amount: 500 } },
         ],
       });
 
       const testimonial = await prisma.testimonial.create({
-        data: { did: supporterDid, content: { text: 'My testimonial' } },
+        data: { did: contributorDid, content: { text: 'My testimonial' } },
       });
 
-      mockBlueskySession({ did: anotherSupporterDid, host: 'http://localhost:2583' });
+      mockBlueskySession({ did: anotherContributorDid, host: 'http://localhost:2583' });
 
       const response = await request(server.express)
         .post('/xrpc/social.spkeasy.actor.deleteTestimonial')
         .send({ id: testimonial.id })
-        .set('Authorization', `Bearer ${anotherSupporterToken}`)
+        .set('Authorization', `Bearer ${anotherContributorToken}`)
         .expect(403);
 
       // Authorization errors return generic 'Forbidden' without details for security
@@ -268,27 +268,28 @@ describe('Testimonials API Tests', () => {
     });
 
     it('should succeed for author', async () => {
-      await prisma.supporter.create({
-        data: { did: supporterDid, contribution: 'donor', details: { amount: 1000 } },
+      await prisma.contribution.create({
+        data: { did: contributorDid, contribution: 'donor', details: { amount: 1000 } },
       });
 
       const testimonial = await prisma.testimonial.create({
-        data: { did: supporterDid, content: { text: 'My testimonial' } },
+        data: { did: contributorDid, content: { text: 'My testimonial' } },
       });
 
       const response = await request(server.express)
         .post('/xrpc/social.spkeasy.actor.deleteTestimonial')
         .send({ id: testimonial.id })
-        .set('Authorization', `Bearer ${supporterToken}`)
+        .set('Authorization', `Bearer ${contributorToken}`)
         .expect(200);
 
       expect(response.body.success).toBe(true);
 
-      // Verify deletion
+      // Verify soft deletion (record exists but has deletedAt set)
       const deleted = await prisma.testimonial.findUnique({
         where: { id: testimonial.id },
       });
-      expect(deleted).toBeNull();
+      expect(deleted).not.toBeNull();
+      expect(deleted?.deletedAt).not.toBeNull();
     });
   });
 });
