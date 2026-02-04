@@ -2,7 +2,7 @@
 FROM node:22-alpine AS base
 
 # Install pnpm
-RUN corepack enable && corepack prepare pnpm@8.15.4 --activate
+RUN corepack enable && corepack prepare pnpm@10.15.1 --activate
 
 # Set working directory
 WORKDIR /app
@@ -24,7 +24,7 @@ RUN pnpm turbo run build --filter=@speakeasy-services/private-sessions... && \
 FROM node:22-alpine AS production
 
 # Install pnpm
-RUN corepack enable && corepack prepare pnpm@8.15.4 --activate
+RUN corepack enable && corepack prepare pnpm@10.15.1 --activate
 
 # Set working directory
 WORKDIR /app
@@ -38,7 +38,7 @@ COPY --from=base /app/pnpm-lock.yaml .
 COPY --from=base /app/pnpm-workspace.yaml .
 
 # Install production dependencies only and generate Prisma clients
-RUN COREPACK_ENABLE_DOWNLOAD_PROMPT=0 pnpm install --frozen-lockfile --prod
+RUN COREPACK_ENABLE_DOWNLOAD_PROMPT=0 pnpm install --frozen-lockfile --prod --config.confirmModulesPurge=false
 
 # Copy supervisor script and make it executable
 COPY supervisor.js ./
