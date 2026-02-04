@@ -39,6 +39,7 @@
     "dotenv": "^16.4.7",
     "pino": "^9.6.0",
     "pino-pretty": "^13.0.0",
+    "prisma": "^6.5.0",
     "stripe": "^18.4.0",
     "zod": "^3.24.2"
   },
@@ -50,7 +51,6 @@
     "@typescript-eslint/parser": "^7.0.1",
     "@vitest/ui": "^3.2.4",
     "eslint": "^8.56.0",
-    "prisma": "^6.5.0",
     "prisma-erd-generator": "^2.0.4",
     "supertest": "^6.3.4",
     "tsx": "^4.19.3",
