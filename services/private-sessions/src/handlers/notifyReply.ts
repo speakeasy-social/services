@@ -150,6 +150,7 @@ export function createNotifyReplyHandler(prisma: PrismaClient) {
         reasonSubject: uri,
         updatedAt: new Date(),
       })),
+      skipDuplicates: true,
     });
   };
 }
