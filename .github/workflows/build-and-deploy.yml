@@ -11,16 +11,16 @@ jobs:
   check-changes:
     runs-on: ubuntu-latest
     outputs:
-      trusted-users: true
-      private-sessions: true
-      admin: true
+      # trusted-users: true
+      # private-sessions: true
+      # admin: true
       user-keys: true
-      media: true
-      # trusted-users: ${{ steps.filter.outputs.trusted-users }}
-      # private-sessions: ${{ steps.filter.outputs.private-sessions }}
-      # admin: ${{ steps.filter.outputs.admin }}
+      # media: true
+      trusted-users: ${{ steps.filter.outputs.trusted-users }}
+      private-sessions: ${{ steps.filter.outputs.private-sessions }}
+      admin: ${{ steps.filter.outputs.admin }}
       # user-keys: ${{ steps.filter.outputs.user-keys }}
-      # media: ${{ steps.filter.outputs.media }}
+      media: ${{ steps.filter.outputs.media }}
     steps:
       - uses: actions/checkout@v4
         with:

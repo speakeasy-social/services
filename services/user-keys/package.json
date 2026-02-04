@@ -30,6 +30,7 @@
     "@atproto/lexicon": "^0.4.9",
     "@atproto/xrpc-server": "^0.7.13",
     "@prisma/client": "^6.5.0",
+    "@speakeasy-services/common": "workspace:^",
     "@speakeasy-services/crypto": "workspace:*",
     "@speakeasy-services/queue": "workspace:^",
     "@speakeasy-services/service-base": "workspace:*",
@@ -40,7 +41,6 @@
   },
   "devDependencies": {
     "@mermaid-js/mermaid-cli": "^11.4.2",
-    "@speakeasy-services/common": "workspace:^",
     "@speakeasy-services/test-utils": "workspace:^",
     "@types/node": "^22.13.11",
     "@types/uuid": "^10.0.0",
