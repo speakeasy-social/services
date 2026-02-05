@@ -476,7 +476,7 @@ importers:
         specifier: workspace:^
         version: link:../../packages/test-utils
       '@types/jsonwebtoken':
-        specifier: ^9.0.9
+        specifier: ^9.0.5
         version: 9.0.10
       '@types/node':
         specifier: ^22.13.11
