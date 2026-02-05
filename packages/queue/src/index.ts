@@ -17,6 +17,22 @@ export const JOB_NAMES = {
   NOTIFY_REPLY: 'notify-reply',
 } as const;
 
+// Re-export types
+export type { Job, JobName } from './types.js';
+
+/**
+ * Generate a service-specific job name by prefixing the base job name with the service name
+ * @param serviceName - The name of the service (e.g., 'private-sessions', 'private-profiles')
+ * @param baseJobName - The base job name from JOB_NAMES
+ * @returns A service-specific job name
+ */
+export function getServiceJobName(
+  serviceName: string,
+  baseJobName: string,
+): string {
+  return `${serviceName}.${baseJobName}`;
+}
+
 const queueConfigSchema = z.object({
   connectionString: z.string(),
   schema: z.string().default('pgboss'),
