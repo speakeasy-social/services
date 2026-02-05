@@ -1,7 +1,4 @@
-import {
-  ProfileSession,
-  ProfileSessionKey,
-} from '../generated/prisma-client/index.js';
+import { SessionKey } from '../generated/prisma-client/index.js';
 import {
   createView,
   createListView,
@@ -20,9 +17,7 @@ export type EncryptedSessionKeyView = {
 /**
  * Create a view that picks recipientDid and createdAt, converting createdAt to ISO string
  */
-export const toSessionKeyView = createView<
-  ProfileSessionKey,
-  EncryptedSessionKeyView
+export const toSessionKeyView = createView<SessionKey, EncryptedSessionKeyView
 >(['sessionId', 'encryptedDek', 'recipientDid', 'createdAt'], {
   sessionId: (value: string) => value,
   encryptedDek: (value: Uint8Array) => safeBtoa(value),
@@ -35,6 +30,6 @@ export const toSessionKeyView = createView<
  * Create a list view that maps over the array
  */
 export const toSessionKeyListView = createListView<
-  ProfileSessionKey,
+  SessionKey,
   EncryptedSessionKeyView
 >(toSessionKeyView);
