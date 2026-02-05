@@ -80,7 +80,7 @@ export const listTestimonialsDef: LexiconDoc = {
     },
     testimonialView: {
       type: 'object',
-      required: ['id', 'did', 'content', 'createdAt'],
+      required: ['id', 'did', 'content', 'createdAt', 'contributions'],
       properties: {
         id: { type: 'string' },
         did: { type: 'string' },

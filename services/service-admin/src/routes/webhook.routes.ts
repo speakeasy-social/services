@@ -13,7 +13,7 @@ const DONATION_DEDUP_WINDOW_DAYS = 30;
 
 /**
  * Stripe webhook handler for checkout.session.completed events.
- * Auto-adds donors as supporters after successful payment.
+ * Auto-adds donors as contributors after successful payment.
  */
 export async function handleStripeWebhook(req: Request, res: Response): Promise<void> {
   const sig = req.headers['stripe-signature'];
@@ -46,7 +46,7 @@ export async function handleStripeWebhook(req: Request, res: Response): Promise<
 
     const donorDid = session.metadata?.donorDid;
     if (!donorDid) {
-      logger.info('Stripe checkout completed without donorDid in metadata, skipping supporter creation');
+      logger.info('Stripe checkout completed without donorDid in metadata, skipping contribution creation');
       res.status(200).json({ received: true });
       return;
     }
