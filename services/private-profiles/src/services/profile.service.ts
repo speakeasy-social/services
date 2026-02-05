@@ -1,22 +1,57 @@
-import { PrismaClient } from '../generated/prisma-client/index.js';
-import { NotFoundError, ValidationError } from '@speakeasy-services/common';
+import { NotFoundError } from '@speakeasy-services/common';
 import { getPrismaClient } from '../db.js';
 
 const prisma = getPrismaClient();
 
 export class ProfileService {
-  async getProfile(recipientDid: string) {
+  async getProfile(viewerDid: string, targetDid: string) {
     const profile = await prisma.privateProfile.findFirst({
       where: {
-        authorDid: recipientDid,
+        authorDid: targetDid,
+      },
+      include: {
+        session: {
+          include: {
+            sessionKeys: {
+              where: { recipientDid: viewerDid },
+              take: 1,
+            },
+          },
+        },
       },
     });
 
-    if (!profile) {
+    // Return 404 if profile not found OR viewer has no session key access
+    if (!profile || !profile.session?.sessionKeys?.length) {
       throw new NotFoundError('Profile not found');
     }
 
     return profile;
+  }
+
+  async getProfiles(viewerDid: string, targetDids: string[]) {
+    const profiles = await prisma.privateProfile.findMany({
+      where: {
+        authorDid: { in: targetDids },
+        session: {
+          sessionKeys: {
+            some: { recipientDid: viewerDid },
+          },
+        },
+      },
+      include: {
+        session: {
+          include: {
+            sessionKeys: {
+              where: { recipientDid: viewerDid },
+              take: 1,
+            },
+          },
+        },
+      },
+    });
+
+    return profiles;
   }
 
   async updateProfile(
