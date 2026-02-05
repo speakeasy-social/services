@@ -45,8 +45,8 @@ describe('Trust Integration Tests', () => {
   beforeEach(async () => {
     // Clear test data before each test
     await prisma.privateProfile.deleteMany();
-    await prisma.profileSessionKey.deleteMany();
-    await prisma.profileSession.deleteMany();
+    await prisma.sessionKey.deleteMany();
+    await prisma.session.deleteMany();
 
     // Reset mocks
     vi.clearAllMocks();
@@ -55,7 +55,7 @@ describe('Trust Integration Tests', () => {
   describe('Add Recipient to Session (Trust Event)', () => {
     it('should add session key for new trusted user', async () => {
       // Setup: Create a session with author's session key
-      const session = await prisma.profileSession.create({
+      const session = await prisma.session.create({
         data: {
           authorDid,
           expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
@@ -102,7 +102,7 @@ describe('Trust Integration Tests', () => {
       await handler({ data: { authorDid, recipientDid } } as any);
 
       // Verify: Session key was created for the recipient
-      const sessionKeys = await prisma.profileSessionKey.findMany({
+      const sessionKeys = await prisma.sessionKey.findMany({
         where: { sessionId: session.id },
       });
 
@@ -114,7 +114,7 @@ describe('Trust Integration Tests', () => {
 
     it('should abort if recipient is no longer trusted', async () => {
       // Setup: Create a session with author's session key
-      await prisma.profileSession.create({
+      await prisma.session.create({
         data: {
           authorDid,
           expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
@@ -142,7 +142,7 @@ describe('Trust Integration Tests', () => {
       // Verify: Handler aborted and no key was created
       expect(result).toEqual({ abortReason: 'Recipient no longer trusted' });
 
-      const sessionKeys = await prisma.profileSessionKey.findMany({
+      const sessionKeys = await prisma.sessionKey.findMany({
         where: { recipientDid },
       });
       expect(sessionKeys).toHaveLength(0);
@@ -150,7 +150,7 @@ describe('Trust Integration Tests', () => {
 
     it('should not create duplicate session keys', async () => {
       // Setup: Create a session with both author and recipient already having keys
-      const session = await prisma.profileSession.create({
+      const session = await prisma.session.create({
         data: {
           authorDid,
           expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
@@ -183,7 +183,7 @@ describe('Trust Integration Tests', () => {
       await handler({ data: { authorDid, recipientDid } } as any);
 
       // Verify: Still only 2 session keys (no duplicates)
-      const sessionKeys = await prisma.profileSessionKey.findMany({
+      const sessionKeys = await prisma.sessionKey.findMany({
         where: { sessionId: session.id },
       });
       expect(sessionKeys).toHaveLength(2);
@@ -191,7 +191,7 @@ describe('Trust Integration Tests', () => {
 
     it('should only add key to most recent session (currentSessionOnly=true for profiles)', async () => {
       // Setup: Create two sessions
-      const oldSession = await prisma.profileSession.create({
+      const oldSession = await prisma.session.create({
         data: {
           authorDid,
           expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
@@ -206,7 +206,7 @@ describe('Trust Integration Tests', () => {
         },
       });
 
-      const newSession = await prisma.profileSession.create({
+      const newSession = await prisma.session.create({
         data: {
           authorDid,
           expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
@@ -254,12 +254,12 @@ describe('Trust Integration Tests', () => {
       await handler({ data: { authorDid, recipientDid } } as any);
 
       // Verify: Key only added to new session, not old session
-      const oldSessionKeys = await prisma.profileSessionKey.findMany({
+      const oldSessionKeys = await prisma.sessionKey.findMany({
         where: { sessionId: oldSession.id },
       });
       expect(oldSessionKeys).toHaveLength(1); // Only author's key
 
-      const newSessionKeys = await prisma.profileSessionKey.findMany({
+      const newSessionKeys = await prisma.sessionKey.findMany({
         where: { sessionId: newSession.id },
       });
       expect(newSessionKeys).toHaveLength(2); // Author + recipient
@@ -269,7 +269,7 @@ describe('Trust Integration Tests', () => {
   describe('Delete Session Keys (Untrust Event)', () => {
     it('should delete session keys for untrusted user', async () => {
       // Setup: Create a session with recipient having a key
-      const session = await prisma.profileSession.create({
+      const session = await prisma.session.create({
         data: {
           authorDid,
           expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
@@ -301,7 +301,7 @@ describe('Trust Integration Tests', () => {
       await handler({ data: { authorDid, recipientDid } } as any);
 
       // Verify: Recipient's session key was deleted
-      const sessionKeys = await prisma.profileSessionKey.findMany({
+      const sessionKeys = await prisma.sessionKey.findMany({
         where: { sessionId: session.id },
       });
       expect(sessionKeys).toHaveLength(1);
@@ -310,7 +310,7 @@ describe('Trust Integration Tests', () => {
 
     it('should abort if recipient was re-trusted', async () => {
       // Setup: Create a session with recipient having a key
-      const session = await prisma.profileSession.create({
+      const session = await prisma.session.create({
         data: {
           authorDid,
           expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
@@ -344,7 +344,7 @@ describe('Trust Integration Tests', () => {
       // Verify: Handler aborted and keys preserved
       expect(result).toEqual({ abortReason: 'Recipient has been trusted again' });
 
-      const sessionKeys = await prisma.profileSessionKey.findMany({
+      const sessionKeys = await prisma.sessionKey.findMany({
         where: { sessionId: session.id },
       });
       expect(sessionKeys).toHaveLength(2);
@@ -352,7 +352,7 @@ describe('Trust Integration Tests', () => {
 
     it('should delete keys across all sessions for the author', async () => {
       // Setup: Create two sessions with recipient having keys in both
-      const session1 = await prisma.profileSession.create({
+      const session1 = await prisma.session.create({
         data: {
           authorDid,
           expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
@@ -373,7 +373,7 @@ describe('Trust Integration Tests', () => {
         },
       });
 
-      const session2 = await prisma.profileSession.create({
+      const session2 = await prisma.session.create({
         data: {
           authorDid,
           expiresAt: new Date(Date.now() + 48 * 60 * 60 * 1000),
@@ -405,13 +405,13 @@ describe('Trust Integration Tests', () => {
       await handler({ data: { authorDid, recipientDid } } as any);
 
       // Verify: Recipient's keys deleted from all sessions
-      const recipientKeys = await prisma.profileSessionKey.findMany({
+      const recipientKeys = await prisma.sessionKey.findMany({
         where: { recipientDid },
       });
       expect(recipientKeys).toHaveLength(0);
 
       // Author's keys should still exist
-      const authorKeys = await prisma.profileSessionKey.findMany({
+      const authorKeys = await prisma.sessionKey.findMany({
         where: { recipientDid: authorDid },
       });
       expect(authorKeys).toHaveLength(2);
@@ -421,7 +421,7 @@ describe('Trust Integration Tests', () => {
   describe('Revoke Session', () => {
     it('should revoke active sessions for author', async () => {
       // Setup: Create an active session
-      const session = await prisma.profileSession.create({
+      const session = await prisma.session.create({
         data: {
           authorDid,
           expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
@@ -441,7 +441,7 @@ describe('Trust Integration Tests', () => {
       await handler({ data: { authorDid } } as any);
 
       // Verify: Session was revoked
-      const revokedSession = await prisma.profileSession.findUnique({
+      const revokedSession = await prisma.session.findUnique({
         where: { id: session.id },
       });
       expect(revokedSession?.revokedAt).not.toBeNull();
@@ -449,7 +449,7 @@ describe('Trust Integration Tests', () => {
 
     it('should delete recipient keys when recipientDid is specified', async () => {
       // Setup: Create a session with recipient
-      const session = await prisma.profileSession.create({
+      const session = await prisma.session.create({
         data: {
           authorDid,
           expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
@@ -476,7 +476,7 @@ describe('Trust Integration Tests', () => {
       await handler({ data: { authorDid, recipientDid } } as any);
 
       // Verify: Session revoked and recipient's key deleted
-      const sessionKeys = await prisma.profileSessionKey.findMany({
+      const sessionKeys = await prisma.sessionKey.findMany({
         where: { sessionId: session.id },
       });
       expect(sessionKeys).toHaveLength(1);
@@ -486,7 +486,7 @@ describe('Trust Integration Tests', () => {
     it('should not revoke already revoked sessions', async () => {
       // Setup: Create an already revoked session
       const revokedAt = new Date(Date.now() - 1000);
-      const session = await prisma.profileSession.create({
+      const session = await prisma.session.create({
         data: {
           authorDid,
           expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
@@ -507,7 +507,7 @@ describe('Trust Integration Tests', () => {
       await handler({ data: { authorDid } } as any);
 
       // Verify: Original revocation time preserved (updateMany skips already revoked)
-      const checkedSession = await prisma.profileSession.findUnique({
+      const checkedSession = await prisma.session.findUnique({
         where: { id: session.id },
       });
       expect(checkedSession?.revokedAt?.getTime()).toBe(revokedAt.getTime());

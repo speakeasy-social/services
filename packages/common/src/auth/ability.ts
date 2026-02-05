@@ -240,6 +240,24 @@ const userAbilities = [
     userProperty: 'did',
     matchesRecordProperty: 'session.authorDid',
   }),
+
+  // Authors can manage their own profile sessions
+  canIf('create', 'private_profile', {
+    userProperty: 'did',
+    matchesRecordProperty: 'authorDid',
+  }),
+  canIf('revoke', 'private_profile', {
+    userProperty: 'did',
+    matchesRecordProperty: 'authorDid',
+  }),
+  canIf('add_recipient', 'private_profile', {
+    userProperty: 'did',
+    matchesRecordProperty: 'authorDid',
+  }),
+  canIf('get', 'private_profile', {
+    userProperty: 'did',
+    matchesRecordProperty: 'session.authorDid',
+  }),
   canIf('*', 'private_post', {
     userProperty: 'did',
     matchesRecordProperty: 'authorDid',
@@ -337,9 +355,13 @@ const serviceAbilities = [
     equalsLiteral: 'private-sessions',
   }),
 
-  // user-keys service can update sessions
+  // user-keys service can update sessions (both posts and profiles)
   // service.name must equal 'user-keys'
   canIf('update', 'private_session', {
+    userProperty: 'name',
+    equalsLiteral: 'user-keys',
+  }),
+  canIf('update', 'private_profile', {
     userProperty: 'name',
     equalsLiteral: 'user-keys',
   }),
