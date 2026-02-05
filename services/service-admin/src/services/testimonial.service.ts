@@ -1,5 +1,6 @@
 import { getPrismaClient } from '../db.js';
 import { Prisma, Testimonial } from '../generated/prisma-client/index.js';
+import type { ContributionPublicData } from '../types/contribution.js';
 
 const prisma = getPrismaClient();
 
@@ -11,6 +12,7 @@ type TestimonialContent = {
 export type ContributionInfo = {
   createdAt: Date;
   contribution: string;
+  public: ContributionPublicData | null;
 };
 
 export type TestimonialWithContributions = Testimonial & {
@@ -78,6 +80,7 @@ export class TestimonialService {
         did: true,
         createdAt: true,
         contribution: true,
+        public: true,
       },
     });
 
@@ -88,6 +91,7 @@ export class TestimonialService {
       contributions.push({
         createdAt: record.createdAt,
         contribution: record.contribution,
+        public: (record.public as ContributionPublicData | null) ?? null,
       });
       contributionsByDid.set(record.did, contributions);
     }

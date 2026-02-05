@@ -71,10 +71,8 @@ export async function handleStripeWebhook(req: Request, res: Response): Promise<
     const contribution = await contributionService.addContribution(
       donorDid,
       'donor',
-      {
-        amount: amountTotal ?? 0,
-        donationId,
-      }
+      { isRegularGift: session.mode === 'subscription' },
+      { amount: amountTotal ?? 0, donationId }
     );
 
     logger.info(

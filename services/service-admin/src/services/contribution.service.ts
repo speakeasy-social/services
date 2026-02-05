@@ -1,5 +1,6 @@
 import { getPrismaClient } from '../db.js';
 import { Prisma, Contribution } from '../generated/prisma-client/index.js';
+import type { ContributionPublicData, ContributionInternalData } from '../types/contribution.js';
 
 const prisma = getPrismaClient();
 
@@ -9,20 +10,23 @@ export class ContributionService {
   /**
    * Adds a new contribution entry
    * @param did - The DID of the contributor
-   * @param contribution - The type of contribution (founding_donor, donor, contributor)
-   * @param details - Optional details about the contribution
+   * @param contribution - The type of contribution (donor, contributor, designer, engineer, testing)
+   * @param publicData - Public metadata visible in API responses. May include: recognition (donor), isRegularGift (donor), feature (optional for all types)
+   * @param internalData - Internal metadata that MUST NEVER be returned in API responses (amount, donationId for donor; null for others)
    * @returns The created contribution entry
    */
   async addContribution(
     did: string,
     contribution: string,
-    details: object | null
+    publicData: ContributionPublicData | null,
+    internalData: ContributionInternalData
   ): Promise<Contribution> {
     return prisma.contribution.create({
       data: {
         did,
         contribution,
-        details: details === null ? Prisma.JsonNull : (details as JsonValue),
+        public: publicData === null ? Prisma.JsonNull : (publicData as JsonValue),
+        internal: internalData === null ? Prisma.JsonNull : (internalData as JsonValue),
       },
     });
   }
@@ -73,7 +77,7 @@ export class ContributionService {
         did,
         deletedAt: null,
         createdAt: { gte: cutoffDate },
-        details: {
+        internal: {
           path: ['donationId'],
           equals: donationId,
         },

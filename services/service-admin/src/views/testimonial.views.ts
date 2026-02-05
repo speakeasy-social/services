@@ -1,8 +1,10 @@
 import { createListView } from '@speakeasy-services/common';
+import type { ContributionPublicData } from '../types/contribution.js';
 
 type ContributionResponse = {
   createdAt: Date;
   contribution: string;
+  public: ContributionPublicData | null;
 };
 
 type TestimonialResponse = {
@@ -16,6 +18,7 @@ type TestimonialResponse = {
 type ContributionView = {
   createdAt: string;
   contribution: string;
+  public: ContributionPublicData | null;
 };
 
 export type TestimonialView = {
@@ -37,6 +40,7 @@ export const toTestimonialView = (testimonial: TestimonialResponse): Testimonial
   contributions: testimonial.contributions.map((c) => ({
     createdAt: c.createdAt.toISOString(),
     contribution: c.contribution,
+    public: c.public,
   })),
 });
 
