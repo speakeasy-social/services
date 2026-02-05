@@ -1,6 +1,8 @@
 import { createListView } from '@speakeasy-services/common';
 import type { ContributionPublicData } from '../types/contribution.js';
 
+// NOTE: The Contribution model has an 'internal' field that MUST NEVER be included in API responses
+
 type ContributionResponse = {
   createdAt: Date;
   contribution: string;

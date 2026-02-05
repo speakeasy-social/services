@@ -86,6 +86,51 @@ export const listTestimonialsDef: LexiconDoc = {
         did: { type: 'string' },
         content: { type: 'unknown' },
         createdAt: { type: 'string', format: 'datetime' },
+        contributions: {
+          type: 'array',
+          items: { type: 'ref', ref: '#contributionView' },
+          description: 'Contribution records for the testimonial author',
+        },
+      },
+    },
+    contributionView: {
+      type: 'object',
+      description:
+        'Single contribution entry (public only; internal_data is never returned by the API)',
+      required: ['createdAt', 'contribution'],
+      nullable: ['public'],
+      properties: {
+        createdAt: { type: 'string', format: 'datetime' },
+        contribution: {
+          type: 'string',
+          knownValues: ['donor', 'contributor', 'designer', 'engineer', 'testing'],
+          description: 'Type of contribution',
+        },
+        public: {
+          type: 'ref',
+          ref: '#contributionPublicData',
+          description:
+            'Public metadata for this contribution. Shape depends on contribution type; null when no public data.',
+        },
+      },
+    },
+    contributionPublicData: {
+      type: 'object',
+      description:
+        'Public metadata for a contribution (stored in contributions.public_data). All fields are optional: donor may have recognition and isRegularGift; feature is optional and applicable to all contribution types. Internal metadata (amount, donationId) is stored in internal_data and MUST NOT be returned in API responses.',
+      properties: {
+        recognition: {
+          type: 'string',
+          description: 'donor only. Recognition text for the donor.',
+        },
+        isRegularGift: {
+          type: 'boolean',
+          description: 'donor only. Whether the donation is a recurring gift.',
+        },
+        feature: {
+          type: 'string',
+          description: 'Optional for all contribution types. Name of the feature contributed to (e.g. "dark-mode").',
+        },
       },
     },
   },
