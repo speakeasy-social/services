@@ -66,7 +66,7 @@ describe('Testimonials API Tests', () => {
     it('should succeed for contributors', async () => {
       // Create contributor
       await prisma.contribution.create({
-        data: { did: contributorDid, contribution: 'founding_donor' },
+        data: { did: contributorDid, contribution: 'contributor', public: { feature: 'test' } },
       });
 
       const response = await request(server.express)
@@ -81,7 +81,7 @@ describe('Testimonials API Tests', () => {
 
     it('should validate content.text is required', async () => {
       await prisma.contribution.create({
-        data: { did: contributorDid, contribution: 'founding_donor' },
+        data: { did: contributorDid, contribution: 'contributor', public: { feature: 'test' } },
       });
 
       const response = await request(server.express)
@@ -95,7 +95,7 @@ describe('Testimonials API Tests', () => {
 
     it('should validate content.text max length 300', async () => {
       await prisma.contribution.create({
-        data: { did: contributorDid, contribution: 'founding_donor' },
+        data: { did: contributorDid, contribution: 'contributor', public: { feature: 'test' } },
       });
 
       const longText = 'a'.repeat(301);
@@ -110,7 +110,7 @@ describe('Testimonials API Tests', () => {
 
     it('should store facets when provided', async () => {
       await prisma.contribution.create({
-        data: { did: contributorDid, contribution: 'founding_donor' },
+        data: { did: contributorDid, contribution: 'contributor', public: { feature: 'test' } },
       });
 
       const facets = [{ index: { byteStart: 0, byteEnd: 5 }, features: [{ $type: 'app.bsky.richtext.facet#tag', tag: 'test' }] }];
@@ -139,7 +139,7 @@ describe('Testimonials API Tests', () => {
 
     it('should return testimonials ordered by createdAt descending', async () => {
       await prisma.contribution.create({
-        data: { did: contributorDid, contribution: 'donor', details: { amount: 1000 } },
+        data: { did: contributorDid, contribution: 'donor', public: { isRegularGift: false }, internal: { amount: 1000 } },
       });
 
       // Create testimonials with different times
@@ -161,7 +161,7 @@ describe('Testimonials API Tests', () => {
 
     it('should support pagination with limit', async () => {
       await prisma.contribution.create({
-        data: { did: contributorDid, contribution: 'donor', details: { amount: 1000 } },
+        data: { did: contributorDid, contribution: 'donor', public: { isRegularGift: false }, internal: { amount: 1000 } },
       });
 
       // Create 3 testimonials
@@ -182,7 +182,7 @@ describe('Testimonials API Tests', () => {
 
     it('should support pagination with cursor', async () => {
       await prisma.contribution.create({
-        data: { did: contributorDid, contribution: 'donor', details: { amount: 1000 } },
+        data: { did: contributorDid, contribution: 'donor', public: { isRegularGift: false }, internal: { amount: 1000 } },
       });
 
       // Create 3 testimonials
@@ -209,8 +209,8 @@ describe('Testimonials API Tests', () => {
     it('should filter by did', async () => {
       await prisma.contribution.createMany({
         data: [
-          { did: contributorDid, contribution: 'donor', details: { amount: 1000 } },
-          { did: anotherContributorDid, contribution: 'donor', details: { amount: 500 } },
+          { did: contributorDid, contribution: 'donor', public: { isRegularGift: false }, internal: { amount: 1000 } },
+          { did: anotherContributorDid, contribution: 'donor', public: { isRegularGift: false }, internal: { amount: 500 } },
         ],
       });
 
@@ -246,8 +246,8 @@ describe('Testimonials API Tests', () => {
     it('should return 403 for non-author', async () => {
       await prisma.contribution.createMany({
         data: [
-          { did: contributorDid, contribution: 'donor', details: { amount: 1000 } },
-          { did: anotherContributorDid, contribution: 'donor', details: { amount: 500 } },
+          { did: contributorDid, contribution: 'donor', public: { isRegularGift: false }, internal: { amount: 1000 } },
+          { did: anotherContributorDid, contribution: 'donor', public: { isRegularGift: false }, internal: { amount: 500 } },
         ],
       });
 
@@ -269,7 +269,7 @@ describe('Testimonials API Tests', () => {
 
     it('should succeed for author', async () => {
       await prisma.contribution.create({
-        data: { did: contributorDid, contribution: 'donor', details: { amount: 1000 } },
+        data: { did: contributorDid, contribution: 'donor', public: { isRegularGift: false }, internal: { amount: 1000 } },
       });
 
       const testimonial = await prisma.testimonial.create({

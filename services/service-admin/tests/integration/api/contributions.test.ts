@@ -69,7 +69,7 @@ describe('Contributions API Tests', () => {
 
     it('should return true with contributions for contributor', async () => {
       await prisma.contribution.create({
-        data: { did: contributorDid, contribution: 'founding_donor' },
+        data: { did: contributorDid, contribution: 'donor', public: { isRegularGift: false }, internal: { amount: 1000 } },
       });
 
       const response = await request(server.express)
@@ -78,15 +78,15 @@ describe('Contributions API Tests', () => {
         .expect(200);
 
       expect(response.body.isContributor).toBe(true);
-      expect(response.body.contributions).toEqual(['founding_donor']);
+      expect(response.body.contributions).toEqual(['donor']);
     });
 
     it('should return multiple contribution types for contributor with multiple contributions', async () => {
       await prisma.contribution.createMany({
         data: [
-          { did: contributorDid, contribution: 'founding_donor' },
-          { did: contributorDid, contribution: 'donor', details: { amount: 5000 } },
-          { did: contributorDid, contribution: 'contributor', details: { feature: 'dark-mode' } },
+          { did: contributorDid, contribution: 'donor', public: { isRegularGift: false }, internal: { amount: 5000 } },
+          { did: contributorDid, contribution: 'contributor', public: { feature: 'dark-mode' } },
+          { did: contributorDid, contribution: 'designer', public: { feature: 'ui-improvements' } },
         ],
       });
 
@@ -97,9 +97,9 @@ describe('Contributions API Tests', () => {
 
       expect(response.body.isContributor).toBe(true);
       expect(response.body.contributions).toHaveLength(3);
-      expect(response.body.contributions).toContain('founding_donor');
       expect(response.body.contributions).toContain('donor');
       expect(response.body.contributions).toContain('contributor');
+      expect(response.body.contributions).toContain('designer');
     });
   });
 });

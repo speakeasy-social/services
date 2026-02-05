@@ -146,7 +146,8 @@ describe('Stripe Webhook Tests', () => {
       });
       expect(contribution).not.toBeNull();
       expect(contribution?.contribution).toBe('donor');
-      expect(contribution?.details).toEqual({
+      expect(contribution?.public).toEqual({ isRegularGift: false });
+      expect(contribution?.internal).toEqual({
         amount: 5000,
         donationId: 'cs_test_456',
       });
@@ -160,7 +161,8 @@ describe('Stripe Webhook Tests', () => {
         data: {
           did: donorDid,
           contribution: 'donor',
-          details: { amount: 5000, donationId },
+          public: { isRegularGift: false },
+          internal: { amount: 5000, donationId },
         },
       });
 
