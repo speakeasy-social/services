@@ -62,7 +62,7 @@ model Contribution {
   id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   did          String
   contribution String
-  /// Public metadata visible in API responses (isRegularGift, appeal, feature)
+  /// Public metadata visible in API responses (recognition?, isRegularGift?, feature? - all optional, feature applicable to all types)
   public       Json?    @map("public_data")
   /// Internal metadata - MUST NEVER be returned in API responses (amount, donationId)
   internal     Json?    @map("internal_data")
