@@ -10,30 +10,30 @@ datasource db {
   url      = env("PRIVATE_PROFILES_DATABASE_URL")
 }
 
-model ProfileSession {
+model Session {
   id                String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
   authorDid         String
-  createdAt         DateTime  @default(now()) 
+  createdAt         DateTime  @default(now())
   expiresAt         DateTime
   revokedAt         DateTime?
 
   // Relationships
-  sessionKeys       ProfileSessionKey[] @relation("ProfileSessionToSessionKeys")
+  sessionKeys       SessionKey[] @relation("ProfileSessionToSessionKeys")
   privateProfiles   PrivateProfile[] @relation("ProfileSessionToProfiles")
 
   @@index([authorDid, createdAt(sort: Desc)], name: "idx_profile_sessions_current")
   @@map("profile_sessions")
 }
 
-model ProfileSessionKey {
+model SessionKey {
   sessionId    String @db.Uuid
   userKeyPairId String @db.Uuid
   recipientDid String
   encryptedDek Bytes
-  createdAt    DateTime  @default(now()) 
+  createdAt    DateTime  @default(now())
 
   // Relationships
-  session     ProfileSession @relation("ProfileSessionToSessionKeys", fields: [sessionId], references: [id])
+  session     Session @relation("ProfileSessionToSessionKeys", fields: [sessionId], references: [id])
 
   @@id([sessionId, recipientDid])
   @@index([recipientDid, sessionId, createdAt], name: "idx_profile_session_keys_by_recipient_session_created_at")
@@ -53,7 +53,7 @@ model PrivateProfile {
   updatedAt         DateTime  @updatedAt
 
   // Relationships
-  session           ProfileSession   @relation("ProfileSessionToProfiles", fields: [sessionId], references: [id])
+  session           Session   @relation("ProfileSessionToProfiles", fields: [sessionId], references: [id])
 
   @@index([authorDid], name: "idx_private_profiles_author")
   @@index([sessionId], name: "idx_private_profiles_session")

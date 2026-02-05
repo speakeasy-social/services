@@ -41,8 +41,8 @@ describe('Profile Session API Tests', () => {
   beforeEach(async () => {
     // Clear test data before each test
     await prisma.privateProfile.deleteMany();
-    await prisma.profileSessionKey.deleteMany();
-    await prisma.profileSession.deleteMany();
+    await prisma.sessionKey.deleteMany();
+    await prisma.session.deleteMany();
 
     mockBlueskySession({ did: authorDid, host: 'http://localhost:2583' });
   });
@@ -76,7 +76,7 @@ describe('Profile Session API Tests', () => {
       expect(typeof response.body.sessionId).toBe('string');
 
       // Verify session was created in database
-      const session = await prisma.profileSession.findFirst({
+      const session = await prisma.session.findFirst({
         where: { authorDid },
         include: { sessionKeys: true },
       });
@@ -112,7 +112,7 @@ describe('Profile Session API Tests', () => {
       expect(response.body).toHaveProperty('sessionId');
 
       // Verify both session keys were created
-      const sessionKeys = await prisma.profileSessionKey.findMany({
+      const sessionKeys = await prisma.sessionKey.findMany({
         where: { sessionId: response.body.sessionId },
       });
       expect(sessionKeys).toHaveLength(2);
@@ -153,7 +153,7 @@ describe('Profile Session API Tests', () => {
   describe('GET /xrpc/social.spkeasy.profileSession.getSession', () => {
     it('should retrieve current session key for user', async () => {
       // Create a session with a session key for the author
-      await prisma.profileSession.create({
+      await prisma.session.create({
         data: {
           authorDid,
           expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
@@ -187,7 +187,7 @@ describe('Profile Session API Tests', () => {
   describe('POST /xrpc/social.spkeasy.profileSession.addUser', () => {
     it('should add a user to existing session', async () => {
       // Create an existing session
-      const session = await prisma.profileSession.create({
+      const session = await prisma.session.create({
         data: {
           authorDid,
           expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
@@ -217,7 +217,7 @@ describe('Profile Session API Tests', () => {
       expect(response.body).toHaveProperty('success', true);
 
       // Verify the new session key was created
-      const sessionKeys = await prisma.profileSessionKey.findMany({
+      const sessionKeys = await prisma.sessionKey.findMany({
         where: { sessionId: session.id },
       });
       expect(sessionKeys).toHaveLength(2);
@@ -239,7 +239,7 @@ describe('Profile Session API Tests', () => {
   describe('POST /xrpc/social.spkeasy.profileSession.revoke', () => {
     it('should revoke an existing session', async () => {
       // Create a session
-      const session = await prisma.profileSession.create({
+      const session = await prisma.session.create({
         data: {
           authorDid,
           expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
@@ -263,7 +263,7 @@ describe('Profile Session API Tests', () => {
       expect(response.body).toHaveProperty('success', true);
 
       // Verify session was revoked
-      const revokedSession = await prisma.profileSession.findUnique({
+      const revokedSession = await prisma.session.findUnique({
         where: { id: session.id },
       });
       expect(revokedSession?.revokedAt).not.toBeNull();
@@ -279,7 +279,9 @@ describe('Profile Session API Tests', () => {
   });
 
   describe('POST /xrpc/social.spkeasy.profileSession.updateKeys', () => {
-    it('should queue key rotation job', async () => {
+    // NOTE: This endpoint requires service authentication (user-keys service only)
+    // Regular user auth is forbidden - this is a service-to-service call
+    it('should reject user auth (requires service auth from user-keys)', async () => {
       const updateKeysData = {
         prevKeyId: '00000000-0000-0000-0000-000000000001',
         newKeyId: '00000000-0000-0000-0000-000000000002',
@@ -287,14 +289,12 @@ describe('Profile Session API Tests', () => {
         newPublicKey: 'base64-encoded-new-public-key',
       };
 
-      const response = await request(server.express)
+      await request(server.express)
         .post('/xrpc/social.spkeasy.profileSession.updateKeys')
         .set('Authorization', `Bearer ${authorToken}`)
         .set('Content-Type', 'application/json')
         .send(updateKeysData)
-        .expect(200);
-
-      expect(response.body).toHaveProperty('success', true);
+        .expect(403);
     });
 
     it('should require authentication', async () => {
