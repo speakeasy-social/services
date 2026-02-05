@@ -80,3 +80,24 @@ export const putProfileDef: LexiconDoc = {
     },
   },
 };
+
+export const deleteProfileDef: LexiconDoc = {
+  lexicon: 1,
+  id: 'social.spkeasy.actor.deleteProfile',
+  defs: {
+    main: {
+      type: 'procedure',
+      description: 'Delete encrypted private profile',
+      output: {
+        encoding: 'application/json',
+        schema: {
+          type: 'object',
+          required: ['success'],
+          properties: {
+            success: { type: 'boolean' },
+          },
+        },
+      },
+    },
+  },
+};

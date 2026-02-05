@@ -58,4 +58,24 @@ export class ProfileService {
       });
     }
   }
+
+  async deleteProfile(authorDid: string) {
+    const profile = await prisma.privateProfile.findFirst({
+      where: {
+        authorDid,
+      },
+    });
+
+    if (!profile) {
+      throw new NotFoundError('Profile not found');
+    }
+
+    await prisma.privateProfile.delete({
+      where: {
+        id: profile.id,
+      },
+    });
+
+    return { success: true };
+  }
 }
