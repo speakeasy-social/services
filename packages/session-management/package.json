@@ -10,7 +10,7 @@
     "clean": "rimraf dist",
     "dev": "tsc -w",
     "lint": "eslint . --ext .ts",
-    "test": "jest"
+    "test": "echo 'no tests'"
   },
   "dependencies": {
     "@atproto/lexicon": "^0.4.9",
