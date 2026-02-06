@@ -116,7 +116,7 @@ export class FeatureService {
     const sessionParams: Stripe.Checkout.SessionCreateParams = {
       mode,
       ui_mode: 'embedded',
-      return_url: `${config.SPKEASY_HOST}/donate/thanks`,
+      return_url: `${config.SPKEASY_HOST}/supporters/add`,
       line_items: [{
         price_data,
         quantity: 1,
