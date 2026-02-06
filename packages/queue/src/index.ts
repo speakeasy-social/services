@@ -103,6 +103,16 @@ export class Queue {
     jobName: K,
     data: JobDataMap[K],
     config?: SendOptions,
+  ): Promise<void>;
+  static async publish(
+    jobName: string,
+    data: object,
+    config?: SendOptions,
+  ): Promise<void>;
+  static async publish(
+    jobName: string,
+    data: object,
+    config?: SendOptions,
   ): Promise<void> {
     const queue = this.getInstance();
     await queue.send(jobName, data, {
