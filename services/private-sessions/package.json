@@ -33,6 +33,7 @@
     "@speakeasy-services/crypto": "workspace:*",
     "@speakeasy-services/queue": "workspace:*",
     "@speakeasy-services/service-base": "workspace:*",
+    "@speakeasy-services/session-management": "workspace:*",
     "@types/express": "^4.17.21",
     "@types/uuid": "^10.0.0",
     "axios": "^1.9.0",

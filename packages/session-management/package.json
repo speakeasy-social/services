@@ -1,0 +1,29 @@
+{
+  "name": "@speakeasy-services/session-management",
+  "version": "0.1.0",
+  "description": "Shared session management functionality for Speakeasy services",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "clean": "rimraf dist",
+    "dev": "tsc -w",
+    "lint": "eslint . --ext .ts",
+    "test": "echo 'no tests'"
+  },
+  "dependencies": {
+    "@atproto/lexicon": "^0.4.9",
+    "@prisma/client": "^5.10.2",
+    "@speakeasy-services/common": "workspace:*",
+    "@speakeasy-services/service-base": "workspace:*",
+    "@speakeasy-services/queue": "workspace:*",
+    "@speakeasy-services/crypto": "workspace:*",
+    "crypto": "^1.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.24",
+    "typescript": "^5.3.3",
+    "prisma": "^5.10.2"
+  }
+} 

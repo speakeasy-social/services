@@ -1,9 +1,9 @@
 -- CreateExtension
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA public;
 
 -- CreateTable
 CREATE TABLE "sessions" (
-	"id" UUID NOT NULL DEFAULT uuid_generate_v4(),
+	"id" UUID NOT NULL DEFAULT public.uuid_generate_v4(),
 	"authorDid" TEXT NOT NULL,
 	"createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	"expiresAt" TIMESTAMP(3) NOT NULL,
@@ -23,7 +23,7 @@ CREATE TABLE "session_keys" (
 
 -- CreateTable
 CREATE TABLE "encrypted_posts" (
-	"id" UUID NOT NULL DEFAULT uuid_generate_v4(),
+	"id" UUID NOT NULL DEFAULT public.uuid_generate_v4(),
 	"uri" TEXT NOT NULL,
 	"rkey" TEXT NOT NULL,
 	"sessionId" UUID NOT NULL,
