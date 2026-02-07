@@ -29,6 +29,43 @@ docker exec -it <container-id> npm run invite:add -- <code> <key> [value] [total
 
 If you've borked your database `pnpm dev:setup` will wipe and reinitialise it
 
+### Add Contribution
+
+Records a user contribution to the project (for testimonials/supporter recognition).
+
+```bash
+# Development
+cd services/service-admin
+pnpm cli:addContribution <did> <contribution> [json]
+
+# Production
+docker exec -it <container-id> npm run cli:addContribution -- <did> <contribution> [json]
+```
+
+**Arguments:**
+- `did|handle` - User DID (`did:plc:...`) or handle (`@user.bsky.social` or `user.bsky.social`)
+- `contribution` - One of: `donor`, `contributor`, `designer`, `engineer`, `testing`
+- `json` - Optional JSON object with additional data
+
+**JSON fields:**
+- `feature` - Feature name (any contribution type)
+- `isRegularGift` - Regular/recurring donation flag (donor only)
+- `recognition` - Recognition level e.g. "Founding Donor" (donor only)
+- `amount` - Amount in cents (donor only, internal)
+
+**Examples:**
+```bash
+pnpm cli:addContribution did:plc:abc123 donor
+pnpm cli:addContribution @user.bsky.social donor
+pnpm cli:addContribution user.bsky.social donor '{"isRegularGift": true}'
+pnpm cli:addContribution did:plc:abc123 donor '{"amount": 5000}'
+pnpm cli:addContribution did:plc:abc123 donor '{"recognition": "Founding Donor"}'
+pnpm cli:addContribution @user.bsky.social contributor '{"feature": "dark-mode"}'
+pnpm cli:addContribution did:plc:abc123 designer
+pnpm cli:addContribution did:plc:abc123 engineer '{"feature": "api-integration"}'
+pnpm cli:addContribution did:plc:abc123 testing '{"feature": "bug-fixes"}'
+```
+
 [Database ER Diagrams](DATABASE_DIAGRAMS.md)
 
 ## Project Structure
