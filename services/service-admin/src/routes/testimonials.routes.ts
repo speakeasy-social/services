@@ -14,6 +14,7 @@ import {
   createTestimonialDef,
   deleteTestimonialDef,
   listTestimonialsDef,
+  updateTestimonialDef,
 } from '../lexicon/types/testimonials.js';
 import { ContributionService } from '../services/contribution.service.js';
 import { TestimonialService } from '../services/testimonial.service.js';
@@ -98,6 +99,41 @@ const methodHandlers = {
     };
   },
 
+  'social.spkeasy.actor.updateTestimonial': async (
+    req: ExtendedRequest,
+  ): RequestHandlerReturn => {
+    // Validate input against lexicon
+    validateAgainstLexicon(updateTestimonialDef, req.body);
+
+    const { id, content } = req.body as { id: string; content: TestimonialContent };
+
+    // Validate content.text is provided and within limits
+    if (!content?.text) {
+      throw new ValidationError('content.text is required');
+    }
+    if (content.text.length > 300) {
+      throw new ValidationError('content.text must be under 300 characters');
+    }
+
+    // Fetch testimonial to check ownership
+    const testimonial = await testimonialService.getTestimonial(id);
+    if (!testimonial) {
+      throw new NotFoundError('Testimonial not found');
+    }
+
+    // Authorize update (checks user.did matches testimonial.did)
+    authorize(req, 'update', 'testimonial', { did: testimonial.did });
+
+    const updated = await testimonialService.updateTestimonial(id, content);
+
+    return {
+      body: {
+        id: updated.id,
+        createdAt: updated.createdAt.toISOString(),
+      },
+    };
+  },
+
   'social.spkeasy.actor.deleteTestimonial': async (
     req: ExtendedRequest,
   ): RequestHandlerReturn => {
@@ -155,6 +191,9 @@ export const methods: Record<MethodName, { handler: RequestHandler }> = {
   },
   'social.spkeasy.actor.listTestimonials': {
     handler: methodHandlers['social.spkeasy.actor.listTestimonials'],
+  },
+  'social.spkeasy.actor.updateTestimonial': {
+    handler: methodHandlers['social.spkeasy.actor.updateTestimonial'],
   },
   'social.spkeasy.actor.deleteTestimonial': {
     handler: methodHandlers['social.spkeasy.actor.deleteTestimonial'],

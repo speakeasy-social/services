@@ -122,6 +122,25 @@ export class TestimonialService {
   }
 
   /**
+   * Updates the content of a testimonial by ID without authorization checks.
+   * Authorization should be performed by the caller before invoking this method.
+   * @param id - The ID of the testimonial to update
+   * @param content - The new content (text and optional facets)
+   * @returns The updated testimonial
+   */
+  async updateTestimonial(
+    id: string,
+    content: TestimonialContent,
+  ): Promise<Testimonial> {
+    return prisma.testimonial.update({
+      where: { id },
+      data: {
+        content: content as Prisma.InputJsonValue,
+      },
+    });
+  }
+
+  /**
    * Soft deletes a testimonial by ID without authorization checks.
    * Authorization should be performed by the caller before invoking this method.
    * @param id - The ID of the testimonial to delete

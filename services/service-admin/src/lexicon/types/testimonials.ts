@@ -136,6 +136,42 @@ export const listTestimonialsDef: LexiconDoc = {
   },
 };
 
+export const updateTestimonialDef: LexiconDoc = {
+  lexicon: 1,
+  id: 'social.spkeasy.actor.updateTestimonial',
+  defs: {
+    main: {
+      type: 'procedure',
+      description: 'Update the content of an existing testimonial',
+      input: {
+        encoding: 'application/json',
+        schema: {
+          type: 'object',
+          required: ['id', 'content'],
+          properties: {
+            id: { type: 'string', description: 'UUID of testimonial to update' },
+            content: {
+              type: 'unknown',
+              description: 'Content object with text (required, max 300 chars) and optional facets array',
+            },
+          },
+        },
+      },
+      output: {
+        encoding: 'application/json',
+        schema: {
+          type: 'object',
+          required: ['id', 'createdAt'],
+          properties: {
+            id: { type: 'string', description: 'UUID of updated testimonial' },
+            createdAt: { type: 'string', format: 'datetime' },
+          },
+        },
+      },
+    },
+  },
+};
+
 export const deleteTestimonialDef: LexiconDoc = {
   lexicon: 1,
   id: 'social.spkeasy.actor.deleteTestimonial',

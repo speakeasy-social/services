@@ -276,6 +276,10 @@ const userAbilities = [
     userProperty: 'did',
     matchesRecordProperty: 'did',
   }),
+  canIf('update', 'testimonial', {
+    userProperty: 'did',
+    matchesRecordProperty: 'did',
+  }),
   can('list', 'testimonial'),
   can('get', 'testimonial'),
 

@@ -231,6 +231,129 @@ describe('Testimonials API Tests', () => {
     });
   });
 
+  describe('updateTestimonial endpoint', () => {
+    it('should return 404 for non-existent testimonial', async () => {
+      const response = await request(server.express)
+        .post('/xrpc/social.spkeasy.actor.updateTestimonial')
+        .send({ id: '00000000-0000-0000-0000-000000000000', content: { text: 'Updated' } })
+        .set('Authorization', `Bearer ${contributorToken}`)
+        .expect(404);
+
+      expect(response.body.error).toBe('NotFoundError');
+      expect(response.body.message).toBe('Testimonial not found');
+    });
+
+    it('should return 403 for non-author', async () => {
+      await prisma.contribution.createMany({
+        data: [
+          { did: contributorDid, contribution: 'donor', public: { isRegularGift: false }, internal: { amount: 1000 } },
+          { did: anotherContributorDid, contribution: 'donor', public: { isRegularGift: false }, internal: { amount: 500 } },
+        ],
+      });
+
+      const testimonial = await prisma.testimonial.create({
+        data: { did: contributorDid, content: { text: 'My testimonial' } },
+      });
+
+      mockBlueskySession({ did: anotherContributorDid, host: 'http://localhost:2583' });
+
+      const response = await request(server.express)
+        .post('/xrpc/social.spkeasy.actor.updateTestimonial')
+        .send({ id: testimonial.id, content: { text: 'Hacked!' } })
+        .set('Authorization', `Bearer ${anotherContributorToken}`)
+        .expect(403);
+
+      expect(response.body.error).toBe('Forbidden');
+    });
+
+    it('should succeed for author and update content', async () => {
+      await prisma.contribution.create({
+        data: { did: contributorDid, contribution: 'contributor', public: { feature: 'test' } },
+      });
+
+      const testimonial = await prisma.testimonial.create({
+        data: { did: contributorDid, content: { text: 'Original text' } },
+      });
+
+      const response = await request(server.express)
+        .post('/xrpc/social.spkeasy.actor.updateTestimonial')
+        .send({ id: testimonial.id, content: { text: 'Updated text' } })
+        .set('Authorization', `Bearer ${contributorToken}`)
+        .expect(200);
+
+      expect(response.body.id).toBe(testimonial.id);
+      expect(response.body.createdAt).toBeDefined();
+
+      // Verify content was updated in DB
+      const updated = await prisma.testimonial.findUnique({
+        where: { id: testimonial.id },
+      });
+      expect((updated?.content as { text: string }).text).toBe('Updated text');
+    });
+
+    it('should validate content.text is required', async () => {
+      await prisma.contribution.create({
+        data: { did: contributorDid, contribution: 'contributor', public: { feature: 'test' } },
+      });
+
+      const testimonial = await prisma.testimonial.create({
+        data: { did: contributorDid, content: { text: 'Original' } },
+      });
+
+      const response = await request(server.express)
+        .post('/xrpc/social.spkeasy.actor.updateTestimonial')
+        .send({ id: testimonial.id, content: {} })
+        .set('Authorization', `Bearer ${contributorToken}`)
+        .expect(400);
+
+      expect(response.body.error).toBe('ValidationError');
+    });
+
+    it('should validate content.text max length 300', async () => {
+      await prisma.contribution.create({
+        data: { did: contributorDid, contribution: 'contributor', public: { feature: 'test' } },
+      });
+
+      const testimonial = await prisma.testimonial.create({
+        data: { did: contributorDid, content: { text: 'Original' } },
+      });
+
+      const longText = 'a'.repeat(301);
+      const response = await request(server.express)
+        .post('/xrpc/social.spkeasy.actor.updateTestimonial')
+        .send({ id: testimonial.id, content: { text: longText } })
+        .set('Authorization', `Bearer ${contributorToken}`)
+        .expect(400);
+
+      expect(response.body.error).toBe('ValidationError');
+    });
+
+    it('should update facets', async () => {
+      await prisma.contribution.create({
+        data: { did: contributorDid, contribution: 'contributor', public: { feature: 'test' } },
+      });
+
+      const testimonial = await prisma.testimonial.create({
+        data: { did: contributorDid, content: { text: 'Original' } },
+      });
+
+      const facets = [{ index: { byteStart: 0, byteEnd: 5 }, features: [{ $type: 'app.bsky.richtext.facet#tag', tag: 'updated' }] }];
+      const response = await request(server.express)
+        .post('/xrpc/social.spkeasy.actor.updateTestimonial')
+        .send({ id: testimonial.id, content: { text: '#updated post', facets } })
+        .set('Authorization', `Bearer ${contributorToken}`)
+        .expect(200);
+
+      expect(response.body.id).toBe(testimonial.id);
+
+      const updated = await prisma.testimonial.findUnique({
+        where: { id: testimonial.id },
+      });
+      expect((updated?.content as { text: string; facets?: unknown[] }).text).toBe('#updated post');
+      expect((updated?.content as { text: string; facets?: unknown[] }).facets).toEqual(facets);
+    });
+  });
+
   describe('deleteTestimonial endpoint', () => {
     it('should return 404 for non-existent testimonial', async () => {
       const response = await request(server.express)

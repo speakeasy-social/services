@@ -2,6 +2,7 @@ import { getFeaturesDef, applyInviteCodeDef, donateDef } from './types/features.
 import {
   createTestimonialDef,
   listTestimonialsDef,
+  updateTestimonialDef,
   deleteTestimonialDef,
   checkContributionDef,
 } from './types/testimonials.js';
@@ -12,6 +13,7 @@ export const lexicons = [
   donateDef,
   createTestimonialDef,
   listTestimonialsDef,
+  updateTestimonialDef,
   deleteTestimonialDef,
   checkContributionDef,
 ];
