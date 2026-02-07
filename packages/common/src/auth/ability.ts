@@ -1,6 +1,6 @@
 import { Response, NextFunction } from 'express';
 import { AuthorizationError } from '../errors.js';
-import { User, Service, ExtendedRequest } from '../express-extensions.js';
+import { User, Service, PublicUser, ExtendedRequest } from '../express-extensions.js';
 
 /**
  * Resolve a potentially nested property path on an object.
@@ -110,6 +110,8 @@ export type Subject =
   | 'feature'
   | 'notification'
   | 'reaction'
+  | 'testimonial'
+  | 'contribution'
   | 'invite_code'
   | 'media'
   | 'key';
@@ -265,6 +267,28 @@ const userAbilities = [
   // Media creation doesn't require ownership checks (usage tracked elsewhere)
   can('create', 'media'),
 
+  // Testimonials - users can create/delete their own, list/get are public but also granted to users
+  canIf('create', 'testimonial', {
+    userProperty: 'did',
+    matchesRecordProperty: 'did',
+  }),
+  canIf('delete', 'testimonial', {
+    userProperty: 'did',
+    matchesRecordProperty: 'did',
+  }),
+  canIf('update', 'testimonial', {
+    userProperty: 'did',
+    matchesRecordProperty: 'did',
+  }),
+  can('list', 'testimonial'),
+  can('get', 'testimonial'),
+
+  // Contribution - users can check their own contribution status
+  canIf('get', 'contribution', {
+    userProperty: 'did',
+    matchesRecordProperty: 'did',
+  }),
+
   // Users can manage their own keys
   // user.did must match record.authorDid (user owns the key)
   canIf('*', 'key', {
@@ -317,6 +341,15 @@ const serviceAbilities = [
 ];
 
 /**
+ * Abilities for unauthenticated (public) users.
+ * These are intentionally limited to read-only operations on public data.
+ */
+const publicAbilities = [
+  can('list', 'testimonial'),
+  can('get', 'testimonial'),
+];
+
+/**
  * Middleware that sets up the ability based on whether the request is from a user or service.
  * Attaches the appropriate set of authorization abilities to the request
  */
@@ -328,6 +361,26 @@ export async function authorizationMiddleware(req: ExtendedRequest, res: Respons
     req.abilities = serviceAbilities;
   } else {
     throw new AuthorizationError('Request must be authenticated');
+  }
+
+  next();
+}
+
+/**
+ * Optional authorization middleware - allows unauthenticated requests to pass through.
+ * For authenticated requests, it sets up abilities as normal.
+ * For unauthenticated requests, sets up a mock public user with limited abilities.
+ * Useful for services with both public and protected endpoints.
+ */
+export async function optionalAuthorizationMiddleware(req: ExtendedRequest, res: Response, next: NextFunction) {
+  if (req.user?.type === 'user') {
+    req.abilities = userAbilities;
+  } else if (req.user?.type === 'service') {
+    req.abilities = serviceAbilities;
+  } else {
+    // Set mock public user so authorize() can work consistently
+    req.user = { type: 'public', did: 'unauthenticated' };
+    req.abilities = publicAbilities;
   }
 
   next();
@@ -393,7 +446,7 @@ export function authorize(
 
 function isAuthorized(
   abilities: Ability[],
-  user: User | Service,
+  user: User | Service | PublicUser,
   action: Action,
   subject: Subject,
   record?: Record<string, unknown>,

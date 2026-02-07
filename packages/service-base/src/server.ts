@@ -175,8 +175,8 @@ export class Server {
       },
     );
 
-    // Catch-all route handler for unmatched routes
-    app.use('*', () => {
+    // Catch-all route handler for unmatched XRPC routes
+    app.use('/xrpc/*', () => {
       throw new NotFoundError('Not Found');
     });
 

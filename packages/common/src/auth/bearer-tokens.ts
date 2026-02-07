@@ -90,6 +90,35 @@ export const authenticateToken = async (req: any, res: any, next: any) => {
 };
 
 /**
+ * Optional authentication middleware - doesn't throw if no auth header present.
+ * Useful for endpoints that can work with or without authentication.
+ * If auth header is present, it will be validated; if invalid, it throws.
+ * If no auth header, req.user will be undefined and request proceeds.
+ */
+export const optionalAuthenticateToken = async (req: any, res: any, next: any) => {
+  const authHeader = Array.isArray(req.headers.authorization)
+    ? req.headers.authorization[0]
+    : req.headers.authorization;
+
+  // No auth header - proceed without authentication
+  if (!authHeader?.startsWith('Bearer ')) {
+    next();
+    return;
+  }
+
+  // Auth header present - validate it
+  const token = getBearerToken(req);
+
+  if (token.startsWith('api-key:')) {
+    authenticateService(req, token);
+  } else {
+    await authenticateUser(req, token);
+  }
+
+  next();
+};
+
+/**
  * Generates a full API key for a given service.
  *
  * @param serviceName - The name of the service (e.g. "private-sessions", "trusted-users", "user-keys")

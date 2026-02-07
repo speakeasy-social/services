@@ -45,6 +45,13 @@ export class AuthorizationError extends ServiceError {
   }
 }
 
+export class ForbiddenError extends ServiceError {
+  constructor(message: string) {
+    super(message, 403);
+    this.name = 'ForbiddenError';
+  }
+}
+
 export class DatabaseError extends ServiceError {
   constructor(message: string) {
     super(message, 500);
