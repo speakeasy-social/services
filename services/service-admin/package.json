@@ -13,7 +13,7 @@
   "scripts": {
     "prebuild": "prisma generate",
     "build": "prisma generate && tsc --build && cp -r src/generated dist",
-    "postbuild": "chmod +x dist/cli/addInvite.js && chmod +x dist/cli/addContribution.js",
+    "postbuild": "chmod +x dist/cli/addInvite.js && chmod +x dist/cli/addContribution.js && chmod +x dist/cli/seedDevData.js",
     "typecheck": "tsc --noEmit",
     "dev": "tsx watch src/api.ts",
     "dev:prisma": "prisma generate --watch",
@@ -26,7 +26,8 @@
     "prisma:migrate": "prisma migrate deploy",
     "prisma:generate": "prisma generate",
     "cli:addInvite": "node dist/cli/addInvite.js",
-    "cli:addContribution": "node dist/cli/addContribution.js"
+    "cli:addContribution": "node dist/cli/addContribution.js",
+    "cli:seedDevData": "node dist/cli/seedDevData.js"
   },
   "bin": {
     "addInvite": "./dist/cli/addInvite.js",

@@ -32,8 +32,29 @@ if [ "$ENV" != "test" ]; then
     echo "Adding dev invite code..."
     pnpm invite:add dev private-posts true 20
     echo
-    echo "👉 Use the invite code \"dev\" to activate private posts" 
+    echo "👉 Use the invite code \"dev\" to activate private posts"
     echo
+
+    echo "Seeding dev data..."
+
+    # Try adding the first contribution to check if AT Proto PDS is reachable
+    # If it fails, skip all contributions and testimonials (non-critical seed data)
+    if pnpm contribution:add alice.test testing; then
+        pnpm contribution:add bob.test engineer '{"feature": "Private Profiles"}'
+        pnpm contribution:add bob.test designer
+        pnpm contribution:add carla.test donor '{"recognition": "Founding Donor"}'
+        pnpm contribution:add carla.test donor '{"isRegularGift": true}'
+
+        # Seed testimonials (looks up DIDs from contribution table)
+        echo "  Adding testimonials..."
+        node services/service-admin/dist/cli/seedDevData.js
+    else
+        echo ""
+        echo "Could not seed contributions and testimonials."
+        echo "    To seed this data, start the AT Protocol development environment and rerun:"
+        echo "    pnpm dev:setup"
+        echo ""
+    fi
 fi
 
 # Setup pgboss
