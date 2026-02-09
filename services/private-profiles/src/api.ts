@@ -1,6 +1,6 @@
 import jsonwebtoken from 'jsonwebtoken';
 
-import { Server } from '@speakeasy-services/service-base';
+import { Server, ServerOptions } from '@speakeasy-services/service-base';
 import config from './config.js';
 import { profileSessionMethods, profileMethods } from './routes/index.js';
 import {
@@ -25,14 +25,8 @@ import NodeCache from 'node-cache';
 // Cache following DIDs for 10 minutes
 export const cache = new NodeCache({ stdTTL: 600 });
 
-// Custom type to extend ServerOptions with our dbMetrics
-type PrivateSessionsServerOptions = {
-  name: string;
-  port: number;
-  methods: Record<string, { handler: any }>;
-  middleware?: any[];
-  lexicons?: any[];
-  healthCheck: () => Promise<void>;
+// Extend ServerOptions with our dbMetrics
+type PrivateProfilesServerOptions = ServerOptions & {
   dbMetrics: {
     getTotalQueryDuration: typeof getTotalQueryDuration;
     getQueryDurationProfile: typeof getQueryDurationProfile;
@@ -62,7 +56,7 @@ const server = new Server({
     getQueryDurationProfile,
     cleanupQueryTracking,
   },
-} as PrivateSessionsServerOptions);
+} as PrivateProfilesServerOptions);
 
 // Initialize and start the queue before starting the server
 Queue.start()

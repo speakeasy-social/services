@@ -16,7 +16,8 @@ const requestDurations = new Map<string, number>();
 // Track individual query durations for each request
 const requestQueryDurations = new Map<string, number[]>();
 
-(prisma.$on as any)('query', (e: Prisma.QueryEvent) => {
+// Type assertion needed because @prisma/client event types are incomplete
+(prisma.$on as (event: 'query', callback: (e: Prisma.QueryEvent) => void) => void)('query', (e: Prisma.QueryEvent) => {
   if (process.env.PRISMA_LOG) {
     console.log('Query Event Fired:', e.query);
     console.log('Query Duration:', e.duration + 'ms');
@@ -95,8 +96,30 @@ export function cleanupQueryTracking(requestId: string): void {
   globalRequestId.clear(requestId);
 }
 
+// Request type with headers
+interface RequestWithHeaders {
+  headers: Record<string, string | undefined>;
+  getTotalQueryDuration?: () => number;
+  getQueryDurationProfile?: () => string;
+  cleanupQueryTracking?: () => void;
+}
+
+// Response type with event emitter and locals
+interface ResponseWithLocals {
+  locals?: {
+    getTotalQueryDuration?: () => number;
+    getQueryDurationProfile?: () => string;
+    cleanupQueryTracking?: () => void;
+  };
+  on: (event: string, callback: () => void) => void;
+}
+
 // Middleware to initialize query duration tracking for a request
-export function queryTrackerMiddleware(req: any, res: any, next: () => void) {
+export function queryTrackerMiddleware(
+  req: RequestWithHeaders,
+  res: ResponseWithLocals,
+  next: () => void,
+) {
   // Generate a unique request ID if not already present
   const requestId =
     req.headers['x-request-id'] ||
