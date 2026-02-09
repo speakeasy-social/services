@@ -22,10 +22,12 @@ const serviceSchema = {
 } as const;
 
 // Create and validate the config
-const config = validateEnv(z.object(serviceSchema));
+const config = validateEnv(z.object(serviceSchema)) as z.infer<
+  ReturnType<typeof z.object<typeof serviceSchema>>
+> & { PRIVATE_SESSIONS_DATABASE_URL: string };
 
 // Set PRIVATE_SESSIONS_DATABASE_URL using getDatabaseUrl
-(config as any).PRIVATE_SESSIONS_DATABASE_URL = getDatabaseUrl(
+config.PRIVATE_SESSIONS_DATABASE_URL = getDatabaseUrl(
   'private_sessions',
   'PRIVATE_SESSIONS_DATABASE_URL',
 );
