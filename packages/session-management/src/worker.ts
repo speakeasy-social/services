@@ -1,6 +1,6 @@
 import { Worker } from '@speakeasy-services/service-base';
 import { getServiceJobName, JOB_NAMES } from '@speakeasy-services/queue';
-import { SessionPrismaClient } from './session.service.js';
+import { SessionPrismaClient, SessionKeyModel } from './session.service.js';
 import { recryptDEK } from '@speakeasy-services/crypto';
 import {
   createAddRecipientToSessionHandler,
@@ -52,10 +52,10 @@ export class SessionJobHandlers {
         let hasMore = true;
 
         while (hasMore) {
-          const sessionKeys = await this.prisma.sessionKey.findMany({
+          const sessionKeys = (await this.prisma.sessionKey.findMany({
             where: { userKeyPairId: prevKeyId },
             take: BATCH_SIZE,
-          });
+          })) as SessionKeyModel[];
 
           if (sessionKeys.length === 0) {
             hasMore = false;
