@@ -1,9 +1,4 @@
-import { EncryptedPost } from '../generated/prisma-client/index.js';
-import {
-  createView,
-  createListView,
-  safeBtoa,
-} from '@speakeasy-services/common';
+import { createListView, safeBtoa } from '@speakeasy-services/common';
 import { AnnotatedEncryptedPost } from '../services/privatePosts.service.js';
 
 export type EncryptedPostView = {

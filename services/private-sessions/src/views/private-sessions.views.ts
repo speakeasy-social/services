@@ -1,4 +1,4 @@
-import { Session, SessionKey } from '../generated/prisma-client/index.js';
+import { SessionKey } from '../generated/prisma-client/index.js';
 import {
   createView,
   createListView,
