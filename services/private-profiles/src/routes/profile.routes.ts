@@ -9,7 +9,6 @@ import {
   getProfileDef,
   getProfilesDef,
   putProfileDef,
-  deleteProfileDef,
 } from '../lexicon/types/profile.js';
 import { toProfileView, toProfileListView } from '../views/profile.views.js';
 
@@ -18,7 +17,7 @@ const profileService = new ProfileService();
 const methodHandlers = {
   'social.spkeasy.actor.getProfile': async (
     req: ExtendedRequest,
-  ): Promise<RequestHandlerReturn> => {
+  ): RequestHandlerReturn => {
     validateAgainstLexicon(getProfileDef, req.query);
     const viewerDid = getSessionDid(req);
     const targetDid = req.query.did as string;
@@ -27,7 +26,7 @@ const methodHandlers = {
   },
   'social.spkeasy.actor.getProfiles': async (
     req: ExtendedRequest,
-  ): Promise<RequestHandlerReturn> => {
+  ): RequestHandlerReturn => {
     validateAgainstLexicon(getProfilesDef, req.query);
     const viewerDid = getSessionDid(req);
     const rawDids = req.query.dids;
@@ -37,7 +36,7 @@ const methodHandlers = {
   },
   'social.spkeasy.actor.putProfile': async (
     req: ExtendedRequest,
-  ): Promise<RequestHandlerReturn> => {
+  ): RequestHandlerReturn => {
     validateAgainstLexicon(putProfileDef, req.body);
     const did = getSessionDid(req);
     await profileService.updateProfile(did, req.body);
@@ -45,7 +44,7 @@ const methodHandlers = {
   },
   'social.spkeasy.actor.deleteProfile': async (
     req: ExtendedRequest,
-  ): Promise<RequestHandlerReturn> => {
+  ): RequestHandlerReturn => {
     const did = getSessionDid(req);
     const result = await profileService.deleteProfile(did);
     return { body: result };

@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach } from 'vitest';
-import server from '../../../dist/server.js';
-import { PrismaClient } from '../../../dist/generated/prisma-client/index.js';
+import server from '../../../src/server.js';
+import { PrismaClient } from '../../../src/generated/prisma-client/index.js';
 import {
   mockBlueskySession,
   cleanupBlueskySessionMocks,
