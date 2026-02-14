@@ -561,8 +561,6 @@ export class PrivatePostsService {
   }
 
   async deletePost(uri: string) {
-    const authorDid = getDIDFromUri(uri);
-
     await prisma.$transaction(async (tx) => {
       const post = await tx.encryptedPost.findFirst({
         where: {

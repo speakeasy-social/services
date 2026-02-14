@@ -175,7 +175,7 @@ const methodHandlers = {
     };
   },
   'social.spkeasy.privatePost.preAuth': async (
-    req: ExtendedRequest,
+    _req: ExtendedRequest,
   ): RequestHandlerReturn => {
     // NOOP
     // This route is called to cause the user's bluesky session

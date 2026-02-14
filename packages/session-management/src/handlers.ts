@@ -1,6 +1,15 @@
 import { speakeasyApiRequest } from '@speakeasy-services/common';
 import { recryptDEK } from '@speakeasy-services/crypto';
-import type { SessionPrismaClient } from './session.service.js';
+import type {
+  SessionPrismaClient,
+  SessionKeyModel,
+  SessionModel,
+} from './session.service.js';
+
+// Type for session with sessionKeys included
+interface SessionWithKeys extends SessionModel {
+  sessionKeys: SessionKeyModel[];
+}
 
 // Job types
 export interface AddRecipientToSessionJob {
@@ -77,7 +86,8 @@ export function createAddRecipientToSessionHandler(
     });
 
     const sessionsWithAuthorKeys = sessions.filter(
-      (session: { sessionKeys: unknown[] }) => session.sessionKeys.length > 0,
+      (session): session is SessionWithKeys =>
+        !!session.sessionKeys && session.sessionKeys.length > 0,
     );
 
     if (sessionsWithAuthorKeys.length === 0) {
@@ -88,32 +98,28 @@ export function createAddRecipientToSessionHandler(
     const sessionsToProcess = currentSessionOnly
       ? [
           sessionsWithAuthorKeys.sort(
-            (a: { createdAt: Date }, b: { createdAt: Date }) =>
-              b.createdAt.getTime() - a.createdAt.getTime(),
+            (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
           )[0],
         ]
       : sessionsWithAuthorKeys;
 
     // Remove from the set any existing session keys
-    const existingSessionKeys = await prisma.sessionKey.findMany({
+    const existingSessionKeys = (await prisma.sessionKey.findMany({
       where: {
         recipientDid,
         sessionId: {
-          in: sessionsToProcess.map(
-            (session: { id: string }) => session.id,
-          ),
+          in: sessionsToProcess.map((session) => session.id),
         },
       },
       select: {
         sessionId: true,
       },
-    });
+    })) as { sessionId: string }[];
 
     const sessionKeysNeeded = sessionsToProcess.filter(
-      (session: { id: string }) =>
+      (session) =>
         !existingSessionKeys.some(
-          (existing: { sessionId: string }) =>
-            existing.sessionId === session.id,
+          (existing) => existing.sessionId === session.id,
         ),
     );
 
@@ -122,9 +128,7 @@ export function createAddRecipientToSessionHandler(
     }
 
     const sessionKeyPairIds = sessionKeysNeeded.map(
-      (session: {
-        sessionKeys: { userKeyPairId: string; encryptedDek: Uint8Array }[];
-      }) => session.sessionKeys[0].userKeyPairId,
+      (session) => session.sessionKeys[0].userKeyPairId,
     );
 
     // Get the author's private keys and the recipient's public key
@@ -161,36 +165,28 @@ export function createAddRecipientToSessionHandler(
 
     const newSessionKeys = (
       await Promise.all(
-        sessionKeysNeeded.map(
-          async (session: {
-            id: string;
-            sessionKeys: {
-              userKeyPairId: string;
-              encryptedDek: Uint8Array;
-            }[];
-          }) => {
-            const privateKey = authorPrivateKeysMap.get(
-              session.sessionKeys[0].userKeyPairId,
-            );
+        sessionKeysNeeded.map(async (session) => {
+          const privateKey = authorPrivateKeysMap.get(
+            session.sessionKeys[0].userKeyPairId,
+          );
 
-            if (!privateKey) {
-              return null;
-            }
+          if (!privateKey) {
+            return null;
+          }
 
-            const encryptedDek = await recryptDEK(
-              session.sessionKeys[0],
-              privateKey,
-              recipientPublicKeyBody.publicKey,
-            );
+          const encryptedDek = await recryptDEK(
+            session.sessionKeys[0],
+            privateKey,
+            recipientPublicKeyBody.publicKey,
+          );
 
-            return {
-              sessionId: session.id,
-              recipientDid,
-              encryptedDek,
-              userKeyPairId: recipientPublicKeyBody.userKeyPairId,
-            };
-          },
-        ),
+          return {
+            sessionId: session.id,
+            recipientDid,
+            encryptedDek,
+            userKeyPairId: recipientPublicKeyBody.userKeyPairId,
+          };
+        }),
       )
     ).filter((val) => !!val);
 

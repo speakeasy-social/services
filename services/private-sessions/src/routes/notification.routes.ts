@@ -5,7 +5,6 @@ import {
   RequestHandlerReturn,
   ExtendedRequest,
   validateAgainstLexicon,
-  User,
   getSessionDid,
 } from '@speakeasy-services/common';
 import { toNotificationListView } from '../views/notification.views.js';

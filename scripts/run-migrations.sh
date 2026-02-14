@@ -16,6 +16,7 @@ export TRUSTED_USERS_DATABASE_URL="postgresql://speakeasy:speakeasy@localhost:54
 export PRIVATE_SESSIONS_DATABASE_URL="postgresql://speakeasy:speakeasy@localhost:5496/${DB_NAME}?schema=private_sessions"
 export SERVICE_ADMIN_DATABASE_URL="postgresql://speakeasy:speakeasy@localhost:5496/${DB_NAME}?schema=service_admin"
 export MEDIA_DATABASE_URL="postgresql://speakeasy:speakeasy@localhost:5496/${DB_NAME}?schema=media"
+export PRIVATE_PROFILES_DATABASE_URL="postgresql://speakeasy:speakeasy@localhost:5496/${DB_NAME}?schema=private_profiles"
 export DATABASE_URL="postgresql://speakeasy:speakeasy@localhost:5496/${DB_NAME}?schema=pgboss"
 
 # Run migrations for each service
@@ -32,4 +33,7 @@ echo "Running migrations for service-admin service..."
 pnpm --filter @speakeasy-services/service-admin prisma:migrate 
 
 echo "Running migrations for media service..."
-pnpm --filter @speakeasy-services/media prisma:migrate 
+pnpm --filter @speakeasy-services/media prisma:migrate
+
+echo "Running migrations for private-profiles service..."
+pnpm --filter @speakeasy-services/private-profiles prisma:migrate

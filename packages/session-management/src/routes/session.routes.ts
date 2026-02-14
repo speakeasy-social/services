@@ -6,7 +6,6 @@ import {
   ExtendedRequest,
   validateAgainstLexicon,
   User,
-  safeBtoa,
   Subject,
 } from '@speakeasy-services/common';
 import { toSessionKeyView } from '../views/session.views.js';
@@ -80,7 +79,7 @@ export function createSessionRoutes(config: SessionRouteConfig) {
         (req.user as User)!.did!,
       );
 
-      authorize(req, 'get', authorizationRecord, sessionKey as unknown as Record<string, unknown>);
+      authorize(req, 'get_private', authorizationRecord, sessionKey);
 
       return {
         body: { encryptedSessionKey: toSessionKeyView(sessionKey) },
