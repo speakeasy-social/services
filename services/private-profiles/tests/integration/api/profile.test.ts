@@ -7,6 +7,7 @@ import {
   verifyBlueskySessionMocks,
   generateTestToken,
 } from '@speakeasy-services/test-utils';
+import { safeBtoa } from '@speakeasy-services/common';
 import request from 'supertest';
 
 const authorDid = 'did:example:profile-author';
@@ -27,17 +28,6 @@ describe('Profile API Tests', () => {
 
   afterAll(async () => {
     await prisma.$disconnect();
-    const originalExit = process.exit;
-    process.exit = (() => {}) as never;
-
-    try {
-      // @ts-ignore - shutdown is private but we need it for tests
-      await server.shutdown();
-    } catch {
-      // Ignore shutdown errors during testing
-    } finally {
-      process.exit = originalExit;
-    }
   });
 
   beforeEach(async () => {
@@ -71,9 +61,12 @@ describe('Profile API Tests', () => {
         },
       });
 
+      // Use a realistic SafeText-encoded value to catch double-encoding bugs
+      const encryptedContent = safeBtoa(new Uint8Array([10, 20, 30, 40, 50, 60, 70, 80, 90, 100]));
+
       const profileData = {
         sessionId: session.id,
-        encryptedContent: 'encrypted-profile-content-base64',
+        encryptedContent,
         avatarUri: 'https://example.com/avatar.jpg',
         bannerUri: 'https://example.com/banner.jpg',
       };
@@ -94,6 +87,15 @@ describe('Profile API Tests', () => {
       expect(profile).not.toBeNull();
       expect(profile?.avatarUri).toBe('https://example.com/avatar.jpg');
       expect(profile?.bannerUri).toBe('https://example.com/banner.jpg');
+
+      // Verify encryptedContent roundtrips correctly (catches Buffer.from double-encoding)
+      const getResponse = await request(server.express)
+        .get('/xrpc/social.spkeasy.actor.getProfile')
+        .query({ did: authorDid })
+        .set('Authorization', `Bearer ${authorToken}`)
+        .expect(200);
+
+      expect(getResponse.body.profile.encryptedContent).toBe(encryptedContent);
     });
 
     it('should update an existing profile', async () => {
@@ -121,9 +123,10 @@ describe('Profile API Tests', () => {
         },
       });
 
+      const updatedEncryptedContent = safeBtoa(new Uint8Array([99, 88, 77, 66, 55, 44, 33, 22, 11]));
       const updatedProfileData = {
         sessionId: session.id,
-        encryptedContent: 'updated-encrypted-content',
+        encryptedContent: updatedEncryptedContent,
         avatarUri: 'https://example.com/new-avatar.jpg',
       };
 

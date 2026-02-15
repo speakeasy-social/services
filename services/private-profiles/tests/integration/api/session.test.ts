@@ -7,10 +7,12 @@ import {
   verifyBlueskySessionMocks,
   generateTestToken,
 } from '@speakeasy-services/test-utils';
+import { safeBtoa } from '@speakeasy-services/common';
 import request from 'supertest';
 
 const authorDid = 'did:example:profile-author';
 const recipientDid = 'did:example:profile-recipient';
+const newRecipientDid = 'did:example:new-recipient';
 
 describe('Profile Session API Tests', () => {
   let prisma: PrismaClient;
@@ -25,17 +27,6 @@ describe('Profile Session API Tests', () => {
 
   afterAll(async () => {
     await prisma.$disconnect();
-    const originalExit = process.exit;
-    process.exit = (() => {}) as never;
-
-    try {
-      // @ts-ignore - shutdown is private but we need it for tests
-      await server.shutdown();
-    } catch {
-      // Ignore shutdown errors during testing
-    } finally {
-      process.exit = originalExit;
-    }
   });
 
   beforeEach(async () => {
@@ -201,9 +192,13 @@ describe('Profile Session API Tests', () => {
         },
       });
 
+      // Use a realistic SafeText-encoded value to catch double-encoding bugs
+      const encryptedDek = safeBtoa(new Uint8Array([10, 20, 30, 40, 50, 60, 70, 80, 90, 100]));
+      const newRecipientToken = generateTestToken(newRecipientDid);
+
       const newRecipientData = {
-        recipientDid: 'did:example:new-recipient',
-        encryptedDek: 'new-encrypted-key-base64',
+        recipientDid: newRecipientDid,
+        encryptedDek,
         userKeyPairId: '00000000-0000-0000-0000-000000000003',
       };
 
@@ -221,6 +216,27 @@ describe('Profile Session API Tests', () => {
         where: { sessionId: session.id },
       });
       expect(sessionKeys).toHaveLength(2);
+
+      // Verify encryptedDek roundtrips correctly (catches Buffer.from double-encoding)
+      // Read the stored key back via getProfile (which uses safeBtoa on the stored bytes)
+      await prisma.privateProfile.create({
+        data: {
+          sessionId: session.id,
+          authorDid,
+          encryptedContent: Buffer.from([1, 2, 3]),
+        },
+      });
+
+      cleanupBlueskySessionMocks();
+      mockBlueskySession({ did: newRecipientDid, host: 'http://localhost:2583' });
+
+      const getResponse = await request(server.express)
+        .get('/xrpc/social.spkeasy.actor.getProfile')
+        .query({ did: authorDid })
+        .set('Authorization', `Bearer ${newRecipientToken}`)
+        .expect(200);
+
+      expect(getResponse.body.profile.encryptedDek).toBe(encryptedDek);
     });
 
     it('should require authentication', async () => {
