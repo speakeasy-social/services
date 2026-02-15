@@ -28,6 +28,17 @@ type TestimonialContent = {
   facets?: unknown[];
 };
 
+type MethodName = keyof typeof methodHandlers;
+
+function validateTestimonialContent(content: TestimonialContent): void {
+  if (!content?.text) {
+    throw new ValidationError('content.text is required');
+  }
+  if (content.text.length > 300) {
+    throw new ValidationError('content.text must be under 300 characters');
+  }
+}
+
 // Define method handlers with lexicon validation
 const methodHandlers = {
   'social.spkeasy.actor.createTestimonial': async (
@@ -37,14 +48,7 @@ const methodHandlers = {
     validateAgainstLexicon(createTestimonialDef, req.body);
 
     const { content } = req.body as { content: TestimonialContent };
-
-    // Validate content.text is provided and within limits
-    if (!content?.text) {
-      throw new ValidationError('content.text is required');
-    }
-    if (content.text.length > 300) {
-      throw new ValidationError('content.text must be under 300 characters');
-    }
+    validateTestimonialContent(content);
 
     const did = getSessionDid(req);
 
@@ -106,14 +110,7 @@ const methodHandlers = {
     validateAgainstLexicon(updateTestimonialDef, req.body);
 
     const { id, content } = req.body as { id: string; content: TestimonialContent };
-
-    // Validate content.text is provided and within limits
-    if (!content?.text) {
-      throw new ValidationError('content.text is required');
-    }
-    if (content.text.length > 300) {
-      throw new ValidationError('content.text must be under 300 characters');
-    }
+    validateTestimonialContent(content);
 
     // Fetch testimonial to check ownership
     const testimonial = await testimonialService.getTestimonial(id);
@@ -202,5 +199,3 @@ export const methods: Record<MethodName, { handler: RequestHandler }> = {
     handler: methodHandlers['social.spkeasy.actor.checkContribution'],
   },
 };
-
-type MethodName = keyof typeof methodHandlers;
