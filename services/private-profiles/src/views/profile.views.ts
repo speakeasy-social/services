@@ -1,4 +1,5 @@
 import { safeBtoa } from '@speakeasy-services/common';
+import type { SafeText } from '@speakeasy-services/common';
 import {
   PrivateProfile,
   Session,
@@ -7,8 +8,8 @@ import {
 
 export type ProfileView = {
   did: string;
-  encryptedContent: string;
-  encryptedDek: string;
+  encryptedContent: SafeText;
+  encryptedDek: SafeText;
   userKeyPairId: string;
   avatarUri: string | null;
   bannerUri: string | null;
