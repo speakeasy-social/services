@@ -4,7 +4,7 @@ import {
   TrustedUser,
 } from '../generated/prisma-client/index.js';
 import { NotFoundError, RateLimitError } from '@speakeasy-services/common';
-import { Queue, JOB_NAMES } from '@speakeasy-services/queue';
+import { Queue, JOB_NAMES, getServiceJobName } from '@speakeasy-services/queue';
 import { getPrismaClient } from '../db.js';
 
 const prisma = getPrismaClient();
@@ -134,6 +134,22 @@ export class TrustService {
         })),
       );
 
+      await Queue.bulkPublish(
+        {
+          name: getServiceJobName(
+            'private-profiles',
+            JOB_NAMES.ADD_RECIPIENT_TO_SESSION,
+          ),
+          startAfter: new Date(
+            Date.now() + DEFER_BULK_ADD_TRUSTED_SECONDS * 1000,
+          ),
+        },
+        newRecipientDids.map((recipientDid) => ({
+          authorDid,
+          recipientDid,
+        })),
+      );
+
       return newRecipientDids;
     });
   }
@@ -172,6 +188,17 @@ export class TrustService {
         authorDid,
         recipientDid,
       });
+
+      await Queue.publish(
+        getServiceJobName(
+          'private-profiles',
+          JOB_NAMES.ADD_RECIPIENT_TO_SESSION,
+        ),
+        {
+          authorDid,
+          recipientDid,
+        },
+      );
     });
   }
 
@@ -197,6 +224,14 @@ export class TrustService {
       authorDid,
       recipientDid,
     });
+
+    await Queue.publish(
+      getServiceJobName('private-profiles', JOB_NAMES.REVOKE_SESSION),
+      {
+        authorDid,
+        recipientDid,
+      },
+    );
   }
 
   /**
@@ -236,9 +271,30 @@ export class TrustService {
 
       await Queue.publish(JOB_NAMES.REVOKE_SESSION, { authorDid });
 
+      await Queue.publish(
+        getServiceJobName('private-profiles', JOB_NAMES.REVOKE_SESSION),
+        { authorDid },
+      );
+
       await Queue.bulkPublish(
         {
           name: JOB_NAMES.DELETE_SESSION_KEYS,
+          startAfter: new Date(
+            Date.now() + DEFER_BULK_ADD_TRUSTED_SECONDS * 1000,
+          ),
+        },
+        removedRecipientDids.map((recipientDid) => ({
+          authorDid,
+          recipientDid,
+        })),
+      );
+
+      await Queue.bulkPublish(
+        {
+          name: getServiceJobName(
+            'private-profiles',
+            JOB_NAMES.DELETE_SESSION_KEYS,
+          ),
           startAfter: new Date(
             Date.now() + DEFER_BULK_ADD_TRUSTED_SECONDS * 1000,
           ),
