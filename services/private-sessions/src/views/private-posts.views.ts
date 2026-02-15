@@ -1,11 +1,12 @@
 import { createListView, safeBtoa } from '@speakeasy-services/common';
+import type { SafeText } from '@speakeasy-services/common';
 import { AnnotatedEncryptedPost } from '../services/privatePosts.service.js';
 
 export type EncryptedPostView = {
   uri: string;
   rkey: string;
   authorDid: string;
-  encryptedContent: string;
+  encryptedContent: SafeText;
   createdAt: string;
   sessionId: string;
   reply: {
@@ -28,7 +29,6 @@ export function toEncryptedPostView(
     uri: post.uri,
     rkey: post.rkey,
     authorDid: post.authorDid,
-    // encryptedContent: Buffer.from(post.encryptedContent).toString(),
     encryptedContent: safeBtoa(post.encryptedContent),
     createdAt: post.createdAt.toISOString(),
     sessionId: post.sessionId,

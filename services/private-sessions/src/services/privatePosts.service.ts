@@ -16,6 +16,7 @@ import {
   getHostFromToken,
   safeAtob,
 } from '@speakeasy-services/common';
+import type { SafeText } from '@speakeasy-services/common';
 import { getPrismaClient } from '../db.js';
 import { Queue } from '@speakeasy-services/queue';
 import { JOB_NAMES } from '@speakeasy-services/queue';
@@ -81,7 +82,7 @@ export class PrivatePostsService {
           parent: { uri: string };
         };
         langs: string[];
-        encryptedContent: string;
+        encryptedContent: SafeText;
         media: { key: string }[];
       }[];
       sessionId: string;
@@ -111,7 +112,6 @@ export class PrivatePostsService {
             rkey: post.rkey,
             sessionId: body.sessionId,
             encryptedContent: safeAtob(post.encryptedContent),
-            // encryptedContent: Buffer.from(post.encryptedContent),
             langs: post.langs,
             replyRootUri: post.reply?.root?.uri ?? null,
             replyUri: post.reply?.parent?.uri ?? null,
