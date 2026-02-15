@@ -48,6 +48,7 @@ export interface SessionPrismaClient<
     findMany: (args: {
       where: any;
       include?: any;
+      orderBy?: any;
       take?: number;
       select?: any;
     }) => Promise<any[]>;
