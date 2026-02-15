@@ -259,7 +259,7 @@ export class SessionService<
       data: {
         sessionId: session!.id,
         recipientDid: body.recipientDid,
-        encryptedDek: Buffer.from(body.encryptedDek),
+        encryptedDek: safeAtob(body.encryptedDek),
         userKeyPairId: body.userKeyPairId,
       },
     });
