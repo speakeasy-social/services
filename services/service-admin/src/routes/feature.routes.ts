@@ -78,11 +78,15 @@ const methodHandlers = {
       }
     }
 
+    // Get donor DID if user is authenticated
+    const donorDid = req.user?.type === 'user' ? req.user.did : undefined;
+
     const clientSecret = await featureService.donate(
       unitAmount as number,
       mode as Mode,
       currencyResult.data,
-      donorEmail as string | undefined
+      donorEmail as string | undefined,
+      donorDid
     );
 
     return {

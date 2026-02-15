@@ -1,5 +1,5 @@
 import { XRPCError } from '@atproto/xrpc';
-export { ServiceError, ValidationError, NotFoundError, AuthenticationError, AuthorizationError, DatabaseError } from '../errors.js';
+export { ServiceError, ValidationError, NotFoundError, AuthenticationError, AuthorizationError, ForbiddenError, DatabaseError } from '../errors.js';
 
 export type { XRPCError };
 

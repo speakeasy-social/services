@@ -63,10 +63,12 @@ export async function logAttributes(req: ExtendedRequest, status: number) {
       } else {
         user = 'invalid-session-did';
       }
-    } else {
+    } else if (req.user.type === 'service') {
       // No need to obscure which service made the request,
       // that's not private
       user = req.user.name;
+    } else if (req.user.type === 'public') {
+      user = 'public';
     }
   }
 
