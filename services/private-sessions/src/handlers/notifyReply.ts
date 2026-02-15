@@ -88,7 +88,7 @@ export function createNotifyReplyHandler(prisma: PrismaClient) {
         thread.push({
           uri: currentPost.uri,
           authorDid: currentPost.authorDid,
-          hasSessionKey: (currentPost?.session?.sessionKeys?.length ?? 0) > 0,
+          hasSessionKey: currentPost?.session?.sessionKeys?.length! > 0,
         });
       }
     }
@@ -107,7 +107,7 @@ export function createNotifyReplyHandler(prisma: PrismaClient) {
         thread.push({
           uri: replyRoot.uri,
           authorDid: replyRoot.authorDid,
-          hasSessionKey: (replyRoot.session?.sessionKeys?.length ?? 0) > 0,
+          hasSessionKey: replyRoot.session?.sessionKeys.length! > 0,
         });
       }
     }

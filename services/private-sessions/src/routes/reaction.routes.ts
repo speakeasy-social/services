@@ -5,6 +5,7 @@ import {
   RequestHandlerReturn,
   ExtendedRequest,
   validateAgainstLexicon,
+  User,
   getSessionDid,
 } from '@speakeasy-services/common';
 import {
