@@ -6,6 +6,7 @@ import {
   ExtendedRequest,
   validateAgainstLexicon,
   User,
+  safeBtoa,
   Subject,
 } from '@speakeasy-services/common';
 import { toSessionKeyView } from '../views/session.views.js';
@@ -19,11 +20,13 @@ export interface SessionRouteConfig {
 }
 
 export function createSessionRoutes(config: SessionRouteConfig) {
-  const { authorizationRecord, lexiconPrefix, sessionService } = config;
+  const { serviceName, authorizationRecord, lexiconPrefix, sessionService } =
+    config;
 
   // Get lexicon definitions for each operation
   const createLexicon = getSessionOperation('create');
   const revokeLexicon = getSessionOperation('revoke');
+  const getSessionLexicon = getSessionOperation('getSession');
   const addUserLexicon = getSessionOperation('addUser');
   const updateKeysLexicon = getSessionOperation('updateKeys');
 

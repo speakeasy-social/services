@@ -1,7 +1,6 @@
 import {
   validateEnv,
   baseSchema,
-  getDatabaseUrl,
 } from '@speakeasy-services/service-base/config';
 import z from 'zod';
 
@@ -15,22 +14,15 @@ const serviceSchema = {
   PORT: z.string().transform(Number).default('3000'),
   HOST: z.string().default('0.0.0.0'),
   // Service database - isolated schema for this service
-  PRIVATE_SESSIONS_DATABASE_URL: z
+  PRIVATE_PROFILES_DATABASE_URL: z
     .string()
     .url()
-    .describe('Database URL with private_sessions schema for Prisma'),
+    .describe('Database URL with private_sessions schema for Prisma')
+    .optional(), // Optional since it can be derived from DATABASE_URL
 } as const;
 
 // Create and validate the config
-const config = validateEnv(z.object(serviceSchema)) as z.infer<
-  ReturnType<typeof z.object<typeof serviceSchema>>
-> & { PRIVATE_SESSIONS_DATABASE_URL: string };
-
-// Set PRIVATE_SESSIONS_DATABASE_URL using getDatabaseUrl
-config.PRIVATE_SESSIONS_DATABASE_URL = getDatabaseUrl(
-  'private_sessions',
-  'PRIVATE_SESSIONS_DATABASE_URL',
-);
+const config = validateEnv(z.object(serviceSchema));
 
 // Export the config with proper typing
 export type Config = typeof config;

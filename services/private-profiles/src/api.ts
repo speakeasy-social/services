@@ -1,6 +1,8 @@
+import jsonwebtoken from 'jsonwebtoken';
+
 import { Server, ServerOptions } from '@speakeasy-services/service-base';
 import config from './config.js';
-import { methods } from './routes/index.js';
+import { profileSessionMethods, profileMethods } from './routes/index.js';
 import {
   authorizationMiddleware,
   authenticateToken,
@@ -9,7 +11,9 @@ import {
   fetchFollowingDids,
 } from '@speakeasy-services/common';
 import { lexicons } from './lexicon/index.js';
+import { Queue } from '@speakeasy-services/queue';
 import { healthCheck } from './health.js';
+
 import {
   queryTrackerMiddleware,
   getTotalQueryDuration,
@@ -17,19 +21,52 @@ import {
   cleanupQueryTracking,
 } from './db.js';
 import NodeCache from 'node-cache';
-import jsonwebtoken from 'jsonwebtoken';
 
 // Cache following DIDs for 10 minutes
 export const cache = new NodeCache({ stdTTL: 600 });
 
 // Extend ServerOptions with our dbMetrics
-type PrivateSessionsServerOptions = ServerOptions & {
+type PrivateProfilesServerOptions = ServerOptions & {
   dbMetrics: {
     getTotalQueryDuration: typeof getTotalQueryDuration;
     getQueryDurationProfile: typeof getQueryDurationProfile;
     cleanupQueryTracking: typeof cleanupQueryTracking;
   };
 };
+
+const methods = {
+  ...profileSessionMethods,
+  ...profileMethods,
+};
+
+const server = new Server({
+  name: 'private-profiles',
+  port: config.PORT,
+  methods,
+  middleware: [
+    queryTrackerMiddleware,
+    prefetchUserFolling,
+    authenticateToken,
+    authorizationMiddleware,
+  ],
+  lexicons,
+  healthCheck,
+  dbMetrics: {
+    getTotalQueryDuration,
+    getQueryDurationProfile,
+    cleanupQueryTracking,
+  },
+} as PrivateProfilesServerOptions);
+
+// Initialize and start the queue before starting the server
+Queue.start()
+  .then(() => {
+    server.start();
+  })
+  .catch((error) => {
+    console.error('Error starting queue', error);
+    process.exit(1);
+  });
 
 /**
  * The two slowest requests in getting posts are authenticating the token
@@ -38,7 +75,7 @@ type PrivateSessionsServerOptions = ServerOptions & {
  * We can prefetch the user's follows and store them on the request object
  * so that we don't have to wait for them to be fetched.
  */
-async function prefetchUserFollowing(
+async function prefetchUserFolling(
   req: ExtendedRequest,
   res: Response,
   next: () => void,
@@ -70,24 +107,3 @@ async function prefetchUserFollowing(
   }
   next();
 }
-
-const server = new Server({
-  name: 'private-sessions',
-  port: config.PORT,
-  methods,
-  middleware: [
-    queryTrackerMiddleware,
-    prefetchUserFollowing,
-    authenticateToken,
-    authorizationMiddleware,
-  ],
-  lexicons,
-  healthCheck,
-  dbMetrics: {
-    getTotalQueryDuration,
-    getQueryDurationProfile,
-    cleanupQueryTracking,
-  },
-} as PrivateSessionsServerOptions);
-
-export default server;

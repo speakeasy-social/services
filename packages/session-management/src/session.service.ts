@@ -31,69 +31,47 @@ export interface SessionKeyWithSessionModel extends SessionKeyModel {
   session?: SessionModel;
 }
 
-// Session with optional session keys (for flexible return types based on include)
-export interface SessionMaybeWithKeys extends SessionModel {
-  sessionKeys?: SessionKeyModel[];
-}
-
-// Session key with optional fields for select queries
-export interface SessionKeyPartial {
-  sessionId?: string;
-  userKeyPairId?: string;
-  recipientDid?: string;
-  encryptedDek?: Uint8Array;
-  createdAt?: Date;
-}
-
 // Define the minimum interface required for session operations
 export interface SessionPrismaClient<
   T extends SessionModel = SessionModel,
   K extends SessionKeyModel = SessionKeyModel,
 > {
   session: {
-    create: (args: { data: unknown }) => Promise<T>;
-    updateMany: (args: {
-      where: unknown;
-      data: unknown;
-    }) => Promise<{ count: number }>;
+    create: (args: { data: any }) => Promise<T>;
+    updateMany: (args: { where: any; data: any }) => Promise<any>;
     findFirst: (args: {
-      where: unknown;
-      orderBy?: unknown;
-      select?: unknown;
-      include?: unknown;
+      where: any;
+      orderBy?: any;
+      select?: any;
+      include?: any;
     }) => Promise<T | null>;
     findMany: (args: {
-      where: unknown;
-      include?: unknown;
+      where: any;
+      include?: any;
       take?: number;
-      select?: unknown;
-    }) => Promise<(T & { sessionKeys?: K[] })[]>;
-    deleteMany: (args: { where: unknown }) => Promise<{ count: number }>;
+      select?: any;
+    }) => Promise<any[]>;
+    deleteMany: (args: { where: any }) => Promise<any>;
   };
   sessionKey: {
     findFirst: (args: {
-      where: unknown;
-      include?: unknown;
+      where: any;
+      include?: any;
     }) => Promise<(K & { session?: T }) | null>;
     findMany: (args: {
-      where: unknown;
-      include?: unknown;
+      where: any;
+      include?: any;
       take?: number;
-      select?: unknown;
-    }) => Promise<(K | SessionKeyPartial)[]>;
-    create: (args: { data: unknown }) => Promise<K>;
-    createMany: (args: { data: unknown[] }) => Promise<{ count: number }>;
-    update: (args: { where: unknown; data: unknown }) => Promise<K>;
-    deleteMany: (args: { where: unknown }) => Promise<{ count: number }>;
+      select?: any;
+    }) => Promise<K[]>;
+    create: (args: { data: any }) => Promise<K>;
+    createMany: (args: { data: any[] }) => Promise<any>;
+    update: (args: { where: any; data: any }) => Promise<K>;
+    deleteMany: (args: { where: any }) => Promise<any>;
   };
-  $transaction: <R>(
-    fn: (tx: SessionPrismaClient<T, K>) => Promise<R>,
-  ) => Promise<R>;
-  $queryRaw: <R>(
-    query: TemplateStringsArray,
-    ...values: unknown[]
-  ) => Promise<R[]>;
-  $queryRawUnsafe: <R>(query: string, ...values: unknown[]) => Promise<R[]>;
+  $transaction: <R>(fn: (tx: any) => Promise<R>) => Promise<R>;
+  $queryRaw: <R>(query: any) => Promise<R[]>;
+  $queryRawUnsafe: <R>(query: string, ...values: any[]) => Promise<R[]>;
 }
 
 // Define the SessionKey type for the shared service
