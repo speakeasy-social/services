@@ -55,6 +55,7 @@ export class Server {
   private options: ServerOptions;
   private logger: ReturnType<typeof createLogger>;
   private httpServer?: HTTPServer;
+  private signalHandlersRegistered = false;
 
   constructor(options: ServerOptions) {
     this.options = options;
@@ -187,6 +188,10 @@ export class Server {
   }
 
   public async start() {
+    if (this.httpServer) {
+      return;
+    }
+
     try {
       await new Promise<void>((resolve, reject) => {
         this.httpServer = this.express.listen(this.options.port, '0.0.0.0', () => {
@@ -197,14 +202,19 @@ export class Server {
             );
             resolve();
         });
+        this.httpServer.on('error', reject);
       });
     } catch (err) {
+      this.httpServer = undefined;
       this.logger.error({ error: err }, 'Error starting server');
       process.exit(1);
     }
 
-    process.on('SIGTERM', () => this.shutdown());
-    process.on('SIGINT', () => this.shutdown());
+    if (!this.signalHandlersRegistered) {
+      this.signalHandlersRegistered = true;
+      process.on('SIGTERM', () => this.shutdown());
+      process.on('SIGINT', () => this.shutdown());
+    }
   }
 
   public async shutdown() {
