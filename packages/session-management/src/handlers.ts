@@ -83,6 +83,10 @@ export function createAddRecipientToSessionHandler(
           },
         },
       },
+      ...(currentSessionOnly && {
+        orderBy: { createdAt: 'desc' as const },
+        take: 1,
+      }),
     });
 
     const sessionsWithAuthorKeys = sessions.filter(
@@ -94,14 +98,7 @@ export function createAddRecipientToSessionHandler(
       return;
     }
 
-    // When currentSessionOnly is true (profiles), only process the most recent session
-    const sessionsToProcess = currentSessionOnly
-      ? [
-          sessionsWithAuthorKeys.sort(
-            (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
-          )[0],
-        ]
-      : sessionsWithAuthorKeys;
+    const sessionsToProcess = sessionsWithAuthorKeys;
 
     // Remove from the set any existing session keys
     const existingSessionKeys = (await prisma.sessionKey.findMany({
