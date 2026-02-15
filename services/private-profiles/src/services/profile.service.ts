@@ -1,4 +1,4 @@
-import { NotFoundError } from '@speakeasy-services/common';
+import { NotFoundError, safeAtob } from '@speakeasy-services/common';
 import { getPrismaClient } from '../db.js';
 
 const prisma = getPrismaClient();
@@ -76,7 +76,7 @@ export class ProfileService {
         },
         data: {
           sessionId: profile.sessionId,
-          encryptedContent: Buffer.from(profile.encryptedContent),
+          encryptedContent: safeAtob(profile.encryptedContent),
           avatarUri: profile.avatarUri,
           bannerUri: profile.bannerUri,
         },
@@ -86,7 +86,7 @@ export class ProfileService {
         data: {
           sessionId: profile.sessionId,
           authorDid,
-          encryptedContent: Buffer.from(profile.encryptedContent),
+          encryptedContent: safeAtob(profile.encryptedContent),
           avatarUri: profile.avatarUri,
           bannerUri: profile.bannerUri,
         },
