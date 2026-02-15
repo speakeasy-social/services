@@ -103,7 +103,7 @@ function validateContribution(contribution: string): contribution is Contributio
 
 type ContributionData = {
   publicData: ContributionPublicData | null;
-  internalData: ContributionInternalData;
+  internalData: ContributionInternalData | null;
 };
 
 function buildContributionData(
