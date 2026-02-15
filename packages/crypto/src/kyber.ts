@@ -1,15 +1,16 @@
 import { MlKem768 } from 'mlkem';
 import { ErrorWithLog, safeAtob } from '@speakeasy-services/common';
+import type { SafeText } from '@speakeasy-services/common';
 
 /**
  * Encrypts a session DEK using ML-KEM
- * @param {string} dek - The Data Encryption Key to encrypt (SafeText format).
- * @param {string} recipientPublicKey - The recipient's public key (SafeText format).
- * @returns {Promise<string>} The encrypted DEK in SafeText format.
+ * @param {Uint8Array} dek - The raw Data Encryption Key to encrypt.
+ * @param {SafeText} recipientPublicKey - The recipient's public key (SafeText format).
+ * @returns {Promise<Uint8Array>} The encrypted DEK as raw bytes.
  */
 async function encryptDEK(
   dek: Uint8Array,
-  recipientPublicKey: string,
+  recipientPublicKey: SafeText,
 ): Promise<Uint8Array> {
   // Decode SafeText inputs into Uint8Array for cryptographic operations
   const dekBytes = dek;
@@ -100,13 +101,13 @@ async function encryptDEK(
 
 /**
  * Decrypts an encrypted session DEK using ML-KEM
- * @param {string} encryptedDek - The encrypted DEK in SafeText format.
- * @param {string} recipientPrivateKey - The recipient's private key (SafeText format).
- * @returns {Promise<string>} The decrypted DEK in SafeText format.
+ * @param {Uint8Array} encryptedDek - The encrypted DEK as raw bytes.
+ * @param {SafeText} recipientPrivateKey - The recipient's private key (SafeText format).
+ * @returns {Promise<Uint8Array>} The decrypted DEK as raw bytes.
  */
 async function decryptDEK(
   encryptedDek: Uint8Array,
-  recipientPrivateKey: string,
+  recipientPrivateKey: SafeText,
 ): Promise<Uint8Array> {
   // Decode private key and encrypted data from SafeText to Uint8Array format
   const privateKeyBytes = safeAtob(recipientPrivateKey);
@@ -207,10 +208,10 @@ export async function recryptDEK(
     encryptedDek: Uint8Array;
   },
   privateKey: {
-    privateKey: string;
+    privateKey: SafeText;
     userKeyPairId: string;
   },
-  encryptionPublicKey: string,
+  encryptionPublicKey: SafeText,
 ): Promise<Uint8Array> {
   if (privateKey.userKeyPairId !== sessionKey.userKeyPairId) {
     throw new ErrorWithLog(
