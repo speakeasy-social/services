@@ -1,5 +1,6 @@
 import { NotFoundError, ValidationError } from '@speakeasy-services/common';
 import { safeAtob } from '@speakeasy-services/common';
+import type { SafeText } from '@speakeasy-services/common';
 import { Queue, getServiceJobName, JOB_NAMES } from '@speakeasy-services/queue';
 
 const DEFAULT_EXPIRATION_HOURS = 24 * 7;
@@ -79,7 +80,7 @@ export interface SessionPrismaClient<
 export interface SessionKey {
   recipientDid: string;
   userKeyPairId: string;
-  encryptedDek: string;
+  encryptedDek: SafeText;
 }
 
 export interface CreateSessionParams {
@@ -89,16 +90,16 @@ export interface CreateSessionParams {
 }
 
 export interface AddRecipientParams {
-  authorDid: string;
   recipientDid: string;
-  encryptedSessionKey: string;
+  encryptedDek: SafeText;
+  userKeyPairId: string;
 }
 
 export interface UpdateSessionKeysParams {
   prevKeyId: string;
   newKeyId: string;
-  prevPrivateKey: string;
-  newPublicKey: string;
+  prevPrivateKey: SafeText;
+  newPublicKey: SafeText;
 }
 
 export class SessionService<
@@ -243,7 +244,7 @@ export class SessionService<
     authorDid: string,
     body: {
       recipientDid: string;
-      encryptedDek: string;
+      encryptedDek: SafeText;
       userKeyPairId: string;
     },
   ): Promise<{ success: boolean }> {

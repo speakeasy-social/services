@@ -1,4 +1,5 @@
-import { speakeasyApiRequest } from '@speakeasy-services/common';
+import { speakeasyApiRequest, asSafeText } from '@speakeasy-services/common';
+import type { SafeText } from '@speakeasy-services/common';
 import { recryptDEK } from '@speakeasy-services/crypto';
 import type {
   SessionPrismaClient,
@@ -153,8 +154,13 @@ export function createAddRecipientToSessionHandler(
 
     const authorPrivateKeys: {
       userKeyPairId: string;
-      privateKey: string;
-    }[] = authorPrivateKeysBody.keys;
+      privateKey: SafeText;
+    }[] = authorPrivateKeysBody.keys.map(
+      (key: { userKeyPairId: string; privateKey: string }) => ({
+        ...key,
+        privateKey: asSafeText(key.privateKey),
+      }),
+    );
 
     const authorPrivateKeysMap = new Map(
       authorPrivateKeys.map((key) => [key.userKeyPairId, key]),
@@ -174,7 +180,7 @@ export function createAddRecipientToSessionHandler(
           const encryptedDek = await recryptDEK(
             session.sessionKeys[0],
             privateKey,
-            recipientPublicKeyBody.publicKey,
+            asSafeText(recipientPublicKeyBody.publicKey),
           );
 
           return {

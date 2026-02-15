@@ -5,10 +5,11 @@ import {
   createListView,
   safeBtoa,
 } from '@speakeasy-services/common';
+import type { SafeText } from '@speakeasy-services/common';
 
 export type EncryptedSessionKeyView = {
   sessionId: string;
-  encryptedDek: string;
+  encryptedDek: SafeText;
   recipientDid: string;
   createdAt: string;
 };
