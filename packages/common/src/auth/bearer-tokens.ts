@@ -128,6 +128,7 @@ export const optionalAuthenticateToken = async (req: any, res: any, next: any) =
 export function getServiceApiKey(serviceName: string): string {
   const serviceKeys = {
     'private-sessions': process.env.PRIVATE_SESSIONS_API_KEY,
+    'private-profiles': process.env.PRIVATE_PROFILES_API_KEY,
     'trusted-users': process.env.TRUSTED_USERS_API_KEY,
     'user-keys': process.env.USER_KEYS_API_KEY,
     'media': process.env.MEDIA_API_KEY,

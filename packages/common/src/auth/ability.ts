@@ -355,6 +355,25 @@ const serviceAbilities = [
     equalsLiteral: 'private-sessions',
   }),
 
+  // private-profiles service can access keys and trust relationships
+  // service.name must equal 'private-profiles'
+  canIf('get', 'key', {
+    userProperty: 'name',
+    equalsLiteral: 'private-profiles',
+  }),
+  canIf('get_private', 'key', {
+    userProperty: 'name',
+    equalsLiteral: 'private-profiles',
+  }),
+  canIf('list_private', 'key', {
+    userProperty: 'name',
+    equalsLiteral: 'private-profiles',
+  }),
+  canIf('list', 'trusted_user', {
+    userProperty: 'name',
+    equalsLiteral: 'private-profiles',
+  }),
+
   // user-keys service can update sessions (both posts and profiles)
   // service.name must equal 'user-keys'
   canIf('update', 'private_session', {
