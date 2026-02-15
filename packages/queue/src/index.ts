@@ -121,9 +121,9 @@ export class Queue {
     });
   }
 
-  static async bulkPublish<K extends keyof JobDataMap>(
-    config: JobInsert & { name: K },
-    datas: JobDataMap[K][],
+  static async bulkPublish(
+    config: JobInsert & { name: string },
+    datas: object[],
   ): Promise<void> {
     const queue = this.getInstance();
     await queue.insert(
