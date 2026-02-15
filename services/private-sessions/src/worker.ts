@@ -32,7 +32,7 @@ const prisma = getPrismaClient();
 // Register all job handlers
 worker.work<AddRecipientToSessionJob>(
   JOB_NAMES.ADD_RECIPIENT_TO_SESSION,
-  createAddRecipientToSessionHandler(prisma, worker.logger),
+  createAddRecipientToSessionHandler(prisma, { serviceName: 'private-sessions' }),
 );
 
 worker.queue.work<RevokeSessionJob>(
@@ -42,7 +42,7 @@ worker.queue.work<RevokeSessionJob>(
 
 worker.queue.work<DeleteSessionKeysJob>(
   JOB_NAMES.DELETE_SESSION_KEYS,
-  createDeleteSessionKeysHandler(prisma),
+  createDeleteSessionKeysHandler(prisma, { serviceName: 'private-sessions' }),
 );
 
 worker.queue.work<UpdateSessionKeysJob>(

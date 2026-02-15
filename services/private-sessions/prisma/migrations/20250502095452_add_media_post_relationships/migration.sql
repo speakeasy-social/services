@@ -1,7 +1,7 @@
 
 -- CreateTable
 CREATE TABLE "media" (
-    "id" UUID NOT NULL DEFAULT uuid_generate_v4(),
+    "id" UUID NOT NULL DEFAULT public.uuid_generate_v4(),
     "userDid" TEXT NOT NULL,
     "key" TEXT NOT NULL,
     "mimeType" TEXT NOT NULL,

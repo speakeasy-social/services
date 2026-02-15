@@ -1,18 +1,11 @@
-export interface AddRecipientToSessionJob {
-  authorDid: string;
-  recipientDid: string;
-}
+// Re-export shared job types from session-management
+export type {
+  AddRecipientToSessionJob,
+  RevokeSessionJob,
+  DeleteSessionKeysJob,
+} from '@speakeasy-services/session-management';
 
-export interface RevokeSessionJob {
-  authorDid: string;
-  recipientDid?: string;
-}
-
-export interface DeleteSessionKeysJob {
-  authorDid: string;
-  recipientDid: string;
-}
-
+// Types specific to private-sessions
 export interface UpdateSessionKeysJob {
   prevKeyId: string;
   newKeyId: string;
