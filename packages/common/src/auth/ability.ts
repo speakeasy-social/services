@@ -186,6 +186,16 @@ const canIf = (
 };
 
 /**
+ * Abilities for unauthenticated (public) users.
+ * These are intentionally limited to read-only operations on public data.
+ * Defined first so they can be included in userAbilities.
+ */
+const publicAbilities = [
+  can('list', 'testimonial'),
+  can('get', 'testimonial'),
+];
+
+/**
  * Define what users are allowed to do
  *
  * IMPORTANT SYNTAX REMINDER:
@@ -267,7 +277,7 @@ const userAbilities = [
   // Media creation doesn't require ownership checks (usage tracked elsewhere)
   can('create', 'media'),
 
-  // Testimonials - users can create/delete their own, list/get are public but also granted to users
+  // Testimonials - users can create/delete/update their own
   canIf('create', 'testimonial', {
     userProperty: 'did',
     matchesRecordProperty: 'did',
@@ -280,8 +290,9 @@ const userAbilities = [
     userProperty: 'did',
     matchesRecordProperty: 'did',
   }),
-  can('list', 'testimonial'),
-  can('get', 'testimonial'),
+
+  // Include all public abilities (authenticated users can do everything public users can)
+  ...publicAbilities,
 
   // Contribution - users can check their own contribution status
   canIf('get', 'contribution', {
@@ -338,15 +349,6 @@ const serviceAbilities = [
     userProperty: 'name',
     equalsLiteral: 'private-sessions',
   }),
-];
-
-/**
- * Abilities for unauthenticated (public) users.
- * These are intentionally limited to read-only operations on public data.
- */
-const publicAbilities = [
-  can('list', 'testimonial'),
-  can('get', 'testimonial'),
 ];
 
 /**
