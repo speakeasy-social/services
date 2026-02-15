@@ -79,7 +79,12 @@ export function createSessionRoutes(config: SessionRouteConfig) {
         (req.user as User)!.did!,
       );
 
-      authorize(req, 'get_private', authorizationRecord, sessionKey);
+      authorize(
+        req,
+        'get',
+        authorizationRecord,
+        sessionKey as unknown as Record<string, unknown>,
+      );
 
       return {
         body: { encryptedSessionKey: toSessionKeyView(sessionKey) },
