@@ -1,4 +1,4 @@
-import { speakeasyApiRequest } from '@speakeasy-services/common';
+import { speakeasyApiRequest, safeBtoa } from '@speakeasy-services/common';
 import type { PrismaClient } from '../generated/prisma-client/index.js';
 import type { UpdateUserKeysJob } from './types.js';
 
@@ -39,9 +39,9 @@ export function createUpdateUserKeysHandler(prisma: PrismaClient) {
         prevKeyId,
         newKeyId,
         // We pass it the old private key so it can decrypt the session key
-        prevPrivateKey: Buffer.from(prevKey.privateKey).toString('base64'),
+        prevPrivateKey: safeBtoa(prevKey.privateKey),
         // We pass it the new public key so it can encrypt the session key
-        newPublicKey: Buffer.from(newKey.publicKey).toString('base64'),
+        newPublicKey: safeBtoa(newKey.publicKey),
       },
     );
   };
