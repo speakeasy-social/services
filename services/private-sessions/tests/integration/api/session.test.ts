@@ -331,7 +331,7 @@ describe('Private Session API Tests', () => {
 
       const newRecipientData = {
         recipientDid: 'did:example:new-recipient',
-        encryptedDek: 'new-encrypted-key',
+        encryptedDek: 'new-encrypted-keys',
         userKeyPairId: '00000000-0000-0000-0000-000000000003',
       };
 
