@@ -1,4 +1,5 @@
-import { speakeasyApiRequest } from '@speakeasy-services/common';
+import { speakeasyApiRequest, asSafeText } from '@speakeasy-services/common';
+import type { SafeText } from '@speakeasy-services/common';
 import { recryptDEK } from '@speakeasy-services/crypto';
 import type {
   SessionPrismaClient,
@@ -83,6 +84,10 @@ export function createAddRecipientToSessionHandler(
           },
         },
       },
+      ...(currentSessionOnly && {
+        orderBy: { createdAt: 'desc' as const },
+        take: 1,
+      }),
     });
 
     const sessionsWithAuthorKeys = sessions.filter(
@@ -94,14 +99,7 @@ export function createAddRecipientToSessionHandler(
       return;
     }
 
-    // When currentSessionOnly is true (profiles), only process the most recent session
-    const sessionsToProcess = currentSessionOnly
-      ? [
-          sessionsWithAuthorKeys.sort(
-            (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
-          )[0],
-        ]
-      : sessionsWithAuthorKeys;
+    const sessionsToProcess = sessionsWithAuthorKeys;
 
     // Remove from the set any existing session keys
     const existingSessionKeys = (await prisma.sessionKey.findMany({
@@ -156,8 +154,13 @@ export function createAddRecipientToSessionHandler(
 
     const authorPrivateKeys: {
       userKeyPairId: string;
-      privateKey: string;
-    }[] = authorPrivateKeysBody.keys;
+      privateKey: SafeText;
+    }[] = authorPrivateKeysBody.keys.map(
+      (key: { userKeyPairId: string; privateKey: string }) => ({
+        ...key,
+        privateKey: asSafeText(key.privateKey),
+      }),
+    );
 
     const authorPrivateKeysMap = new Map(
       authorPrivateKeys.map((key) => [key.userKeyPairId, key]),
@@ -177,7 +180,7 @@ export function createAddRecipientToSessionHandler(
           const encryptedDek = await recryptDEK(
             session.sessionKeys[0],
             privateKey,
-            recipientPublicKeyBody.publicKey,
+            asSafeText(recipientPublicKeyBody.publicKey),
           );
 
           return {

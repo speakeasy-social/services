@@ -3,6 +3,7 @@ import {
   createListView,
   safeBtoa,
 } from '@speakeasy-services/common';
+import type { SafeText } from '@speakeasy-services/common';
 
 type PublicKeyResponse = {
   id: string;
@@ -18,13 +19,13 @@ type PrivateKeyResponse = {
 
 export type PublicKeyView = {
   userKeyPairId: string;
-  publicKey: string;
+  publicKey: SafeText;
   recipientDid: string;
 };
 
 export type PrivateKeyView = {
   userKeyPairId: string;
-  privateKey: string;
+  privateKey: SafeText;
   authorDid: string;
 };
 

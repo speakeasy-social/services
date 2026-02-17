@@ -77,6 +77,7 @@ export async function speakeasyApiRequest(
   const apiKey = getServiceApiKey(options.fromService);
   const host = {
     'private-sessions': process.env.PRIVATE_SESSIONS_HOST,
+    'private-profiles': process.env.PRIVATE_PROFILES_HOST,
     'trusted-users': process.env.TRUSTED_USERS_HOST,
     'user-keys': process.env.USER_KEYS_HOST,
     'service-admin': process.env.SERVICE_ADMIN_HOST,

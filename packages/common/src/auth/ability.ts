@@ -104,6 +104,7 @@ export type Action =
 export type Subject =
   | 'private_post'
   | 'private_session'
+  | 'private_profile'
   | 'session_key'
   | 'trusted_user'
   | 'group'
@@ -239,6 +240,24 @@ const userAbilities = [
     userProperty: 'did',
     matchesRecordProperty: 'session.authorDid',
   }),
+
+  // Authors can manage their own profile sessions
+  canIf('create', 'private_profile', {
+    userProperty: 'did',
+    matchesRecordProperty: 'authorDid',
+  }),
+  canIf('revoke', 'private_profile', {
+    userProperty: 'did',
+    matchesRecordProperty: 'authorDid',
+  }),
+  canIf('add_recipient', 'private_profile', {
+    userProperty: 'did',
+    matchesRecordProperty: 'authorDid',
+  }),
+  canIf('get', 'private_profile', {
+    userProperty: 'did',
+    matchesRecordProperty: 'session.authorDid',
+  }),
   canIf('*', 'private_post', {
     userProperty: 'did',
     matchesRecordProperty: 'authorDid',
@@ -336,9 +355,32 @@ const serviceAbilities = [
     equalsLiteral: 'private-sessions',
   }),
 
-  // user-keys service can update sessions
+  // private-profiles service can access keys and trust relationships
+  // service.name must equal 'private-profiles'
+  canIf('get', 'key', {
+    userProperty: 'name',
+    equalsLiteral: 'private-profiles',
+  }),
+  canIf('get_private', 'key', {
+    userProperty: 'name',
+    equalsLiteral: 'private-profiles',
+  }),
+  canIf('list_private', 'key', {
+    userProperty: 'name',
+    equalsLiteral: 'private-profiles',
+  }),
+  canIf('list', 'trusted_user', {
+    userProperty: 'name',
+    equalsLiteral: 'private-profiles',
+  }),
+
+  // user-keys service can update sessions (both posts and profiles)
   // service.name must equal 'user-keys'
   canIf('update', 'private_session', {
+    userProperty: 'name',
+    equalsLiteral: 'user-keys',
+  }),
+  canIf('update', 'private_profile', {
     userProperty: 'name',
     equalsLiteral: 'user-keys',
   }),

@@ -5,6 +5,7 @@ import {
   safeBtoa,
   ValidationError,
 } from '@speakeasy-services/common';
+import type { SafeText } from '@speakeasy-services/common';
 import { Queue, JOB_NAMES } from '@speakeasy-services/queue';
 import { MlKem768 } from 'crystals-kyber-js';
 import { getPrismaClient } from '../db.js';
@@ -189,8 +190,8 @@ export class KeyService {
    */
   async requestRotation(
     authorDid: string,
-    publicKey: string,
-    privateKey: string,
+    publicKey: SafeText,
+    privateKey: SafeText,
   ): Promise<UserKey | null> {
     return this.prisma.$transaction(
       async (tx) => {

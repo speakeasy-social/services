@@ -19,11 +19,13 @@ export interface SessionRouteConfig {
 }
 
 export function createSessionRoutes(config: SessionRouteConfig) {
-  const { authorizationRecord, lexiconPrefix, sessionService } = config;
+  const { serviceName, authorizationRecord, lexiconPrefix, sessionService } =
+    config;
 
   // Get lexicon definitions for each operation
   const createLexicon = getSessionOperation('create');
   const revokeLexicon = getSessionOperation('revoke');
+  const getSessionLexicon = getSessionOperation('getSession');
   const addUserLexicon = getSessionOperation('addUser');
   const updateKeysLexicon = getSessionOperation('updateKeys');
 
@@ -77,7 +79,12 @@ export function createSessionRoutes(config: SessionRouteConfig) {
         (req.user as User)!.did!,
       );
 
-      authorize(req, 'get', authorizationRecord, sessionKey as unknown as Record<string, unknown>);
+      authorize(
+        req,
+        'get',
+        authorizationRecord,
+        sessionKey as unknown as Record<string, unknown>,
+      );
 
       return {
         body: { encryptedSessionKey: toSessionKeyView(sessionKey) },

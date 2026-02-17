@@ -12,12 +12,13 @@ import type {
   RevokeSessionJob,
   DeleteSessionKeysJob,
 } from './handlers.js';
+import type { SafeText } from '@speakeasy-services/common';
 
 export interface UpdateSessionKeysJob {
   prevKeyId: string;
   newKeyId: string;
-  prevPrivateKey: string;
-  newPublicKey: string;
+  prevPrivateKey: SafeText;
+  newPublicKey: SafeText;
 }
 
 export interface SessionWorkerOptions {

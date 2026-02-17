@@ -1,4 +1,4 @@
-import { Server } from '@speakeasy-services/service-base';
+import { Server, ServerOptions } from '@speakeasy-services/service-base';
 import config from './config.js';
 import { methods } from './routes/index.js';
 import {
@@ -22,14 +22,8 @@ import jsonwebtoken from 'jsonwebtoken';
 // Cache following DIDs for 10 minutes
 export const cache = new NodeCache({ stdTTL: 600 });
 
-// Custom type to extend ServerOptions with our dbMetrics
-type PrivateSessionsServerOptions = {
-  name: string;
-  port: number;
-  methods: Record<string, { handler: any }>;
-  middleware?: any[];
-  lexicons?: any[];
-  healthCheck: () => Promise<void>;
+// Extend ServerOptions with our dbMetrics
+type PrivateSessionsServerOptions = ServerOptions & {
   dbMetrics: {
     getTotalQueryDuration: typeof getTotalQueryDuration;
     getQueryDurationProfile: typeof getQueryDurationProfile;

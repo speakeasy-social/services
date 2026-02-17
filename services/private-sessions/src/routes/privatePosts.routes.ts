@@ -17,7 +17,7 @@ import {
   toEncryptedPostsListView,
   toEncryptedPostView,
 } from '../views/private-posts.views.js';
-import { toSessionKeyListView } from '../views/private-sessions.views.js';
+import { toSessionKeyListView } from '@speakeasy-services/session-management';
 import {
   getDIDFromUri,
   PrivatePostsService,
@@ -175,7 +175,7 @@ const methodHandlers = {
     };
   },
   'social.spkeasy.privatePost.preAuth': async (
-    req: ExtendedRequest,
+    _req: ExtendedRequest,
   ): RequestHandlerReturn => {
     // NOOP
     // This route is called to cause the user's bluesky session
