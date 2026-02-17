@@ -10,7 +10,7 @@ import {
 const worker = new Worker({
   name: 'user-keys-worker',
   healthCheck,
-  port: 4000,
+  port: parseInt(process.env.WORKER_PORT || process.env.PORT || '4000'),
 });
 const prisma = new PrismaClient();
 

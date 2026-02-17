@@ -24,7 +24,7 @@ import {
 const worker = new Worker({
   name: 'private-sessions-worker',
   healthCheck,
-  port: 4001,
+  port: parseInt(process.env.WORKER_PORT || process.env.PORT || '4001'),
 });
 
 const prisma = getPrismaClient();
