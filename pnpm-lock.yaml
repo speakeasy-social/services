@@ -412,6 +412,9 @@ importers:
       '@prisma/client':
         specifier: ^6.5.0
         version: 6.15.0(prisma@6.15.0(typescript@5.9.2))(typescript@5.9.2)
+      '@speakeasy-services/common':
+        specifier: workspace:^
+        version: link:../../packages/common
       '@speakeasy-services/crypto':
         specifier: workspace:*
         version: link:../../packages/crypto
@@ -467,9 +470,6 @@ importers:
       '@mermaid-js/mermaid-cli':
         specifier: ^11.4.2
         version: 11.9.0(puppeteer@23.11.1(typescript@5.9.2))
-      '@speakeasy-services/common':
-        specifier: workspace:^
-        version: link:../../packages/common
       '@speakeasy-services/test-utils':
         specifier: workspace:^
         version: link:../../packages/test-utils
