@@ -454,6 +454,9 @@ importers:
       pino-pretty:
         specifier: ^13.0.0
         version: 13.1.1
+      prisma:
+        specifier: ^6.5.0
+        version: 6.15.0(typescript@5.9.2)
       uuid:
         specifier: ^11.1.0
         version: 11.1.0
@@ -488,9 +491,6 @@ importers:
       eslint:
         specifier: ^8.56.0
         version: 8.57.1
-      prisma:
-        specifier: ^6.5.0
-        version: 6.15.0(typescript@5.9.2)
       prisma-erd-generator:
         specifier: ^2.0.4
         version: 2.0.4(@prisma/client@6.15.0(prisma@6.15.0(typescript@5.9.2))(typescript@5.9.2))(puppeteer@23.11.1(typescript@5.9.2))
