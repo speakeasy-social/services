@@ -1,12 +1,9 @@
--- CreateExtension
--- CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA public;
-
 -- CreateSchema
 -- CREATE SCHEMA IF NOT EXISTS "private_profiles";
 
 -- CreateTable
 CREATE TABLE "private_profiles"."profile_sessions" (
-    "id" UUID NOT NULL DEFAULT public.uuid_generate_v4(),
+    "id" UUID NOT NULL DEFAULT gen_random_uuid(),
     "authorDid" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "expiresAt" TIMESTAMP(3) NOT NULL,
@@ -28,7 +25,7 @@ CREATE TABLE "private_profiles"."profile_session_keys" (
 
 -- CreateTable
 CREATE TABLE "private_profiles"."private_profiles" (
-    "id" UUID NOT NULL DEFAULT public.uuid_generate_v4(),
+    "id" UUID NOT NULL DEFAULT gen_random_uuid(),
     "sessionId" UUID NOT NULL,
     "authorDid" TEXT NOT NULL,
     "encryptedContent" BYTEA NOT NULL,
