@@ -119,7 +119,7 @@ export class PrivatePostsService {
         }),
       });
 
-      await prisma.mediaPost.createMany({
+      await tx.mediaPost.createMany({
         data: body.encryptedPosts.flatMap((post) =>
           post.media.map((m) => ({
             mediaKey: m.key,

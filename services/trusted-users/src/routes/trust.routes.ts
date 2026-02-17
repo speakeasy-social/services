@@ -182,7 +182,7 @@ const methodHandlers = {
     const authorDid = getSessionDid(req);
 
     // Authorize the action
-    authorize(req, 'create', 'trusted_user', { authorDid });
+    authorize(req, 'delete', 'trusted_user', { authorDid });
 
     // Perform the action
     const removedRecipientDids = await trustService.bulkRemoveTrusted(

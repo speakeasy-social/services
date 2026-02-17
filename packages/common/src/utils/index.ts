@@ -54,10 +54,14 @@ export async function asyncCache<T>(
     let resultPromise = promiseCache[key];
     if (!resultPromise) {
       resultPromise = asyncFn(...args);
+      promiseCache[key] = resultPromise;
     }
-    result = await resultPromise;
-    cache.set(key, result);
-    delete promiseCache[key];
+    try {
+      result = await resultPromise;
+      cache.set(key, result);
+    } finally {
+      delete promiseCache[key];
+    }
   }
   return result as T;
 }

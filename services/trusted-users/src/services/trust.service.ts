@@ -160,7 +160,7 @@ export class TrustService {
   async addTrusted(authorDid: string, recipientDid: string): Promise<void> {
     await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       // Create trust relationship - we can rely on the unique constraint to prevent duplicates
-      await prisma.trustedUser.create({
+      await tx.trustedUser.create({
         data: {
           authorDid,
           recipientDid,
@@ -178,7 +178,7 @@ export class TrustService {
         },
       });
 
-      if (existing + 1 >= MAX_TRUSTED_USERS_PER_DAY) {
+      if (existing >= MAX_TRUSTED_USERS_PER_DAY) {
         throw new RateLimitError('You may not add more users today', {
           max: MAX_TRUSTED_USERS_PER_DAY,
         });
