@@ -34,7 +34,7 @@
     "@speakeasy-services/crypto": "workspace:*",
     "@speakeasy-services/queue": "workspace:^",
     "@speakeasy-services/service-base": "workspace:*",
-    "crystals-kyber-js": "2.3.1",
+    "mlkem": "^2.3.1",
     "dotenv": "^16.4.7",
     "prisma": "^6.5.0",
     "zod": "^3.24.2"

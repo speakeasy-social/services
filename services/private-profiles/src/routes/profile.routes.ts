@@ -1,5 +1,6 @@
 import { ProfileService } from '../services/profile.service.js';
 import {
+  authorize,
   validateAgainstLexicon,
   ExtendedRequest,
   RequestHandlerReturn,
@@ -22,6 +23,9 @@ const methodHandlers = {
     const viewerDid = getSessionDid(req);
     const targetDid = req.query.did as string;
     const profile = await profileService.getProfile(viewerDid, targetDid);
+
+    authorize(req, 'list', 'private_profile', profile as unknown as Record<string, unknown>);
+
     return { body: { profile: toProfileView(profile) } };
   },
   'social.spkeasy.actor.getProfiles': async (
@@ -32,6 +36,9 @@ const methodHandlers = {
     const rawDids = req.query.dids;
     const targetDids = Array.isArray(rawDids) ? rawDids as string[] : [rawDids as string];
     const profiles = await profileService.getProfiles(viewerDid, targetDids);
+
+    authorize(req, 'list', 'private_profile', profiles as unknown as Record<string, unknown>[]);
+
     return { body: { profiles: toProfileListView(profiles) } };
   },
   'social.spkeasy.actor.putProfile': async (
@@ -39,6 +46,9 @@ const methodHandlers = {
   ): RequestHandlerReturn => {
     validateAgainstLexicon(putProfileDef, req.body);
     const did = getSessionDid(req);
+
+    authorize(req, 'update', 'private_profile', { authorDid: did });
+
     await profileService.updateProfile(did, req.body);
     return { body: { success: true } };
   },
@@ -46,6 +56,9 @@ const methodHandlers = {
     req: ExtendedRequest,
   ): RequestHandlerReturn => {
     const did = getSessionDid(req);
+
+    authorize(req, 'delete', 'private_profile', { authorDid: did });
+
     const result = await profileService.deleteProfile(did);
     return { body: result };
   },

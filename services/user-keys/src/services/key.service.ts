@@ -7,7 +7,7 @@ import {
 } from '@speakeasy-services/common';
 import type { SafeText } from '@speakeasy-services/common';
 import { Queue, JOB_NAMES } from '@speakeasy-services/queue';
-import { MlKem768 } from 'crystals-kyber-js';
+import { MlKem768 } from 'mlkem';
 import { getPrismaClient } from '../db.js';
 
 const keySchema = z.object({

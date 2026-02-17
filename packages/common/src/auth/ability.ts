@@ -241,7 +241,7 @@ const userAbilities = [
     matchesRecordProperty: 'session.authorDid',
   }),
 
-  // Authors can manage their own profile sessions
+  // Authors can manage their own profile sessions and profile data
   canIf('create', 'private_profile', {
     userProperty: 'did',
     matchesRecordProperty: 'authorDid',
@@ -257,6 +257,21 @@ const userAbilities = [
   canIf('get', 'private_profile', {
     userProperty: 'did',
     matchesRecordProperty: 'session.authorDid',
+  }),
+  canIf('update', 'private_profile', {
+    userProperty: 'did',
+    matchesRecordProperty: 'authorDid',
+  }),
+  canIf('delete', 'private_profile', {
+    userProperty: 'did',
+    matchesRecordProperty: 'authorDid',
+  }),
+
+  // Recipients can read profiles shared with them
+  // user.did must match one of record.session.sessionKeys.recipientDid (user is a recipient)
+  canIf('list', 'private_profile', {
+    userProperty: 'did',
+    matchesRecordProperty: 'session.sessionKeys.recipientDid',
   }),
   canIf('*', 'private_post', {
     userProperty: 'did',

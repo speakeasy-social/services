@@ -815,12 +815,12 @@ importers:
       '@speakeasy-services/service-base':
         specifier: workspace:*
         version: link:../../packages/service-base
-      crystals-kyber-js:
-        specifier: 2.3.1
-        version: 2.3.1
       dotenv:
         specifier: ^16.4.7
         version: 16.6.1
+      mlkem:
+        specifier: ^2.3.1
+        version: 2.5.0
       prisma:
         specifier: ^6.5.0
         version: 6.15.0(typescript@5.9.2)
@@ -2142,10 +2142,6 @@ packages:
   crypto@1.0.1:
     resolution: {integrity: sha512-VxBKmeNcqQdiUQUW2Tzq0t377b54N2bMtXO/qiLa+6eRRmmC4qT3D4OnTGoT/U6O9aklQ/jTwbOtRMTTY8G0Ig==}
     deprecated: This package is no longer supported. It's now a built-in Node module. If you've depended on crypto, you should switch to the one that's built-in.
-
-  crystals-kyber-js@2.3.1:
-    resolution: {integrity: sha512-ANA5XaO5c7nSKq0N1u9mG5uhC9q1rl7MN83vEwkBo9LE+N99O4EcNl8EBbLaiQfemi8Xf7e7KyfqB0es0jQPGg==}
-    engines: {node: '>=16.0.0'}
 
   cssesc@3.0.0:
     resolution: {integrity: sha512-/Tb/JcjK111nNScGob5MNtsntNM1aCNUDipB/TkwZFhyDrrE47SOx/18wF2bbjgc3ZzCSKW1T5nt5EbFoAz/Vg==}
@@ -5618,10 +5614,6 @@ snapshots:
       which: 2.0.2
 
   crypto@1.0.1: {}
-
-  crystals-kyber-js@2.3.1:
-    dependencies:
-      '@noble/hashes': 1.8.0
 
   cssesc@3.0.0: {}
 
