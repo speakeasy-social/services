@@ -1,4 +1,4 @@
-import { NotFoundError, ValidationError } from '@speakeasy-services/common';
+import { NotFoundError, RateLimitError, ValidationError } from '@speakeasy-services/common';
 import Stripe from 'stripe';
 import config from '../config.js';
 import { getPrismaClient } from '../db.js';
@@ -9,6 +9,25 @@ import {
 import { Mode } from '../types.js';
 
 const prisma = getPrismaClient();
+
+const INVITE_CODE_USES = 6;
+const RATE_LIMIT_DAYS = 7;
+const FEATURE_KEY = 'private-posts';
+
+/**
+ * Generate a random invite code in XXXX-XXXX-XXXX format
+ */
+function generateInviteCodeString(): string {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Excluding confusing chars: I, O, 0, 1
+  const generateSegment = () => {
+    let segment = '';
+    for (let i = 0; i < 4; i++) {
+      segment += chars[Math.floor(Math.random() * chars.length)];
+    }
+    return segment;
+  };
+  return `${generateSegment()}-${generateSegment()}-${generateSegment()}`;
+}
 
 type SelectedUserFeatures = Pick<UserFeature, 'userDid' | 'key' | 'value'>;
 
@@ -139,5 +158,76 @@ export class FeatureService {
        throw new Error("Stripe API call did not return a client secret");
     }
     return session.client_secret;
+  }
+
+  /**
+   * Generate a new invite code for the private-posts feature
+   * @param creatorDid - The DID of the user generating the invite code
+   * @returns Promise containing the generated code and remaining uses
+   */
+  async generateInviteCode(creatorDid: string): Promise<{ code: string; remainingUses: number }> {
+    // 1. Check user has private-posts feature
+    const hasFeature = await prisma.userFeature.findFirst({
+      where: { userDid: creatorDid, key: FEATURE_KEY },
+    });
+    if (!hasFeature) {
+      throw new ValidationError('You must have the private-posts feature enabled to generate invite codes', undefined, 'FeatureNotGranted');
+    }
+
+    // 2. Check per-user rate limit (user can only create 1 invite per 7 days)
+    const oneWeekAgo = new Date();
+    oneWeekAgo.setDate(oneWeekAgo.getDate() - RATE_LIMIT_DAYS);
+
+    const recentInvite = await prisma.inviteCode.findFirst({
+      where: { creatorDid, createdAt: { gte: oneWeekAgo } },
+    });
+    if (recentInvite) {
+      throw new RateLimitError('You can only generate one invite code per week');
+    }
+
+    // 3. Generate and create invite code
+    const code = generateInviteCodeString();
+    const inviteCode = await prisma.inviteCode.create({
+      data: {
+        code,
+        creatorDid,
+        key: FEATURE_KEY,
+        value: 'true',
+        totalUses: INVITE_CODE_USES,
+        remainingUses: INVITE_CODE_USES,
+      },
+    });
+
+    return { code: inviteCode.code, remainingUses: inviteCode.remainingUses };
+  }
+
+  /**
+   * List all invite codes created by a user
+   * @param creatorDid - The DID of the user whose invite codes to list
+   * @returns Promise containing the list of invite codes
+   */
+  async listInviteCodes(creatorDid: string): Promise<{
+    code: string;
+    remainingUses: number;
+    totalUses: number;
+    createdAt: string;
+  }[]> {
+    const inviteCodes = await prisma.inviteCode.findMany({
+      where: { creatorDid },
+      select: {
+        code: true,
+        remainingUses: true,
+        totalUses: true,
+        createdAt: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return inviteCodes.map((ic) => ({
+      code: ic.code,
+      remainingUses: ic.remainingUses,
+      totalUses: ic.totalUses,
+      createdAt: ic.createdAt.toISOString(),
+    }));
   }
 }

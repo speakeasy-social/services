@@ -10,7 +10,9 @@ import {
 import {
   applyInviteCodeDef,
   donateDef,
-  getFeaturesDef
+  generateInviteCodeDef,
+  getFeaturesDef,
+  listInviteCodesDef
 } from '../lexicon/types/features.js';
 import { FeatureService } from '../services/feature.service.js';
 import { Mode } from '../types.js';
@@ -52,6 +54,38 @@ const methodHandlers = {
 
     return {
       body: { status: 'success' },
+    };
+  },
+  'social.spkeasy.actor.generateInviteCode': async (
+    req: ExtendedRequest,
+  ): RequestHandlerReturn => {
+    const did = getSessionDid(req);
+
+    // Validate input against lexicon
+    validateAgainstLexicon(generateInviteCodeDef, req.body);
+
+    authorize(req, 'create', 'invite_code', { creatorDid: did });
+
+    const result = await featureService.generateInviteCode(did);
+
+    return {
+      body: result,
+    };
+  },
+  'social.spkeasy.actor.listInviteCodes': async (
+    req: ExtendedRequest,
+  ): RequestHandlerReturn => {
+    const did = getSessionDid(req);
+
+    // Validate input against lexicon
+    validateAgainstLexicon(listInviteCodesDef, req.query);
+
+    authorize(req, 'list', 'invite_code', { creatorDid: did });
+
+    const inviteCodes = await featureService.listInviteCodes(did);
+
+    return {
+      body: { inviteCodes },
     };
   },
   'social.spkeasy.actor.donate': async (
@@ -105,6 +139,12 @@ export const methods: Record<MethodName, { handler: RequestHandler }> = {
   },
   'social.spkeasy.actor.applyInviteCode': {
     handler: methodHandlers['social.spkeasy.actor.applyInviteCode'],
+  },
+  'social.spkeasy.actor.generateInviteCode': {
+    handler: methodHandlers['social.spkeasy.actor.generateInviteCode'],
+  },
+  'social.spkeasy.actor.listInviteCodes': {
+    handler: methodHandlers['social.spkeasy.actor.listInviteCodes'],
   },
   'social.spkeasy.actor.donate': {
     handler: methodHandlers['social.spkeasy.actor.donate'],
