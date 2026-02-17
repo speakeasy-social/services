@@ -2,7 +2,7 @@
 -- CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA public;
 
 -- CreateSchema
-CREATE SCHEMA IF NOT EXISTS "private_profiles";
+-- CREATE SCHEMA IF NOT EXISTS "private_profiles";
 
 -- CreateTable
 CREATE TABLE "private_profiles"."profile_sessions" (
