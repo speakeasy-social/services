@@ -15,6 +15,12 @@ import { Readable } from 'stream';
 vi.mock('../../../src/utils/manageS3.js', () => ({
   uploadToS3: vi.fn().mockResolvedValue(undefined),
   deleteFromS3: vi.fn().mockResolvedValue(undefined),
+  getFromS3: vi.fn().mockImplementation((_path: string) => {
+    const stream = new Readable();
+    stream.push(Buffer.from('fake-media-bytes'));
+    stream.push(null);
+    return Promise.resolve(stream);
+  }),
 }));
 
 const authorDid = 'did:example:alex-author';
@@ -326,6 +332,74 @@ describe('Media API Tests', () => {
       });
       
       expect(mediaRecord).not.toBeNull();
+    });
+  });
+
+  describe('GET /xrpc/social.spkeasy.media.get', () => {
+    it('should return 200 and raw bytes with Content-Type when caller is the uploader', async () => {
+      const mediaKey = `${sessionId}/get-test-key`;
+      await prisma.media.create({
+        data: {
+          key: mediaKey,
+          userDid: authorDid,
+          mimeType: 'image/jpeg',
+          size: 16,
+        },
+      });
+
+      const response = await request(server.express)
+        .get('/xrpc/social.spkeasy.media.get')
+        .query({ key: mediaKey })
+        .set('Authorization', `Bearer ${validToken}`)
+        .expect(200);
+
+      expect(response.headers['content-type']).toBe('image/jpeg');
+      expect(response.body).toEqual(Buffer.from('fake-media-bytes'));
+    });
+
+    it('should return 403 when caller is not the uploader', async () => {
+      const mediaKey = `${sessionId}/other-user-media`;
+      const otherDid = 'did:example:other-user';
+      await prisma.media.create({
+        data: {
+          key: mediaKey,
+          userDid: otherDid,
+          mimeType: 'image/png',
+          size: 32,
+        },
+      });
+
+      await request(server.express)
+        .get('/xrpc/social.spkeasy.media.get')
+        .query({ key: mediaKey })
+        .set('Authorization', `Bearer ${validToken}`)
+        .expect(403);
+    });
+
+    it('should return 404 when media key does not exist', async () => {
+      const nonExistentKey = `${sessionId}/non-existent-get-key`;
+
+      await request(server.express)
+        .get('/xrpc/social.spkeasy.media.get')
+        .query({ key: nonExistentKey })
+        .set('Authorization', `Bearer ${validToken}`)
+        .expect(404);
+    });
+
+    it('should return 401 when unauthenticated', async () => {
+      const mediaKey = `${sessionId}/some-key`;
+
+      await request(server.express)
+        .get('/xrpc/social.spkeasy.media.get')
+        .query({ key: mediaKey })
+        .expect(401);
+    });
+
+    it('should return 400 when key query param is missing', async () => {
+      await request(server.express)
+        .get('/xrpc/social.spkeasy.media.get')
+        .set('Authorization', `Bearer ${validToken}`)
+        .expect(400);
     });
   });
 

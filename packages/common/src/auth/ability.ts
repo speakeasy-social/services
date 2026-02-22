@@ -295,6 +295,11 @@ const userAbilities = [
 
   // Media creation doesn't require ownership checks (usage tracked elsewhere)
   can('create', 'media'),
+  // Caller may only get media they uploaded
+  canIf('get', 'media', {
+    userProperty: 'did',
+    matchesRecordProperty: 'userDid',
+  }),
 
   // Testimonials - users can create/delete/update their own
   canIf('create', 'testimonial', {

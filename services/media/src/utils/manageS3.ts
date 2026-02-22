@@ -172,3 +172,46 @@ export async function deleteFromS3(path: string) {
     throw err;
   }
 }
+
+/**
+ * Stream a media file from S3 by path (key).
+ * @param path - The S3 object key (e.g. sessionId/uuid)
+ * @returns The response body as a Readable stream
+ */
+export async function getFromS3(path: string): Promise<Readable> {
+  const fullPath = `/${config.MEDIA_S3_BUCKET}/${path}`;
+  const authHeaders = getSignatureV4Headers(
+    'GET',
+    config.MEDIA_S3_ENDPOINT,
+    config.MEDIA_S3_REGION,
+    fullPath,
+    '',
+    '0',
+  );
+
+  let url: string;
+  if (config.MEDIA_S3_ENDPOINT.includes('localhost')) {
+    url = `http://${config.MEDIA_S3_ENDPOINT}${fullPath}`;
+  } else {
+    url = `https://${config.MEDIA_S3_ENDPOINT}${fullPath}`;
+  }
+
+  try {
+    const response = await axios.get<Readable>(url, {
+      responseType: 'stream',
+      headers: {
+        'X-Amz-Date': authHeaders['X-Amz-Date'],
+        'X-Amz-Content-SHA256': authHeaders['X-Amz-Content-SHA256'],
+        Authorization: authHeaders.Authorization,
+      },
+    });
+    return response.data;
+  } catch (err: any) {
+    if (err instanceof AxiosError && err.response?.data) {
+      (err as any).log = {
+        s3message: err.response?.data,
+      };
+    }
+    throw err;
+  }
+}

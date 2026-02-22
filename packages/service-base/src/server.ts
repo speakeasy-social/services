@@ -140,8 +140,10 @@ export class Server {
             throw new Error('Invalid handler output');
           }
 
-          // Send the JSON response
-          res.status(200).json(output.body);
+          // Send the JSON response only if the handler did not already send (e.g. streaming)
+          if (!res.headersSent) {
+            res.status(200).json(output.body);
+          }
 
           // Get base log data and extend it with DB metrics
           const logData = {

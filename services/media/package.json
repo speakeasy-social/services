@@ -25,6 +25,7 @@
     "prisma:generate": "prisma generate"
   },
   "dependencies": {
+    "express": "^4.21.2",
     "@atproto/lexicon": "^0.4.9",
     "@prisma/client": "^6.5.0",
     "@speakeasy-services/common": "workspace:*",
@@ -37,6 +38,7 @@
     "zod": "^3.24.2"
   },
   "devDependencies": {
+    "@types/express": "^4.17.21",
     "@mermaid-js/mermaid-cli": "^11.4.2",
     "@speakeasy-services/test-utils": "workspace:^",
     "@types/node": "^22.13.11",

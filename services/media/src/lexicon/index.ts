@@ -1,3 +1,3 @@
-import { uploadMediaDef, deleteMediaDef } from './types/media.js';
+import { uploadMediaDef, getMediaDef, deleteMediaDef } from './types/media.js';
 
-export const lexicons = [uploadMediaDef, deleteMediaDef];
+export const lexicons = [uploadMediaDef, getMediaDef, deleteMediaDef];
