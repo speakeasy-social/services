@@ -95,6 +95,22 @@ function getSignatureV4Headers(
   };
 }
 
+function buildS3RequestUrl(fullPath: string): string {
+  if (config.MEDIA_S3_ENDPOINT.includes('localhost')) {
+    return `http://${config.MEDIA_S3_ENDPOINT}${fullPath}`;
+  }
+  return `https://${config.MEDIA_S3_ENDPOINT}${fullPath}`;
+}
+
+function rethrowWithS3Context(err: unknown): never {
+  if (err instanceof AxiosError && err.response?.data) {
+    (err as any).log = {
+      s3message: err.response?.data,
+    };
+  }
+  throw err;
+}
+
 export async function uploadToS3(
   file: Readable,
   mimeType: string,
@@ -113,14 +129,7 @@ export async function uploadToS3(
     size.toString(),
   );
 
-  let url;
-  if (config.MEDIA_S3_ENDPOINT.includes('localhost')) {
-    // For localstack, use the direct endpoint format with port
-    url = `http://${config.MEDIA_S3_ENDPOINT}${fullPath}`;
-  } else {
-    // For production services, use virtual hosted-style access
-    url = `https://${config.MEDIA_S3_ENDPOINT}${fullPath}`;
-  }
+  const url = buildS3RequestUrl(fullPath);
 
   try {
     // Upload to S3 using Axios with streaming and authentication
@@ -129,14 +138,8 @@ export async function uploadToS3(
       maxBodyLength: MAX_FILE_SIZE,
       maxContentLength: MAX_FILE_SIZE,
     });
-  } catch (err: any) {
-    if (err instanceof AxiosError && err.response?.data) {
-      (err as any).log = {
-        s3message: err.response?.data,
-      };
-    }
-    // console.error('Error uploading to S3', err);
-    throw err;
+  } catch (err: unknown) {
+    rethrowWithS3Context(err);
   }
 }
 
@@ -152,24 +155,14 @@ export async function deleteFromS3(path: string) {
     '0',
   );
 
-  let url;
-  if (config.MEDIA_S3_ENDPOINT.includes('localhost')) {
-    url = `http://${config.MEDIA_S3_ENDPOINT}${fullPath}`;
-  } else {
-    url = `https://${config.MEDIA_S3_ENDPOINT}${fullPath}`;
-  }
+  const url = buildS3RequestUrl(fullPath);
 
   try {
     await axios.delete(url, {
       headers: authHeaders,
     });
-  } catch (err: any) {
-    if (err instanceof AxiosError && err.response?.data) {
-      (err as any).log = {
-        s3message: err.response?.data,
-      };
-    }
-    throw err;
+  } catch (err: unknown) {
+    rethrowWithS3Context(err);
   }
 }
 
@@ -189,12 +182,7 @@ export async function getFromS3(path: string): Promise<Readable> {
     '0',
   );
 
-  let url: string;
-  if (config.MEDIA_S3_ENDPOINT.includes('localhost')) {
-    url = `http://${config.MEDIA_S3_ENDPOINT}${fullPath}`;
-  } else {
-    url = `https://${config.MEDIA_S3_ENDPOINT}${fullPath}`;
-  }
+  const url = buildS3RequestUrl(fullPath);
 
   try {
     const response = await axios.get<Readable>(url, {
@@ -206,12 +194,7 @@ export async function getFromS3(path: string): Promise<Readable> {
       },
     });
     return response.data;
-  } catch (err: any) {
-    if (err instanceof AxiosError && err.response?.data) {
-      (err as any).log = {
-        s3message: err.response?.data,
-      };
-    }
-    throw err;
+  } catch (err: unknown) {
+    rethrowWithS3Context(err);
   }
 }
