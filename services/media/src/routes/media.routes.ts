@@ -1,3 +1,4 @@
+import { pipeline } from 'stream/promises';
 import type { Response } from 'express';
 import {
   RequestHandler,
@@ -119,12 +120,7 @@ const methodHandlers = {
     const stream = await getFromS3(key);
     res.setHeader('Content-Type', record.mimeType);
     res.status(200);
-    stream.pipe(res);
-
-    await new Promise<void>((resolve, reject) => {
-      stream.on('end', () => resolve());
-      stream.on('error', reject);
-    });
+    await pipeline(stream, res);
 
     return { body: {} };
   },
