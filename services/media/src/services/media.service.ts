@@ -98,15 +98,9 @@ export class MediaService {
     mimeType: string;
     size: number;
   } | null> {
-    const record = await prisma.media.findUnique({
+    return prisma.media.findUnique({
       where: { key },
+      select: { key: true, userDid: true, mimeType: true, size: true },
     });
-    if (!record) return null;
-    return {
-      key: record.key,
-      userDid: record.userDid,
-      mimeType: record.mimeType,
-      size: record.size,
-    };
   }
 }
