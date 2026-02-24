@@ -17,7 +17,12 @@ const requestDurations = new Map<string, number>();
 const requestQueryDurations = new Map<string, number[]>();
 
 // Type assertion needed because @prisma/client event types are incomplete
-(prisma.$on as (event: 'query', callback: (e: Prisma.QueryEvent) => void) => void)('query', (e: Prisma.QueryEvent) => {
+(
+  prisma.$on as (
+    event: 'query',
+    callback: (e: Prisma.QueryEvent) => void,
+  ) => void
+)('query', (e: Prisma.QueryEvent) => {
   if (process.env.PRISMA_LOG) {
     console.log('Query Event Fired:', e.query);
     console.log('Query Duration:', e.duration + 'ms');

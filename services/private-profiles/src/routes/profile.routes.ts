@@ -30,7 +30,9 @@ const methodHandlers = {
     validateAgainstLexicon(getProfilesDef, req.query);
     const viewerDid = getSessionDid(req);
     const rawDids = req.query.dids;
-    const targetDids = Array.isArray(rawDids) ? rawDids as string[] : [rawDids as string];
+    const targetDids = Array.isArray(rawDids)
+      ? (rawDids as string[])
+      : [rawDids as string];
     const profiles = await profileService.getProfiles(viewerDid, targetDids);
     return { body: { profiles: toProfileListView(profiles) } };
   },
