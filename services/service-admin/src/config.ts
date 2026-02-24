@@ -20,10 +20,7 @@ const serviceSchema = {
     .url()
     .describe('Database URL with service_admin schema for Prisma'),
 
-  SPKEASY_HOST: z
-    .string()
-    .min(1)
-    .describe('Host for Speakeasy front end'),
+  SPKEASY_HOST: z.string().min(1).describe('Host for Speakeasy front end'),
 
   STRIPE_SECRET_KEY: z
     .string()
@@ -34,7 +31,7 @@ const serviceSchema = {
     .string()
     .min(1)
     .describe('Webhook secret for verifying Stripe webhook signatures'),
-  } as const;
+} as const;
 
 // Create and validate the config
 const config = validateEnv(z.object(serviceSchema));

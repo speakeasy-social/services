@@ -23,7 +23,7 @@ const server = new Server({
 server.express.post(
   '/webhooks/stripe',
   express.raw({ type: 'application/json' }),
-  handleStripeWebhook
+  handleStripeWebhook,
 );
 
 export default server;

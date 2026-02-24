@@ -1,4 +1,8 @@
-import { getFeaturesDef, applyInviteCodeDef, donateDef } from './types/features.js';
+import {
+  getFeaturesDef,
+  applyInviteCodeDef,
+  donateDef,
+} from './types/features.js';
 import {
   createTestimonialDef,
   listTestimonialsDef,

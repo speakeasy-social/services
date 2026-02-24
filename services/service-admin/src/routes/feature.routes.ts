@@ -5,12 +5,12 @@ import {
   RequestHandler,
   RequestHandlerReturn,
   validateAgainstLexicon,
-  ValidationError
+  ValidationError,
 } from '@speakeasy-services/common';
 import {
   applyInviteCodeDef,
   donateDef,
-  getFeaturesDef
+  getFeaturesDef,
 } from '../lexicon/types/features.js';
 import { FeatureService } from '../services/feature.service.js';
 import { Mode } from '../types.js';
@@ -66,7 +66,9 @@ const methodHandlers = {
     const currencySchema = z.string().length(3).toUpperCase();
     const currencyResult = currencySchema.safeParse(currency);
     if (!currencyResult.success) {
-      throw new ValidationError('Currency must be a 3-letter ISO code (e.g., USD, NZD, EUR)');
+      throw new ValidationError(
+        'Currency must be a 3-letter ISO code (e.g., USD, NZD, EUR)',
+      );
     }
 
     // Validate donorEmail if provided
@@ -86,7 +88,7 @@ const methodHandlers = {
       mode as Mode,
       currencyResult.data,
       donorEmail as string | undefined,
-      donorDid
+      donorDid,
     );
 
     return {

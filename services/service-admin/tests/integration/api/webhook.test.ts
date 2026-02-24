@@ -1,4 +1,12 @@
-import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from 'vitest';
+import {
+  describe,
+  it,
+  expect,
+  beforeAll,
+  afterAll,
+  beforeEach,
+  vi,
+} from 'vitest';
 import server from '../../../src/server.js';
 import { PrismaClient } from '../../../src/generated/prisma-client/index.js';
 import request from 'supertest';
@@ -21,7 +29,9 @@ const donorDid = 'did:plc:webhook-test-donor';
 
 describe('Stripe Webhook Tests', () => {
   let prisma: PrismaClient;
-  let mockStripeInstance: { webhooks: { constructEvent: ReturnType<typeof vi.fn> } };
+  let mockStripeInstance: {
+    webhooks: { constructEvent: ReturnType<typeof vi.fn> };
+  };
 
   beforeAll(async () => {
     prisma = new PrismaClient();
@@ -29,7 +39,8 @@ describe('Stripe Webhook Tests', () => {
     await server.start();
 
     // Get the mocked Stripe instance
-    mockStripeInstance = new (Stripe as unknown as new () => typeof mockStripeInstance)();
+    mockStripeInstance =
+      new (Stripe as unknown as new () => typeof mockStripeInstance)();
   });
 
   afterAll(async () => {

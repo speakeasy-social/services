@@ -28,7 +28,7 @@ export class TestimonialService {
    */
   async createTestimonial(
     did: string,
-    content: TestimonialContent
+    content: TestimonialContent,
   ): Promise<Testimonial> {
     return prisma.testimonial.create({
       data: {
@@ -47,7 +47,10 @@ export class TestimonialService {
     did?: string;
     limit: number;
     cursor?: string;
-  }): Promise<{ testimonials: TestimonialWithContributions[]; cursor: string | null }> {
+  }): Promise<{
+    testimonials: TestimonialWithContributions[];
+    cursor: string | null;
+  }> {
     const { did, limit, cursor } = options;
 
     const where: Prisma.TestimonialWhereInput = { deletedAt: null };
@@ -97,12 +100,11 @@ export class TestimonialService {
     }
 
     // Attach contributions to each testimonial
-    const testimonialsWithContributions: TestimonialWithContributions[] = results.map(
-      (testimonial) => ({
+    const testimonialsWithContributions: TestimonialWithContributions[] =
+      results.map((testimonial) => ({
         ...testimonial,
         contributions: contributionsByDid.get(testimonial.did) || [],
-      })
-    );
+      }));
 
     return {
       testimonials: testimonialsWithContributions,

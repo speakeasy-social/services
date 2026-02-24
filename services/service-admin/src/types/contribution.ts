@@ -4,7 +4,13 @@ import { z } from 'zod';
  * Valid contribution types.
  * Maps to the contribution field in the contributions table.
  */
-export const CONTRIBUTION_TYPES = ['donor', 'contributor', 'designer', 'engineer', 'testing'] as const;
+export const CONTRIBUTION_TYPES = [
+  'donor',
+  'contributor',
+  'designer',
+  'engineer',
+  'testing',
+] as const;
 
 export type ContributionType = (typeof CONTRIBUTION_TYPES)[number];
 
@@ -26,7 +32,9 @@ export const ContributionPublicDataSchema = z.object({
  * TypeScript type for contribution public data.
  * All fields are optional, allowing flexibility across contribution types.
  */
-export type ContributionPublicData = z.infer<typeof ContributionPublicDataSchema>;
+export type ContributionPublicData = z.infer<
+  typeof ContributionPublicDataSchema
+>;
 
 /**
  * Zod schema for contribution internal data.
@@ -47,4 +55,6 @@ export const ContributionInternalDataSchema = z.union([
  * TypeScript type for contribution internal data.
  * null for contributor, designer, engineer, testing; or { amount, donationId?, appeal? } for donor.
  */
-export type ContributionInternalData = z.infer<typeof ContributionInternalDataSchema>;
+export type ContributionInternalData = z.infer<
+  typeof ContributionInternalDataSchema
+>;

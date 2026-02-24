@@ -58,10 +58,15 @@ const methodHandlers = {
     // Check if user is a contributor (business logic, separate from authorization)
     const isContributor = await contributionService.isContributor(did);
     if (!isContributor) {
-      throw new ForbiddenError('You must be a contributor to create a testimonial');
+      throw new ForbiddenError(
+        'You must be a contributor to create a testimonial',
+      );
     }
 
-    const testimonial = await testimonialService.createTestimonial(did, content);
+    const testimonial = await testimonialService.createTestimonial(
+      did,
+      content,
+    );
 
     return {
       body: {
@@ -109,7 +114,10 @@ const methodHandlers = {
     // Validate input against lexicon
     validateAgainstLexicon(updateTestimonialDef, req.body);
 
-    const { id, content } = req.body as { id: string; content: TestimonialContent };
+    const { id, content } = req.body as {
+      id: string;
+      content: TestimonialContent;
+    };
     validateTestimonialContent(content);
 
     // Fetch testimonial to check ownership

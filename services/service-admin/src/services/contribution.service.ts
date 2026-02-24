@@ -1,6 +1,9 @@
 import { getPrismaClient } from '../db.js';
 import { Prisma, Contribution } from '../generated/prisma-client/index.js';
-import type { ContributionPublicData, ContributionInternalData } from '../types/contribution.js';
+import type {
+  ContributionPublicData,
+  ContributionInternalData,
+} from '../types/contribution.js';
 
 const prisma = getPrismaClient();
 
@@ -19,14 +22,16 @@ export class ContributionService {
     did: string,
     contribution: string,
     publicData: ContributionPublicData | null,
-    internalData: ContributionInternalData
+    internalData: ContributionInternalData,
   ): Promise<Contribution> {
     return prisma.contribution.create({
       data: {
         did,
         contribution,
-        public: publicData === null ? Prisma.JsonNull : (publicData as JsonValue),
-        internal: internalData === null ? Prisma.JsonNull : (internalData as JsonValue),
+        public:
+          publicData === null ? Prisma.JsonNull : (publicData as JsonValue),
+        internal:
+          internalData === null ? Prisma.JsonNull : (internalData as JsonValue),
       },
     });
   }
@@ -67,7 +72,7 @@ export class ContributionService {
   async findRecentByDidAndDonationId(
     did: string,
     donationId: string,
-    days: number
+    days: number,
   ): Promise<Contribution | null> {
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - days);

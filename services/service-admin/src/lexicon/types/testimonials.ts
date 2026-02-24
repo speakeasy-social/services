@@ -15,7 +15,8 @@ export const createTestimonialDef: LexiconDoc = {
           properties: {
             content: {
               type: 'unknown',
-              description: 'Content object with text (required, max 300 chars) and optional facets array',
+              description:
+                'Content object with text (required, max 300 chars) and optional facets array',
             },
           },
         },
@@ -103,7 +104,13 @@ export const listTestimonialsDef: LexiconDoc = {
         createdAt: { type: 'string', format: 'datetime' },
         contribution: {
           type: 'string',
-          knownValues: ['donor', 'contributor', 'designer', 'engineer', 'testing'],
+          knownValues: [
+            'donor',
+            'contributor',
+            'designer',
+            'engineer',
+            'testing',
+          ],
           description: 'Type of contribution',
         },
         public: {
@@ -129,7 +136,8 @@ export const listTestimonialsDef: LexiconDoc = {
         },
         feature: {
           type: 'string',
-          description: 'Optional for all contribution types. Name of the feature contributed to (e.g. "dark-mode").',
+          description:
+            'Optional for all contribution types. Name of the feature contributed to (e.g. "dark-mode").',
         },
       },
     },
@@ -149,10 +157,14 @@ export const updateTestimonialDef: LexiconDoc = {
           type: 'object',
           required: ['id', 'content'],
           properties: {
-            id: { type: 'string', description: 'UUID of testimonial to update' },
+            id: {
+              type: 'string',
+              description: 'UUID of testimonial to update',
+            },
             content: {
               type: 'unknown',
-              description: 'Content object with text (required, max 300 chars) and optional facets array',
+              description:
+                'Content object with text (required, max 300 chars) and optional facets array',
             },
           },
         },
@@ -185,7 +197,10 @@ export const deleteTestimonialDef: LexiconDoc = {
           type: 'object',
           required: ['id'],
           properties: {
-            id: { type: 'string', description: 'UUID of testimonial to delete' },
+            id: {
+              type: 'string',
+              description: 'UUID of testimonial to delete',
+            },
           },
         },
       },
