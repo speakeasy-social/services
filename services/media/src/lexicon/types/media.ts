@@ -54,9 +54,10 @@ export const getMediaDef: LexiconDoc = {
   defs: {
     main: {
       type: 'query',
-      description: 'Get a media file by key (caller may only access media they uploaded)',
+      description:
+        'Get a media file by key (caller may only access media they uploaded)',
       parameters: {
-        type: 'object',
+        type: 'params',
         required: ['key'],
         properties: {
           key: {

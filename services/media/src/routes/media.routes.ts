@@ -1,7 +1,6 @@
 import { pipeline } from 'stream/promises';
-import type { Response } from 'express';
 import {
-  RequestHandler,
+  type RequestHandler,
   RequestHandlerReturn,
   ExtendedRequest,
   validateAgainstLexicon,
@@ -10,7 +9,13 @@ import {
   NotFoundError,
   ValidationError,
 } from '@speakeasy-services/common';
-import { uploadMediaDef, getMediaDef, deleteMediaDef } from '../lexicon/types/media.js';
+
+type Response = Parameters<RequestHandler>[1];
+import {
+  uploadMediaDef,
+  getMediaDef,
+  deleteMediaDef,
+} from '../lexicon/types/media.js';
 import { MediaService } from '../services/media.service.js';
 import { getFromS3 } from '../utils/manageS3.js';
 import config from '../config.js';
