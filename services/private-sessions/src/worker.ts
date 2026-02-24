@@ -32,7 +32,9 @@ const prisma = getPrismaClient();
 // Register all job handlers
 worker.work<AddRecipientToSessionJob>(
   JOB_NAMES.ADD_RECIPIENT_TO_SESSION,
-  createAddRecipientToSessionHandler(prisma, { serviceName: 'private-sessions' }),
+  createAddRecipientToSessionHandler(prisma, {
+    serviceName: 'private-sessions',
+  }),
 );
 
 worker.queue.work<RevokeSessionJob>(

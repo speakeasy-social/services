@@ -9,8 +9,5 @@ export function createAddRecipientToSessionHandler(
   prisma: PrismaClient,
   options: AddRecipientToSessionOptions,
 ) {
-  return createSharedHandler(
-    prisma as unknown as SessionPrismaClient,
-    options,
-  );
+  return createSharedHandler(prisma as unknown as SessionPrismaClient, options);
 }

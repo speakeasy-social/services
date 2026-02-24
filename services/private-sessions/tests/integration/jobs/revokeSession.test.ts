@@ -65,7 +65,7 @@ describe('revokeSession handler', () => {
     });
 
     expect(sessions).toHaveLength(2);
-    expect(sessions.every(s => s.revokedAt !== null)).toBe(true);
+    expect(sessions.every((s) => s.revokedAt !== null)).toBe(true);
   });
 
   it('should not revoke already revoked sessions', async () => {

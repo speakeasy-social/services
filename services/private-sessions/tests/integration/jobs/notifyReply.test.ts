@@ -65,7 +65,8 @@ describe('notifyReply database operations', () => {
   });
 
   it('should return null when post is not found', async () => {
-    const nonExistentUri = 'at://did:example:nobody/social.spkeasy.privatePost/fake';
+    const nonExistentUri =
+      'at://did:example:nobody/social.spkeasy.privatePost/fake';
 
     const post = await prisma.encryptedPost.findUnique({
       where: { uri: nonExistentUri },
@@ -116,8 +117,12 @@ describe('notifyReply database operations', () => {
     });
 
     expect(authorsThatMaySeeReply).toHaveLength(2);
-    expect(authorsThatMaySeeReply.map(a => a.recipientDid)).toContain(parentAuthorDid);
-    expect(authorsThatMaySeeReply.map(a => a.recipientDid)).toContain(rootAuthorDid);
+    expect(authorsThatMaySeeReply.map((a) => a.recipientDid)).toContain(
+      parentAuthorDid,
+    );
+    expect(authorsThatMaySeeReply.map((a) => a.recipientDid)).toContain(
+      rootAuthorDid,
+    );
   });
 
   it('should create notifications for thread participants', async () => {
@@ -154,7 +159,7 @@ describe('notifyReply database operations', () => {
     });
 
     expect(notifications).toHaveLength(2);
-    expect(notifications.every(n => n.authorDid === authorDid)).toBe(true);
+    expect(notifications.every((n) => n.authorDid === authorDid)).toBe(true);
   });
 
   it('should not create duplicate notifications', async () => {
@@ -260,6 +265,8 @@ describe('notifyReply database operations', () => {
 
     expect(parentPost).toBeDefined();
     expect(parentPost?.session?.sessionKeys).toHaveLength(1);
-    expect(parentPost?.session?.sessionKeys[0].userKeyPairId).toBe('00000000-0000-0000-0000-000000000001');
+    expect(parentPost?.session?.sessionKeys[0].userKeyPairId).toBe(
+      '00000000-0000-0000-0000-000000000001',
+    );
   });
 });

@@ -1,4 +1,4 @@
-import { defineConfig } from 'tsup'
+import { defineConfig } from 'tsup';
 
 export default defineConfig({
   entry: ['src/api.ts'],
@@ -10,5 +10,5 @@ export default defineConfig({
   splitting: false,
   bundle: true,
   minify: false,
-  external: ['@speakeasy-services/common', '@speakeasy-services/crypto']
-})
+  external: ['@speakeasy-services/common', '@speakeasy-services/crypto'],
+});

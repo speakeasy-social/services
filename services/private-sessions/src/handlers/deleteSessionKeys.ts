@@ -9,8 +9,5 @@ export function createDeleteSessionKeysHandler(
   prisma: PrismaClient,
   options: DeleteSessionKeysOptions,
 ) {
-  return createSharedHandler(
-    prisma as unknown as SessionPrismaClient,
-    options,
-  );
+  return createSharedHandler(prisma as unknown as SessionPrismaClient, options);
 }

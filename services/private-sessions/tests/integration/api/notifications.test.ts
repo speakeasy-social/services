@@ -1,4 +1,12 @@
-import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach } from 'vitest';
+import {
+  describe,
+  it,
+  expect,
+  beforeAll,
+  afterAll,
+  beforeEach,
+  afterEach,
+} from 'vitest';
 import server from '../../../src/server.js';
 import { PrismaClient } from '../../../src/generated/prisma-client/index.js';
 import {
@@ -30,7 +38,7 @@ describe('Notifications API Tests', () => {
     // Mock process.exit to prevent test failures
     const originalExit = process.exit;
     process.exit = (() => {}) as any;
-    
+
     try {
       // @ts-ignore - shutdown is private but we need it for tests
       await server.shutdown();
@@ -51,7 +59,7 @@ describe('Notifications API Tests', () => {
     await prisma.encryptedPost.deleteMany();
     await prisma.sessionKey.deleteMany();
     await prisma.session.deleteMany();
-    
+
     // Setup mock for Bluesky session validation
     mockBlueskySession({ did: userDid, host: 'http://localhost:2583' });
   });
@@ -74,7 +82,7 @@ describe('Notifications API Tests', () => {
             authorDid: otherUserDid,
             reasonSubject: `at://${otherUserDid}/social.spkeasy.privatePost/post1`,
             readAt: null, // Unread
-            updatedAt: new Date()
+            updatedAt: new Date(),
           },
         }),
         prisma.notification.create({
@@ -85,7 +93,7 @@ describe('Notifications API Tests', () => {
             authorDid: otherUserDid,
             reasonSubject: `at://${userDid}/social.spkeasy.privatePost/post2`,
             readAt: null, // Unread
-            updatedAt: new Date()
+            updatedAt: new Date(),
           },
         }),
         prisma.notification.create({
@@ -96,7 +104,7 @@ describe('Notifications API Tests', () => {
             authorDid: otherUserDid,
             reasonSubject: `at://${otherUserDid}/social.spkeasy.privatePost/post3`,
             readAt: new Date(), // Read
-            updatedAt: new Date()
+            updatedAt: new Date(),
           },
         }),
       ]);
@@ -137,7 +145,7 @@ describe('Notifications API Tests', () => {
             authorDid: otherUserDid,
             reasonSubject: `at://${otherUserDid}/social.spkeasy.privatePost/post1`,
             createdAt: new Date(Date.now() - 1000),
-            updatedAt: new Date()
+            updatedAt: new Date(),
           },
         }),
         prisma.notification.create({
@@ -148,7 +156,7 @@ describe('Notifications API Tests', () => {
             authorDid: otherUserDid,
             reasonSubject: `at://${userDid}/social.spkeasy.privatePost/post2`,
             createdAt: new Date(),
-            updatedAt: new Date()
+            updatedAt: new Date(),
           },
         }),
       ]);
@@ -176,7 +184,7 @@ describe('Notifications API Tests', () => {
             authorDid: otherUserDid,
             reasonSubject: `at://${otherUserDid}/social.spkeasy.privatePost/post${i}`,
             createdAt: new Date(Date.now() - i * 1000),
-            updatedAt: new Date()
+            updatedAt: new Date(),
           },
         });
       }
@@ -207,7 +215,7 @@ describe('Notifications API Tests', () => {
           authorDid: userDid,
           reasonSubject: `at://${userDid}/social.spkeasy.privatePost/post1`,
           createdAt: new Date(),
-          updatedAt: new Date()
+          updatedAt: new Date(),
         },
       });
 
@@ -232,7 +240,7 @@ describe('Notifications API Tests', () => {
           reasonSubject: `at://${otherUserDid}/social.spkeasy.privatePost/post1`,
           createdAt: new Date(Date.now() - 2000),
           readAt: null,
-          updatedAt: new Date()
+          updatedAt: new Date(),
         },
       });
 
@@ -245,7 +253,7 @@ describe('Notifications API Tests', () => {
           reasonSubject: `at://${userDid}/social.spkeasy.privatePost/post2`,
           createdAt: new Date(Date.now() - 1000),
           readAt: null,
-          updatedAt: new Date()
+          updatedAt: new Date(),
         },
       });
 
@@ -262,14 +270,14 @@ describe('Notifications API Tests', () => {
 
       // Verify notifications were marked as read (readAt field updated)
       const updatedNotifications = await prisma.notification.findMany({
-        where: { 
+        where: {
           userDid,
-          id: { in: [notification1.id, notification2.id] }
+          id: { in: [notification1.id, notification2.id] },
         },
       });
-      
+
       expect(updatedNotifications).toHaveLength(2);
-      updatedNotifications.forEach(notification => {
+      updatedNotifications.forEach((notification) => {
         expect(notification.readAt).not.toBeNull();
       });
     });
@@ -288,7 +296,7 @@ describe('Notifications API Tests', () => {
           reasonSubject: `at://${otherUserDid}/social.spkeasy.privatePost/post1`,
           createdAt: baseTime,
           readAt: null,
-          updatedAt: new Date()
+          updatedAt: new Date(),
         },
       });
 
@@ -302,7 +310,7 @@ describe('Notifications API Tests', () => {
           reasonSubject: `at://${otherUserDid}/social.spkeasy.privatePost/post2`,
           createdAt: new Date(baseTime.getTime() + 2000), // 2 seconds after base
           readAt: null,
-          updatedAt: new Date()
+          updatedAt: new Date(),
         },
       });
 
@@ -320,7 +328,7 @@ describe('Notifications API Tests', () => {
       const updatedNewNotification = await prisma.notification.findUnique({
         where: { id: newNotification.id },
       });
-      
+
       expect(updatedOldNotification?.readAt).not.toBeNull(); // Should be marked as read
       expect(updatedNewNotification?.readAt).toBeNull(); // Should still be unread
     });

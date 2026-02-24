@@ -86,7 +86,7 @@ describe('updateSessionKeys handler', () => {
 
     // Create multiple sessions
     await prisma.session.createMany({
-      data: sessionIds.map(id => ({
+      data: sessionIds.map((id) => ({
         id,
         authorDid,
         expiresAt: new Date(Date.now() + 86400000),
