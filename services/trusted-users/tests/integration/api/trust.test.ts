@@ -1,4 +1,11 @@
-import { describe, expect, beforeAll, afterAll, beforeEach, afterEach } from 'vitest';
+import {
+  describe,
+  expect,
+  beforeAll,
+  afterAll,
+  beforeEach,
+  afterEach,
+} from 'vitest';
 import server from '../../../src/server.js';
 import { PrismaClient } from '../../../src/generated/prisma-client/index.js';
 import {
@@ -38,20 +45,26 @@ describe('Trusted Users API Tests', () => {
   beforeEach(async () => {
     // Clear test data before each test
     await prisma.trustedUser.deleteMany();
-    
+
     // Setup mock for Bluesky session validation with multiple users
     mockMultiUserBlueskySession({
       users: new Map([
-        [validToken, {
-          did: authorDid,
-          handle: 'alex.test',
-          email: 'alex@example.com',
-        }],
-        [wrongUserToken, {
-          did: wrongUserDid,
-          handle: 'wrong.test',
-          email: 'wrong@example.com',
-        }],
+        [
+          validToken,
+          {
+            did: authorDid,
+            handle: 'alex.test',
+            email: 'alex@example.com',
+          },
+        ],
+        [
+          wrongUserToken,
+          {
+            did: wrongUserDid,
+            handle: 'wrong.test',
+            email: 'wrong@example.com',
+          },
+        ],
       ]),
     });
   });
@@ -73,9 +86,9 @@ describe('Trusted Users API Tests', () => {
         note: `${test.note} - without token`,
         bearer: undefined,
         expectedStatus: 401,
-        expectedBody: { 
-          error: 'AuthenticationError', 
-          message: 'Missing authorization header' 
+        expectedBody: {
+          error: 'AuthenticationError',
+          message: 'Missing authorization header',
         },
         assert: undefined, // Remove assertions for auth failure cases
       },
@@ -131,10 +144,12 @@ describe('Trusted Users API Tests', () => {
         });
       },
       expectedBody: {
-        trusted: [{ 
-          recipientDid: validRecipient,
-          createdAt: expect.any(String)
-        }],
+        trusted: [
+          {
+            recipientDid: validRecipient,
+            createdAt: expect.any(String),
+          },
+        ],
       },
     },
     {
@@ -174,10 +189,10 @@ describe('Trusted Users API Tests', () => {
         });
       },
       expectedStatus: 400,
-      expectedBody: { 
+      expectedBody: {
         error: 'InvalidRequest',
         code: 'AlreadyExists',
-        message: 'That TrustedUser already exists'
+        message: 'That TrustedUser already exists',
       },
     },
     {
@@ -225,10 +240,10 @@ describe('Trusted Users API Tests', () => {
       body: { recipientDid: invalidRecipient },
       bearer: validToken,
       expectedStatus: 404,
-      expectedBody: { 
+      expectedBody: {
         error: 'NotFoundError',
         message: 'Trust relationship does not exist',
-        code: 'NotFound'
+        code: 'NotFound',
       },
     },
   ];

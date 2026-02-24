@@ -155,7 +155,11 @@ export function validateAgainstLexicon(
  */
 function schemaToZodSchema(
   lexicon: LexiconDoc,
-  schema: { type: string; required?: string[]; properties?: Record<string, any> },
+  schema: {
+    type: string;
+    required?: string[];
+    properties?: Record<string, any>;
+  },
 ): z.ZodType<any> {
   const properties = schema.properties || {};
   const required = schema.required || [];
@@ -186,9 +190,7 @@ function schemaToZodSchema(
           const refDef = refParts.length > 1 ? refParts[1] : refParts[0];
           arraySchema = z.array(lexiconToZodSchema(lexicon, refDef));
         } else if (propDef.items?.type === 'object') {
-          arraySchema = z.array(
-            schemaToZodSchema(lexicon, propDef.items),
-          );
+          arraySchema = z.array(schemaToZodSchema(lexicon, propDef.items));
         } else {
           arraySchema = z.array(z.string());
         }
@@ -233,16 +235,15 @@ function schemaToZodSchema(
  * @returns The validated data if successful
  * @throws {ValidationError} If validation fails, with details about what failed
  */
-export function validateLexiconInput(
-  lexicon: LexiconDoc,
-  input: unknown,
-): any {
+export function validateLexiconInput(lexicon: LexiconDoc, input: unknown): any {
   const def = lexicon.defs.main as LexiconDefinition;
   if (!def) {
     throw new Error('Definition main not found in lexicon');
   }
 
-  let schema: { type: string; required?: string[]; properties?: Record<string, any> } | undefined;
+  let schema:
+    | { type: string; required?: string[]; properties?: Record<string, any> }
+    | undefined;
 
   // For queries, use parameters; for procedures, use input.schema or parameters
   if (def.type === 'query') {

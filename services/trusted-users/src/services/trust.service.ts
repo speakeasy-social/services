@@ -27,11 +27,11 @@ export class TrustService {
       authorDid,
       deletedAt: null,
     };
-    
+
     if (recipientDid) {
       whereClause.recipientDid = recipientDid;
     }
-    
+
     return prisma.trustedUser.findMany({
       where: whereClause,
     });

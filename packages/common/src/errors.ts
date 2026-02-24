@@ -101,4 +101,3 @@ export class NoSessionError extends ServiceError {
     this.details = details;
   }
 }
-

@@ -10,5 +10,5 @@ export default defineConfig({
   target: 'node20',
   outDir: 'dist',
   treeshake: false,
-  outExtension: () => ({ js: '.js' })
+  outExtension: () => ({ js: '.js' }),
 });

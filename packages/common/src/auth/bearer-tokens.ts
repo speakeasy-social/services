@@ -95,7 +95,11 @@ export const authenticateToken = async (req: any, res: any, next: any) => {
  * If auth header is present, it will be validated; if invalid, it throws.
  * If no auth header, req.user will be undefined and request proceeds.
  */
-export const optionalAuthenticateToken = async (req: any, res: any, next: any) => {
+export const optionalAuthenticateToken = async (
+  req: any,
+  res: any,
+  next: any,
+) => {
   const authHeader = Array.isArray(req.headers.authorization)
     ? req.headers.authorization[0]
     : req.headers.authorization;
@@ -131,7 +135,7 @@ export function getServiceApiKey(serviceName: string): string {
     'private-profiles': process.env.PRIVATE_PROFILES_API_KEY,
     'trusted-users': process.env.TRUSTED_USERS_API_KEY,
     'user-keys': process.env.USER_KEYS_API_KEY,
-    'media': process.env.MEDIA_API_KEY,
+    media: process.env.MEDIA_API_KEY,
     'service-admin': process.env.SERVICE_ADMIN_API_KEY,
   };
 

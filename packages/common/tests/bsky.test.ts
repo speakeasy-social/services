@@ -5,7 +5,6 @@ import { fetchBlueskySession } from '../src/bsky.js';
 import { AuthenticationError } from '../src/errors.js';
 
 describe('Enhanced JWT Authentication - fetchBlueskySession', () => {
-  
   beforeEach(() => {
     nock.cleanAll();
   });
@@ -16,66 +15,86 @@ describe('Enhanced JWT Authentication - fetchBlueskySession', () => {
 
   describe('JWT Structure Validation', () => {
     test('should reject invalid JWT format', async () => {
-      await expect(fetchBlueskySession('invalid-jwt')).rejects.toThrow(AuthenticationError);
-      await expect(fetchBlueskySession('invalid-jwt')).rejects.toThrow('Failed to decode JWT');
+      await expect(fetchBlueskySession('invalid-jwt')).rejects.toThrow(
+        AuthenticationError,
+      );
+      await expect(fetchBlueskySession('invalid-jwt')).rejects.toThrow(
+        'Failed to decode JWT',
+      );
     });
 
     test('should work without issuer (iss) claim', async () => {
       const tokenWithoutIss = jwt.sign(
-        { 
+        {
           sub: 'did:example:test',
-          aud: 'did:web:bsky.social'  // Use trusted domain to avoid profile fetch
-        }, 
-        'secret', 
-        { algorithm: 'HS256', expiresIn: '1h' }
+          aud: 'did:web:bsky.social', // Use trusted domain to avoid profile fetch
+        },
+        'secret',
+        { algorithm: 'HS256', expiresIn: '1h' },
       );
-      
+
       // Should proceed to PDS call, which will reject invalid test token
-      await expect(fetchBlueskySession(tokenWithoutIss)).rejects.toThrow(AuthenticationError);
-      await expect(fetchBlueskySession(tokenWithoutIss)).rejects.toThrow('PDS session verification failed');
+      await expect(fetchBlueskySession(tokenWithoutIss)).rejects.toThrow(
+        AuthenticationError,
+      );
+      await expect(fetchBlueskySession(tokenWithoutIss)).rejects.toThrow(
+        'PDS session verification failed',
+      );
     });
 
     test('should reject JWT without subject (sub)', async () => {
       const tokenWithoutSub = jwt.sign(
-        { 
-          aud: 'did:web:bsky.social'
-        }, 
-        'secret', 
-        { algorithm: 'HS256', expiresIn: '1h' }
+        {
+          aud: 'did:web:bsky.social',
+        },
+        'secret',
+        { algorithm: 'HS256', expiresIn: '1h' },
       );
-      
-      await expect(fetchBlueskySession(tokenWithoutSub)).rejects.toThrow(AuthenticationError);
-      await expect(fetchBlueskySession(tokenWithoutSub)).rejects.toThrow('JWT missing or invalid subject (sub) claim');
+
+      await expect(fetchBlueskySession(tokenWithoutSub)).rejects.toThrow(
+        AuthenticationError,
+      );
+      await expect(fetchBlueskySession(tokenWithoutSub)).rejects.toThrow(
+        'JWT missing or invalid subject (sub) claim',
+      );
     });
 
     test('should reject JWT with invalid DID format in subject', async () => {
       const tokenWithInvalidDid = jwt.sign(
-        { 
+        {
           sub: 'invalid-did-format', // Should start with 'did:'
-          aud: 'did:web:bsky.social'
-        }, 
-        'secret', 
-        { algorithm: 'HS256', expiresIn: '1h' }
+          aud: 'did:web:bsky.social',
+        },
+        'secret',
+        { algorithm: 'HS256', expiresIn: '1h' },
       );
-      
-      await expect(fetchBlueskySession(tokenWithInvalidDid)).rejects.toThrow(AuthenticationError);
-      await expect(fetchBlueskySession(tokenWithInvalidDid)).rejects.toThrow('must be a valid DID');
+
+      await expect(fetchBlueskySession(tokenWithInvalidDid)).rejects.toThrow(
+        AuthenticationError,
+      );
+      await expect(fetchBlueskySession(tokenWithInvalidDid)).rejects.toThrow(
+        'must be a valid DID',
+      );
     });
 
     test('should return error response for expired JWT', async () => {
       const expiredToken = jwt.sign(
-        { 
+        {
           sub: 'did:example:test',
           aud: 'did:web:bsky.social',
-          exp: Math.floor(Date.now() / 1000) - 3600 // 1 hour ago
-        }, 
-        'secret', 
-        { algorithm: 'HS256' }
+          exp: Math.floor(Date.now() / 1000) - 3600, // 1 hour ago
+        },
+        'secret',
+        { algorithm: 'HS256' },
       );
 
       // PDS returns error response for invalid test tokens, function throws AuthenticationError
-      await expect(fetchBlueskySession(expiredToken)).rejects.toThrow(AuthenticationError);
-      await expect(fetchBlueskySession(expiredToken)).rejects.toThrow('PDS session verification failed');
+      await expect(fetchBlueskySession(expiredToken)).rejects.toThrow(
+        AuthenticationError,
+      );
+      await expect(fetchBlueskySession(expiredToken)).rejects.toThrow(
+        'PDS session verification failed',
+      );
     });
   });
 
@@ -86,13 +105,13 @@ describe('Enhanced JWT Authentication - fetchBlueskySession', () => {
       const userHandle = 'testuser.bsky.social';
 
       const validToken = jwt.sign(
-        { 
+        {
           sub: userDid,
           aud: 'did:web:bsky.social',
-          handle: userHandle
-        }, 
-        'secret', 
-        { algorithm: 'HS256', expiresIn: '1h' }
+          handle: userHandle,
+        },
+        'secret',
+        { algorithm: 'HS256', expiresIn: '1h' },
       );
 
       // Mock successful PDS response
@@ -103,7 +122,7 @@ describe('Enhanced JWT Authentication - fetchBlueskySession', () => {
           did: userDid,
           handle: userHandle,
           email: 'test@example.com',
-          refreshJwt: 'mock-refresh-token'
+          refreshJwt: 'mock-refresh-token',
         });
 
       const result = await fetchBlueskySession(validToken);
@@ -119,17 +138,21 @@ describe('Enhanced JWT Authentication - fetchBlueskySession', () => {
       const userDid = 'did:example:testuser';
 
       const validToken = jwt.sign(
-        { 
+        {
           sub: userDid,
-          aud: 'did:web:bsky.social'
-        }, 
-        'secret', 
-        { algorithm: 'HS256', expiresIn: '1h' }
+          aud: 'did:web:bsky.social',
+        },
+        'secret',
+        { algorithm: 'HS256', expiresIn: '1h' },
       );
 
       // PDS returns error response for invalid test tokens, function throws AuthenticationError
-      await expect(fetchBlueskySession(validToken)).rejects.toThrow(AuthenticationError);
-      await expect(fetchBlueskySession(validToken)).rejects.toThrow('PDS session verification failed');
+      await expect(fetchBlueskySession(validToken)).rejects.toThrow(
+        AuthenticationError,
+      );
+      await expect(fetchBlueskySession(validToken)).rejects.toThrow(
+        'PDS session verification failed',
+      );
     });
 
     test('should handle network errors to PDS', async () => {
@@ -137,12 +160,12 @@ describe('Enhanced JWT Authentication - fetchBlueskySession', () => {
       const userDid = 'did:example:testuser';
 
       const validToken = jwt.sign(
-        { 
+        {
           sub: userDid,
-          aud: 'did:web:bsky.social'
-        }, 
-        'secret', 
-        { algorithm: 'HS256', expiresIn: '1h' }
+          aud: 'did:web:bsky.social',
+        },
+        'secret',
+        { algorithm: 'HS256', expiresIn: '1h' },
       );
 
       // Mock network error
@@ -160,17 +183,21 @@ describe('Enhanced JWT Authentication - fetchBlueskySession', () => {
       const userDid = 'did:example:testuser';
 
       const testToken = jwt.sign(
-        { 
+        {
           sub: userDid,
-          aud: 'did:web:bsky.social'
-        }, 
-        'secret', 
-        { algorithm: 'HS256', expiresIn: '1h' }
+          aud: 'did:web:bsky.social',
+        },
+        'secret',
+        { algorithm: 'HS256', expiresIn: '1h' },
       );
 
       // Function throws AuthenticationError when PDS returns error responses
-      await expect(fetchBlueskySession(testToken)).rejects.toThrow(AuthenticationError);
-      await expect(fetchBlueskySession(testToken)).rejects.toThrow('PDS session verification failed');
+      await expect(fetchBlueskySession(testToken)).rejects.toThrow(
+        AuthenticationError,
+      );
+      await expect(fetchBlueskySession(testToken)).rejects.toThrow(
+        'PDS session verification failed',
+      );
     });
   });
 
@@ -181,13 +208,13 @@ describe('Enhanced JWT Authentication - fetchBlueskySession', () => {
       const userHandle = 'user.custom-domain.example.com';
 
       const validToken = jwt.sign(
-        { 
+        {
           sub: userDid,
           aud: 'did:web:custom-domain.example.com',
-          handle: userHandle
-        }, 
-        'secret', 
-        { algorithm: 'HS256', expiresIn: '1h' }
+          handle: userHandle,
+        },
+        'secret',
+        { algorithm: 'HS256', expiresIn: '1h' },
       );
 
       // Custom domain will fail with network error (which is expected)
