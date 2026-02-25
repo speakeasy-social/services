@@ -1,6 +1,11 @@
 import { Response, NextFunction } from 'express';
 import { AuthorizationError } from '../errors.js';
-import { User, Service, PublicUser, ExtendedRequest } from '../express-extensions.js';
+import {
+  User,
+  Service,
+  PublicUser,
+  ExtendedRequest,
+} from '../express-extensions.js';
 
 /**
  * Resolve a potentially nested property path on an object.
@@ -19,7 +24,10 @@ import { User, Service, PublicUser, ExtendedRequest } from '../express-extension
  * getNestedValue({ recipients: [{ did: 'did:1' }, { did: 'did:2' }] }, 'recipients.did')
  * // Returns: ['did:1', 'did:2']
  */
-const getNestedValue = (obj: Record<string, unknown>, path: string): unknown => {
+const getNestedValue = (
+  obj: Record<string, unknown>,
+  path: string,
+): unknown => {
   const parts = path.split('.');
   let current: unknown = obj;
 
@@ -29,17 +37,26 @@ const getNestedValue = (obj: Record<string, unknown>, path: string): unknown => 
     // If current is an array, map over each element and continue traversal
     if (Array.isArray(current)) {
       const remainingPath = parts.slice(i).join('.');
-      return current.flatMap((item) => {
-        if (remainingPath) {
-          const result = getNestedValue(item as Record<string, unknown>, remainingPath);
-          return Array.isArray(result) ? result : [result];
-        }
-        return item;
-      }).filter((item) => item !== undefined && item !== null);
+      return current
+        .flatMap((item) => {
+          if (remainingPath) {
+            const result = getNestedValue(
+              item as Record<string, unknown>,
+              remainingPath,
+            );
+            return Array.isArray(result) ? result : [result];
+          }
+          return item;
+        })
+        .filter((item) => item !== undefined && item !== null);
     }
 
     // Normal traversal
-    if (current === null || current === undefined || typeof current !== 'object') {
+    if (
+      current === null ||
+      current === undefined ||
+      typeof current !== 'object'
+    ) {
       return undefined;
     }
 
@@ -59,7 +76,10 @@ const getNestedValue = (obj: Record<string, unknown>, path: string): unknown => 
  * Returns true if all segments of the path exist and are not undefined.
  * When encountering arrays, checks that all elements have the remaining path segments.
  */
-const hasNestedProperty = (obj: Record<string, unknown>, path: string): boolean => {
+const hasNestedProperty = (
+  obj: Record<string, unknown>,
+  path: string,
+): boolean => {
   const parts = path.split('.');
   let current: unknown = obj;
 
@@ -72,11 +92,18 @@ const hasNestedProperty = (obj: Record<string, unknown>, path: string): boolean 
         return false; // Empty arrays don't have any properties
       }
       const remainingPath = parts.slice(i).join('.');
-      return current.every((item) => hasNestedProperty(item as Record<string, unknown>, remainingPath));
+      return current.every((item) =>
+        hasNestedProperty(item as Record<string, unknown>, remainingPath),
+      );
     }
 
     // Normal traversal
-    if (current === null || current === undefined || typeof current !== 'object' || !(part in current)) {
+    if (
+      current === null ||
+      current === undefined ||
+      typeof current !== 'object' ||
+      !(part in current)
+    ) {
       return false;
     }
     current = (current as Record<string, unknown>)[part];
@@ -173,10 +200,14 @@ const canIf = (
   },
 ) => {
   if (mapping.matchesRecordProperty && mapping.equalsLiteral) {
-    throw new Error('canIf: Cannot specify both matchesRecordProperty and equalsLiteral');
+    throw new Error(
+      'canIf: Cannot specify both matchesRecordProperty and equalsLiteral',
+    );
   }
   if (!mapping.matchesRecordProperty && !mapping.equalsLiteral) {
-    throw new Error('canIf: Must specify either matchesRecordProperty or equalsLiteral');
+    throw new Error(
+      'canIf: Must specify either matchesRecordProperty or equalsLiteral',
+    );
   }
 
   const value = mapping.equalsLiteral
@@ -191,10 +222,7 @@ const canIf = (
  * These are intentionally limited to read-only operations on public data.
  * Defined first so they can be included in userAbilities.
  */
-const publicAbilities = [
-  can('list', 'testimonial'),
-  can('get', 'testimonial'),
-];
+const publicAbilities = [can('list', 'testimonial'), can('get', 'testimonial')];
 
 /**
  * Define what users are allowed to do
@@ -295,6 +323,11 @@ const userAbilities = [
 
   // Media creation doesn't require ownership checks (usage tracked elsewhere)
   can('create', 'media'),
+  // Caller may only get media they uploaded
+  canIf('get', 'media', {
+    userProperty: 'did',
+    matchesRecordProperty: 'userDid',
+  }),
 
   // Testimonials - users can create/delete/update their own
   canIf('create', 'testimonial', {
@@ -397,7 +430,11 @@ const serviceAbilities = [
  * Middleware that sets up the ability based on whether the request is from a user or service.
  * Attaches the appropriate set of authorization abilities to the request
  */
-export async function authorizationMiddleware(req: ExtendedRequest, res: Response, next: NextFunction) {
+export async function authorizationMiddleware(
+  req: ExtendedRequest,
+  res: Response,
+  next: NextFunction,
+) {
   // Check if this is a user or service authenticated request
   if (req.user?.type === 'user') {
     req.abilities = userAbilities;
@@ -416,7 +453,11 @@ export async function authorizationMiddleware(req: ExtendedRequest, res: Respons
  * For unauthenticated requests, sets up a mock public user with limited abilities.
  * Useful for services with both public and protected endpoints.
  */
-export async function optionalAuthorizationMiddleware(req: ExtendedRequest, res: Response, next: NextFunction) {
+export async function optionalAuthorizationMiddleware(
+  req: ExtendedRequest,
+  res: Response,
+  next: NextFunction,
+) {
   if (req.user?.type === 'user') {
     req.abilities = userAbilities;
   } else if (req.user?.type === 'service') {
@@ -529,17 +570,22 @@ function isAuthorized(
                 const recordPropertyValue = value as string;
                 throw new AuthorizationError(
                   `Authorization condition appears backwards!\n` +
-                  `  User has no property '${key}' but record does.\n` +
-                  `  Did you mean: { ${recordPropertyValue}: '${key}' } instead of { ${key}: '${recordPropertyValue}' }?\n` +
-                  `  Remember: { userProperty: 'recordProperty' }`,
-                  { key, value, userProperties: Object.keys(user), recordProperties: Object.keys(record) }
+                    `  User has no property '${key}' but record does.\n` +
+                    `  Did you mean: { ${recordPropertyValue}: '${key}' } instead of { ${key}: '${recordPropertyValue}' }?\n` +
+                    `  Remember: { userProperty: 'recordProperty' }`,
+                  {
+                    key,
+                    value,
+                    userProperties: Object.keys(user),
+                    recordProperties: Object.keys(record),
+                  },
                 );
               }
               throw new AuthorizationError(
                 `Authorization condition error: User/Service has no property '${key}'.\n` +
-                `  Available properties: ${Object.keys(user).join(', ')}\n` +
-                `  Condition was: { ${key}: '${value}' }`,
-                { key, value, userProperties: Object.keys(user) }
+                  `  Available properties: ${Object.keys(user).join(', ')}\n` +
+                  `  Condition was: { ${key}: '${value}' }`,
+                { key, value, userProperties: Object.keys(user) },
               );
             }
 
@@ -547,10 +593,10 @@ function isAuthorized(
             if (!isLiteralValue && !hasNestedProperty(record, value)) {
               throw new AuthorizationError(
                 `Authorization condition error: Record has no property '${value}'.\n` +
-                `  Available properties: ${Object.keys(record).join(', ')}\n` +
-                `  Condition was: { ${key}: '${value}' }\n` +
-                `  TIP: For nested properties, use dot notation (e.g., 'session.authorDid')`,
-                { key, value, recordProperties: Object.keys(record) }
+                  `  Available properties: ${Object.keys(record).join(', ')}\n` +
+                  `  Condition was: { ${key}: '${value}' }\n` +
+                  `  TIP: For nested properties, use dot notation (e.g., 'session.authorDid')`,
+                { key, value, recordProperties: Object.keys(record) },
               );
             }
           }
@@ -574,12 +620,17 @@ function isAuthorized(
           // direct property match (e.g., add `recipientDid` directly to the record).
           let matches: boolean;
           if (Array.isArray(expectedValue)) {
-            matches = expectedValue.length > 0 && expectedValue.every((val) => userValue === val);
+            matches =
+              expectedValue.length > 0 &&
+              expectedValue.every((val) => userValue === val);
           } else {
             matches = userValue === expectedValue;
           }
 
-          if (process.env.DEBUG_AUTH) console.log(`Comparing: user.${key}="${userValue}" vs expected="${expectedValue}" => ${matches}`);
+          if (process.env.DEBUG_AUTH)
+            console.log(
+              `Comparing: user.${key}="${userValue}" vs expected="${expectedValue}" => ${matches}`,
+            );
           return matches;
         })
       );

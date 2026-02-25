@@ -43,9 +43,9 @@
  * @module api-test-generator
  */
 
-import request from "supertest";
-import { Server } from "@speakeasy-services/service-base";
-import { beforeEach, afterEach, describe, it, expect } from "vitest";
+import request from 'supertest';
+import { Server } from '@speakeasy-services/service-base';
+import { beforeEach, afterEach, describe, it, expect } from 'vitest';
 
 /**
  * Interface defining the structure of an API test case.
@@ -65,7 +65,7 @@ export interface ApiTest {
   /** A descriptive note about what the test is checking */
   note: string;
   /** HTTP method to use for the request. Defaults to "get" if not specified */
-  method?: "get" | "post" | "put" | "delete";
+  method?: 'get' | 'post' | 'put' | 'delete';
   /** The API endpoint to test, without the /xrpc prefix */
   endpoint: string;
   /** Query parameters to include in the request */
@@ -111,14 +111,14 @@ export interface ApiTestRunnerOptions {
 }
 
 const ensureXrpcPrefix = (endpoint: string): string => {
-  return endpoint.startsWith("/") ? endpoint : `/xrpc/${endpoint}`;
+  return endpoint.startsWith('/') ? endpoint : `/xrpc/${endpoint}`;
 };
 
 export const createApiTestRunner = (options: ApiTestRunnerOptions) => {
   const { server } = options;
 
   return async (test: ApiTest) => {
-    const method = test.method || "get";
+    const method = test.method || 'get';
     let testName = `${method} ${test.endpoint}`;
     if (test.note) {
       testName = `${testName} - ${test.note}`;
@@ -158,11 +158,11 @@ export const createApiTestRunner = (options: ApiTestRunnerOptions) => {
 
         // Add bearer token if provided
         if (test.bearer) {
-          requestBuilder.set("Authorization", `Bearer ${test.bearer}`);
+          requestBuilder.set('Authorization', `Bearer ${test.bearer}`);
         }
       });
 
-      it("should return expected response", async () => {
+      it('should return expected response', async () => {
         // Execute request
         response = await requestBuilder.expect(test.expectedStatus || 200);
 
@@ -171,7 +171,7 @@ export const createApiTestRunner = (options: ApiTestRunnerOptions) => {
 
       if (test.assert) {
         const assertFn = test.assert;
-        it("should satisfy additional assertions", async () => {
+        it('should satisfy additional assertions', async () => {
           await assertFn();
         });
       }
@@ -219,7 +219,7 @@ export const createApiTestRunner = (options: ApiTestRunnerOptions) => {
 export const runApiTests = (
   options: ApiTestRunnerOptions,
   tests: ApiTest[],
-  describeName: string = "API Tests",
+  describeName: string = 'API Tests',
 ) => {
   const runTest = createApiTestRunner(options);
 

@@ -1,4 +1,12 @@
-import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from 'vitest';
+import {
+  describe,
+  it,
+  expect,
+  beforeAll,
+  afterAll,
+  beforeEach,
+  vi,
+} from 'vitest';
 import { PrismaClient } from '../../../dist/generated/prisma-client/index.js';
 import {
   createAddRecipientToSessionHandler,
@@ -70,28 +78,30 @@ describe('Trust Integration Tests', () => {
       });
 
       // Mock trusted-users API response (recipient is trusted)
-      vi.mocked(speakeasyApiRequest).mockImplementation(async (config, params) => {
-        if (config.path === 'social.spkeasy.graph.getTrusted') {
-          return { trusted: [{ did: recipientDid }] };
-        }
-        if (config.path === 'social.spkeasy.key.getPrivateKeys') {
-          return {
-            keys: [
-              {
-                userKeyPairId: '00000000-0000-0000-0000-000000000001',
-                privateKey: 'mock-private-key',
-              },
-            ],
-          };
-        }
-        if (config.path === 'social.spkeasy.key.getPublicKey') {
-          return {
-            userKeyPairId: '00000000-0000-0000-0000-000000000002',
-            publicKey: 'mock-public-key',
-          };
-        }
-        return {};
-      });
+      vi.mocked(speakeasyApiRequest).mockImplementation(
+        async (config, params) => {
+          if (config.path === 'social.spkeasy.graph.getTrusted') {
+            return { trusted: [{ did: recipientDid }] };
+          }
+          if (config.path === 'social.spkeasy.key.getPrivateKeys') {
+            return {
+              keys: [
+                {
+                  userKeyPairId: '00000000-0000-0000-0000-000000000001',
+                  privateKey: 'mock-private-key',
+                },
+              ],
+            };
+          }
+          if (config.path === 'social.spkeasy.key.getPublicKey') {
+            return {
+              userKeyPairId: '00000000-0000-0000-0000-000000000002',
+              publicKey: 'mock-public-key',
+            };
+          }
+          return {};
+        },
+      );
 
       // Execute handler
       const handler = createAddRecipientToSessionHandler(prisma, {
@@ -107,9 +117,13 @@ describe('Trust Integration Tests', () => {
       });
 
       expect(sessionKeys).toHaveLength(2);
-      const recipientKey = sessionKeys.find((sk) => sk.recipientDid === recipientDid);
+      const recipientKey = sessionKeys.find(
+        (sk) => sk.recipientDid === recipientDid,
+      );
       expect(recipientKey).toBeDefined();
-      expect(recipientKey?.userKeyPairId).toBe('00000000-0000-0000-0000-000000000002');
+      expect(recipientKey?.userKeyPairId).toBe(
+        '00000000-0000-0000-0000-000000000002',
+      );
     });
 
     it('should abort if recipient is no longer trusted', async () => {
@@ -137,7 +151,9 @@ describe('Trust Integration Tests', () => {
         currentSessionOnly: true,
       });
 
-      const result = await handler({ data: { authorDid, recipientDid } } as any);
+      const result = await handler({
+        data: { authorDid, recipientDid },
+      } as any);
 
       // Verify: Handler aborted and no key was created
       expect(result).toEqual({ abortReason: 'Recipient no longer trusted' });
@@ -172,7 +188,9 @@ describe('Trust Integration Tests', () => {
       });
 
       // Mock: Recipient is trusted
-      vi.mocked(speakeasyApiRequest).mockResolvedValue({ trusted: [{ did: recipientDid }] });
+      vi.mocked(speakeasyApiRequest).mockResolvedValue({
+        trusted: [{ did: recipientDid }],
+      });
 
       // Execute handler
       const handler = createAddRecipientToSessionHandler(prisma, {
@@ -332,17 +350,23 @@ describe('Trust Integration Tests', () => {
       });
 
       // Mock: Recipient is still/again trusted
-      vi.mocked(speakeasyApiRequest).mockResolvedValue({ trusted: [{ did: recipientDid }] });
+      vi.mocked(speakeasyApiRequest).mockResolvedValue({
+        trusted: [{ did: recipientDid }],
+      });
 
       // Execute handler
       const handler = createDeleteSessionKeysHandler(prisma, {
         serviceName: SERVICE_NAME,
       });
 
-      const result = await handler({ data: { authorDid, recipientDid } } as any);
+      const result = await handler({
+        data: { authorDid, recipientDid },
+      } as any);
 
       // Verify: Handler aborted and keys preserved
-      expect(result).toEqual({ abortReason: 'Recipient has been trusted again' });
+      expect(result).toEqual({
+        abortReason: 'Recipient has been trusted again',
+      });
 
       const sessionKeys = await prisma.sessionKey.findMany({
         where: { sessionId: session.id },

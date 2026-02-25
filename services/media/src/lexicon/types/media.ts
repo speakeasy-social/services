@@ -48,6 +48,31 @@ export const uploadMediaDef: LexiconDoc = {
   },
 };
 
+export const getMediaDef: LexiconDoc = {
+  lexicon: 1,
+  id: 'social.spkeasy.media.get',
+  defs: {
+    main: {
+      type: 'query',
+      description:
+        'Get a media file by key (caller may only access media they uploaded)',
+      parameters: {
+        type: 'params',
+        required: ['key'],
+        properties: {
+          key: {
+            type: 'string',
+            description: 'The key of the media file to get',
+          },
+        },
+      },
+      output: {
+        encoding: 'application/octet-stream',
+      },
+    },
+  },
+};
+
 export const deleteMediaDef: LexiconDoc = {
   lexicon: 1,
   id: 'social.spkeasy.media.delete',

@@ -2,10 +2,7 @@ import { NotFoundError, ValidationError } from '@speakeasy-services/common';
 import Stripe from 'stripe';
 import config from '../config.js';
 import { getPrismaClient } from '../db.js';
-import {
-  InviteCode,
-  UserFeature
-} from '../generated/prisma-client/index.js';
+import { InviteCode, UserFeature } from '../generated/prisma-client/index.js';
 import { Mode } from '../types.js';
 
 const prisma = getPrismaClient();
@@ -95,7 +92,7 @@ export class FeatureService {
     mode: Mode,
     currency: string,
     donorEmail?: string,
-    donorDid?: string
+    donorDid?: string,
   ): Promise<string | Error> {
     const normalizedCurrency = currency.toLowerCase();
 
@@ -103,24 +100,27 @@ export class FeatureService {
       currency: normalizedCurrency,
       unit_amount: unitAmount,
       product_data: { name: 'One-time Donation' },
-    }
+    };
     const subscriptionPriceData = {
       currency: normalizedCurrency,
       unit_amount: unitAmount,
       product_data: { name: 'Monthly Donation' },
-      recurring: { interval: 'month' as const, interval_count: 1 }
-    }
-    const price_data = mode === 'payment' ? paymentPriceData : subscriptionPriceData
+      recurring: { interval: 'month' as const, interval_count: 1 },
+    };
+    const price_data =
+      mode === 'payment' ? paymentPriceData : subscriptionPriceData;
 
     const stripe = new Stripe(config.STRIPE_SECRET_KEY);
     const sessionParams: Stripe.Checkout.SessionCreateParams = {
       mode,
       ui_mode: 'embedded',
       return_url: `${config.SPKEASY_HOST}/supporters/add`,
-      line_items: [{
-        price_data,
-        quantity: 1,
-      }],
+      line_items: [
+        {
+          price_data,
+          quantity: 1,
+        },
+      ],
     };
 
     if (donorEmail) {
@@ -136,7 +136,7 @@ export class FeatureService {
 
     const session = await stripe.checkout.sessions.create(sessionParams);
     if (!session.client_secret) {
-       throw new Error("Stripe API call did not return a client secret");
+      throw new Error('Stripe API call did not return a client secret');
     }
     return session.client_secret;
   }

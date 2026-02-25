@@ -1,4 +1,12 @@
-import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach } from 'vitest';
+import {
+  describe,
+  it,
+  expect,
+  beforeAll,
+  afterAll,
+  beforeEach,
+  afterEach,
+} from 'vitest';
 import server from '../../../src/server.js';
 import { PrismaClient } from '../../../src/generated/prisma-client/index.js';
 import {
@@ -30,7 +38,7 @@ describe('Private Session API Tests', () => {
     // Mock process.exit to prevent test failures
     const originalExit = process.exit;
     process.exit = (() => {}) as any;
-    
+
     try {
       // @ts-ignore - shutdown is private but we need it for tests
       await server.shutdown();
@@ -51,7 +59,7 @@ describe('Private Session API Tests', () => {
     await prisma.encryptedPost.deleteMany();
     await prisma.sessionKey.deleteMany();
     await prisma.session.deleteMany();
-    
+
     // Setup mock for Bluesky session validation
     mockBlueskySession({ did: authorDid, host: 'http://localhost:2583' });
   });
@@ -175,7 +183,9 @@ describe('Private Session API Tests', () => {
       const authorKey = session?.sessionKeys.find(
         (key) => key.recipientDid === authorDid,
       );
-      expect(authorKey?.userKeyPairId).toBe('00000000-0000-0000-0000-000000000001');
+      expect(authorKey?.userKeyPairId).toBe(
+        '00000000-0000-0000-0000-000000000001',
+      );
     });
 
     it('should reject session creation when author is not in recipients', async () => {
@@ -302,7 +312,10 @@ describe('Private Session API Tests', () => {
         .expect(200);
 
       expect(response.body).toHaveProperty('encryptedSessionKey');
-      expect(response.body.encryptedSessionKey).toHaveProperty('recipientDid', authorDid);
+      expect(response.body.encryptedSessionKey).toHaveProperty(
+        'recipientDid',
+        authorDid,
+      );
     });
 
     it('should require authentication', async () => {
@@ -411,9 +424,7 @@ describe('Private Session API Tests', () => {
 
   describe('Health Check', () => {
     it('should return healthy status', async () => {
-      await request(server.express)
-        .get('/health')
-        .expect(200);
+      await request(server.express).get('/health').expect(200);
     });
   });
 });

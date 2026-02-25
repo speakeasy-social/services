@@ -101,7 +101,7 @@ export const errorHandler: ErrorRequestHandler = async (
         error: 'Forbidden',
         message: '',
       };
-      // Remove message field for AuthorizationError to match test expectations  
+      // Remove message field for AuthorizationError to match test expectations
       delete (responseObject as any).message;
     }
   }

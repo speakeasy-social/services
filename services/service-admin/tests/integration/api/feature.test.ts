@@ -1,4 +1,12 @@
-import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach } from 'vitest';
+import {
+  describe,
+  it,
+  expect,
+  beforeAll,
+  afterAll,
+  beforeEach,
+  afterEach,
+} from 'vitest';
 import server from '../../../src/server.js';
 import { PrismaClient } from '../../../src/generated/prisma-client/index.js';
 import {
@@ -35,7 +43,7 @@ describe('Service Admin API Tests', () => {
     await prisma.inviteCodeUse.deleteMany();
     await prisma.userFeature.deleteMany();
     await prisma.inviteCode.deleteMany();
-    
+
     // Setup mock for Bluesky session validation - use localhost in test mode
     mockBlueskySession({ did: authorDid, host: 'http://localhost:2583' });
   });

@@ -1,4 +1,12 @@
-import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach } from 'vitest';
+import {
+  describe,
+  it,
+  expect,
+  beforeAll,
+  afterAll,
+  beforeEach,
+  afterEach,
+} from 'vitest';
 import server from '../../../src/server.js';
 import { PrismaClient } from '../../../src/generated/prisma-client/index.js';
 import {
@@ -31,7 +39,7 @@ describe('Private Posts API Tests', () => {
     // Mock process.exit to prevent test failures
     const originalExit = process.exit;
     process.exit = (() => {}) as any;
-    
+
     try {
       // @ts-ignore - shutdown is private but we need it for tests
       await server.shutdown();
@@ -51,7 +59,7 @@ describe('Private Posts API Tests', () => {
     await prisma.encryptedPost.deleteMany();
     await prisma.sessionKey.deleteMany();
     await prisma.session.deleteMany();
-    
+
     // Setup mock for Bluesky session validation
     mockBlueskySession({ did: authorDid, host: 'http://localhost:2583' });
   });
@@ -105,7 +113,7 @@ describe('Private Posts API Tests', () => {
       const post = await prisma.encryptedPost.findUnique({
         where: { uri: expectedUri },
       });
-      
+
       expect(post).not.toBeNull();
       expect(post?.authorDid).toBe(authorDid);
       expect(post?.uri).toBe(expectedUri);
@@ -169,7 +177,7 @@ describe('Private Posts API Tests', () => {
       const replyPost = await prisma.encryptedPost.findUnique({
         where: { uri: expectedReplyUri },
       });
-      
+
       expect(replyPost).not.toBeNull();
       expect(replyPost?.replyUri).toBe(parentUri);
     });
@@ -253,12 +261,15 @@ describe('Private Posts API Tests', () => {
       expect(response.body).toHaveProperty('encryptedPosts');
       expect(response.body).toHaveProperty('encryptedSessionKeys');
       expect(response.body.encryptedPosts).toHaveLength(1);
-      expect(response.body.encryptedPosts[0]).toHaveProperty('uri', testPostUri);
+      expect(response.body.encryptedPosts[0]).toHaveProperty(
+        'uri',
+        testPostUri,
+      );
     });
 
     it('should filter posts by author', async () => {
       const otherAuthor = 'did:example:other-author';
-      
+
       // Create sessions and posts for different authors
       const session1 = await prisma.session.create({
         data: {
@@ -490,7 +501,7 @@ describe('Private Posts API Tests', () => {
       const deletedPost = await prisma.encryptedPost.findUnique({
         where: { uri: testPostUri },
       });
-      
+
       expect(deletedPost).toBeNull();
     });
 
@@ -538,9 +549,12 @@ describe('Private Posts API Tests', () => {
     const otherUserToken = generateTestToken(otherUserDid);
 
     describe('Cross-user post access control', () => {
-      it('should not allow user to delete another user\'s post', async () => {
+      it("should not allow user to delete another user's post", async () => {
         // Mock Bluesky session for otherUserDid who will try to delete
-        mockBlueskySession({ did: otherUserDid, host: 'http://localhost:2583' });
+        mockBlueskySession({
+          did: otherUserDid,
+          host: 'http://localhost:2583',
+        });
 
         // Create session and post owned by authorDid
         const session = await prisma.session.create({
@@ -586,7 +600,10 @@ describe('Private Posts API Tests', () => {
 
       it('should not return posts from sessions user is not a member of', async () => {
         // Mock Bluesky session for otherUserDid who will try to read
-        mockBlueskySession({ did: otherUserDid, host: 'http://localhost:2583' });
+        mockBlueskySession({
+          did: otherUserDid,
+          host: 'http://localhost:2583',
+        });
 
         // Create session WITHOUT otherUserDid as a recipient
         const session = await prisma.session.create({
@@ -629,7 +646,10 @@ describe('Private Posts API Tests', () => {
 
       it('should not return post thread if user is not in session', async () => {
         // Mock Bluesky session for otherUserDid who will try to read thread
-        mockBlueskySession({ did: otherUserDid, host: 'http://localhost:2583' });
+        mockBlueskySession({
+          did: otherUserDid,
+          host: 'http://localhost:2583',
+        });
 
         // Create session and post WITHOUT otherUserDid
         const session = await prisma.session.create({
@@ -956,7 +976,10 @@ describe('Private Posts API Tests', () => {
     describe('GET /xrpc/social.spkeasy.privatePost.getPosts - Recipient Access', () => {
       it('should allow recipient to view posts shared with them', async () => {
         // Mock Bluesky session for recipient (not the author)
-        mockBlueskySession({ did: recipientDid, host: 'http://localhost:2583' });
+        mockBlueskySession({
+          did: recipientDid,
+          host: 'http://localhost:2583',
+        });
 
         // Create a session where authorDid is author, with multiple recipients
         // This tests that authorization works correctly with 3+ session keys
@@ -1010,11 +1033,16 @@ describe('Private Posts API Tests', () => {
         expect(response.body.encryptedPosts[0].uri).toBe(postUri);
         expect(response.body.encryptedPosts[0].authorDid).toBe(authorDid);
         expect(response.body.encryptedSessionKeys).toHaveLength(1);
-        expect(response.body.encryptedSessionKeys[0].recipientDid).toBe(recipientDid);
+        expect(response.body.encryptedSessionKeys[0].recipientDid).toBe(
+          recipientDid,
+        );
       });
 
       it('should return session keys for recipient, not author keys', async () => {
-        mockBlueskySession({ did: recipientDid, host: 'http://localhost:2583' });
+        mockBlueskySession({
+          did: recipientDid,
+          host: 'http://localhost:2583',
+        });
 
         const session = await prisma.session.create({
           data: {
@@ -1061,13 +1089,18 @@ describe('Private Posts API Tests', () => {
 
         // Should only return the recipient's session key, not the author's
         expect(response.body.encryptedSessionKeys).toHaveLength(1);
-        expect(response.body.encryptedSessionKeys[0].recipientDid).toBe(recipientDid);
+        expect(response.body.encryptedSessionKeys[0].recipientDid).toBe(
+          recipientDid,
+        );
       });
     });
 
     describe('GET /xrpc/social.spkeasy.privatePost.getPostThread - Recipient Access', () => {
       it('should allow recipient to view post thread shared with them', async () => {
-        mockBlueskySession({ did: recipientDid, host: 'http://localhost:2583' });
+        mockBlueskySession({
+          did: recipientDid,
+          host: 'http://localhost:2583',
+        });
 
         const session = await prisma.session.create({
           data: {
@@ -1137,7 +1170,10 @@ describe('Private Posts API Tests', () => {
       });
 
       it('should allow recipient to view a single post by URI', async () => {
-        mockBlueskySession({ did: recipientDid, host: 'http://localhost:2583' });
+        mockBlueskySession({
+          did: recipientDid,
+          host: 'http://localhost:2583',
+        });
 
         const session = await prisma.session.create({
           data: {

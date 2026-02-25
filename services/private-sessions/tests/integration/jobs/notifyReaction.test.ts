@@ -24,7 +24,7 @@ describe('notifyReaction handler', () => {
     await prisma.notification.deleteMany();
   });
 
-  it('should create notification when user reacts to another user\'s post', async () => {
+  it("should create notification when user reacts to another user's post", async () => {
     const uri = `at://${postOwnerDid}/social.spkeasy.privatePost/post123`;
 
     await handler({

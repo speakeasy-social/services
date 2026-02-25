@@ -1,4 +1,12 @@
-import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach } from 'vitest';
+import {
+  describe,
+  it,
+  expect,
+  beforeAll,
+  afterAll,
+  beforeEach,
+  afterEach,
+} from 'vitest';
 import server from '../../../src/server.js';
 import { PrismaClient } from '../../../src/generated/prisma-client/index.js';
 import {
@@ -56,7 +64,10 @@ describe('Contributions API Tests', () => {
     });
 
     it('should return false for non-contributor', async () => {
-      mockBlueskySession({ did: nonContributorDid, host: 'http://localhost:2583' });
+      mockBlueskySession({
+        did: nonContributorDid,
+        host: 'http://localhost:2583',
+      });
 
       const response = await request(server.express)
         .get('/xrpc/social.spkeasy.actor.checkContribution')
@@ -69,7 +80,12 @@ describe('Contributions API Tests', () => {
 
     it('should return true with contributions for contributor', async () => {
       await prisma.contribution.create({
-        data: { did: contributorDid, contribution: 'donor', public: { isRegularGift: false }, internal: { amount: 1000 } },
+        data: {
+          did: contributorDid,
+          contribution: 'donor',
+          public: { isRegularGift: false },
+          internal: { amount: 1000 },
+        },
       });
 
       const response = await request(server.express)
@@ -84,9 +100,22 @@ describe('Contributions API Tests', () => {
     it('should return multiple contribution types for contributor with multiple contributions', async () => {
       await prisma.contribution.createMany({
         data: [
-          { did: contributorDid, contribution: 'donor', public: { isRegularGift: false }, internal: { amount: 5000 } },
-          { did: contributorDid, contribution: 'contributor', public: { feature: 'dark-mode' } },
-          { did: contributorDid, contribution: 'designer', public: { feature: 'ui-improvements' } },
+          {
+            did: contributorDid,
+            contribution: 'donor',
+            public: { isRegularGift: false },
+            internal: { amount: 5000 },
+          },
+          {
+            did: contributorDid,
+            contribution: 'contributor',
+            public: { feature: 'dark-mode' },
+          },
+          {
+            did: contributorDid,
+            contribution: 'designer',
+            public: { feature: 'ui-improvements' },
+          },
         ],
       });
 

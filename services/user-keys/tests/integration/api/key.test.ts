@@ -1,4 +1,12 @@
-import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach } from 'vitest';
+import {
+  describe,
+  it,
+  expect,
+  beforeAll,
+  afterAll,
+  beforeEach,
+  afterEach,
+} from 'vitest';
 import server from '../../../src/server.js';
 import { PrismaClient } from '../../../src/generated/prisma-client/index.js';
 import {
@@ -24,7 +32,7 @@ describe('User Keys API Tests', () => {
 
     // Start the server
     await server.start();
-    
+
     // Start the queue
     await Queue.start();
   });
@@ -39,7 +47,7 @@ describe('User Keys API Tests', () => {
   beforeEach(async () => {
     // Clear test data before each test
     await prisma.userKey.deleteMany();
-    
+
     // Setup mock for Bluesky session validation - use localhost in test mode
     mockBlueskySession({ did: authorDid, host: 'http://localhost:2583' });
   });
@@ -162,7 +170,7 @@ describe('User Keys API Tests', () => {
           privateKey: Buffer.from('test-private-key-1'),
         },
       });
-      
+
       const key2 = await prisma.userKey.create({
         data: {
           authorDid: anotherUserDid,
@@ -219,10 +227,10 @@ describe('User Keys API Tests', () => {
 
       // Verify that the old key was marked as deleted
       const oldKey = await prisma.userKey.findFirst({
-        where: { 
-          authorDid, 
+        where: {
+          authorDid,
           publicKey: Buffer.from('old-public-key'),
-          deletedAt: { not: null }
+          deletedAt: { not: null },
         },
       });
       expect(oldKey).toBeTruthy();
@@ -230,15 +238,19 @@ describe('User Keys API Tests', () => {
 
       // Verify that a new key was created
       const newKey = await prisma.userKey.findFirst({
-        where: { 
-          authorDid, 
-          deletedAt: null 
+        where: {
+          authorDid,
+          deletedAt: null,
         },
         orderBy: { createdAt: 'desc' },
       });
       expect(newKey).toBeTruthy();
-      expect(newKey?.publicKey).toEqual(Uint8Array.from(Buffer.from('bmV3LXB1YmxpYy1rZXk=', 'base64')));
-      expect(newKey?.privateKey).toEqual(Uint8Array.from(Buffer.from('bmV3LXByaXZhdGUta2V5', 'base64')));
+      expect(newKey?.publicKey).toEqual(
+        Uint8Array.from(Buffer.from('bmV3LXB1YmxpYy1rZXk=', 'base64')),
+      );
+      expect(newKey?.privateKey).toEqual(
+        Uint8Array.from(Buffer.from('bmV3LXByaXZhdGUta2V5', 'base64')),
+      );
     });
   });
 });

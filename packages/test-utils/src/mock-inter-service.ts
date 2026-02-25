@@ -23,7 +23,8 @@ interface MockOptions {
 
 // Service hosts - matches the service host env vars
 const SERVICE_HOSTS: Record<ServiceName, string> = {
-  'private-sessions': process.env.PRIVATE_SESSIONS_HOST || 'http://localhost:3001',
+  'private-sessions':
+    process.env.PRIVATE_SESSIONS_HOST || 'http://localhost:3001',
   'trusted-users': process.env.TRUSTED_USERS_HOST || 'http://localhost:3002',
   'user-keys': process.env.USER_KEYS_HOST || 'http://localhost:3003',
   'service-admin': process.env.SERVICE_ADMIN_HOST || 'http://localhost:3004',
@@ -112,39 +113,37 @@ export function mockInterServiceCall(options: MockOptions): nock.Scope {
   if (method === 'GET') {
     // Use a regex that matches the path with any query string
     const pathRegex = new RegExp(`^${xrpcPath.replace(/\./g, '\\.')}(\\?.*)?$`);
-    scope.get(pathRegex).reply(
-      function (uri) {
-        // Validate request at call time
-        if (lexicon) {
-          const url = new URL(uri, host);
-          const params: Record<string, string | string[]> = {};
-          url.searchParams.forEach((value, key) => {
-            const existing = params[key];
-            if (existing) {
-              params[key] = Array.isArray(existing)
-                ? [...existing, value]
-                : [existing, value];
-            } else {
-              params[key] = value;
-            }
-          });
-
-          try {
-            validateLexiconInput(lexicon, params);
-          } catch (error) {
-            return [
-              400,
-              {
-                error: 'InvalidRequest',
-                message: `Request validation failed: ${error instanceof Error ? error.message : String(error)}`,
-              },
-            ];
+    scope.get(pathRegex).reply(function (uri) {
+      // Validate request at call time
+      if (lexicon) {
+        const url = new URL(uri, host);
+        const params: Record<string, string | string[]> = {};
+        url.searchParams.forEach((value, key) => {
+          const existing = params[key];
+          if (existing) {
+            params[key] = Array.isArray(existing)
+              ? [...existing, value]
+              : [existing, value];
+          } else {
+            params[key] = value;
           }
-        }
+        });
 
-        return [statusCode, response];
-      },
-    );
+        try {
+          validateLexiconInput(lexicon, params);
+        } catch (error) {
+          return [
+            400,
+            {
+              error: 'InvalidRequest',
+              message: `Request validation failed: ${error instanceof Error ? error.message : String(error)}`,
+            },
+          ];
+        }
+      }
+
+      return [statusCode, response];
+    });
   } else {
     scope.post(xrpcPath).reply(function (uri, requestBody) {
       // Validate request at call time
@@ -211,7 +210,9 @@ export function pendingMocks(): string[] {
 export function assertAllMocksCalled(): void {
   const pending = pendingMocks();
   if (pending.length > 0) {
-    throw new Error(`Expected all mocks to be called. Pending: ${pending.join(', ')}`);
+    throw new Error(
+      `Expected all mocks to be called. Pending: ${pending.join(', ')}`,
+    );
   }
 }
 

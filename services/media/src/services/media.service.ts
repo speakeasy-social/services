@@ -86,4 +86,21 @@ export class MediaService {
       where: { key },
     });
   }
+
+  /**
+   * Find media record by key. Does not check ownership; the route must authorize.
+   * @param key - The media key (S3 path)
+   * @returns Record for auth and mimeType, or null if not found
+   */
+  async findMediaByKey(key: string): Promise<{
+    key: string;
+    userDid: string;
+    mimeType: string;
+    size: number;
+  } | null> {
+    return prisma.media.findUnique({
+      where: { key },
+      select: { key: true, userDid: true, mimeType: true, size: true },
+    });
+  }
 }

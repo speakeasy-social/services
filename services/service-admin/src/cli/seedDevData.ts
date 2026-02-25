@@ -14,7 +14,9 @@ const prisma = getPrismaClient();
 
 type JsonValue = Prisma.InputJsonValue | typeof Prisma.JsonNull;
 
-async function findDidByContribution(contributionType: string): Promise<string | null> {
+async function findDidByContribution(
+  contributionType: string,
+): Promise<string | null> {
   const entry = await prisma.contribution.findFirst({
     where: { contribution: contributionType, deletedAt: null },
     select: { did: true },
@@ -32,7 +34,9 @@ async function seedTestimonials(): Promise<void> {
       !bobDid && 'engineer (for bob)',
       !carlaDid && 'donor (for carla)',
     ].filter(Boolean);
-    console.error(`Cannot seed testimonials: missing contributions for ${missing.join(', ')}`);
+    console.error(
+      `Cannot seed testimonials: missing contributions for ${missing.join(', ')}`,
+    );
     console.error('Run contribution:add commands first (see dev-setup.sh).');
     process.exit(1);
   }

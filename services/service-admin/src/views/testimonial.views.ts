@@ -34,7 +34,9 @@ export type TestimonialView = {
 /**
  * Create a view that transforms a testimonial for API response
  */
-export const toTestimonialView = (testimonial: TestimonialResponse): TestimonialView => ({
+export const toTestimonialView = (
+  testimonial: TestimonialResponse,
+): TestimonialView => ({
   id: testimonial.id,
   did: testimonial.did,
   content: testimonial.content,
@@ -49,6 +51,7 @@ export const toTestimonialView = (testimonial: TestimonialResponse): Testimonial
 /**
  * Create a list view that maps over the array
  */
-export const toTestimonialListView = createListView<TestimonialResponse, TestimonialView>(
-  toTestimonialView
-);
+export const toTestimonialListView = createListView<
+  TestimonialResponse,
+  TestimonialView
+>(toTestimonialView);

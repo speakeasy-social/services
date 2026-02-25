@@ -78,9 +78,18 @@ export const profileViewDef: LexiconDoc = {
       required: ['did', 'encryptedContent', 'encryptedDek', 'userKeyPairId'],
       properties: {
         did: { type: 'string', description: 'DID of the profile owner' },
-        encryptedContent: { type: 'string', description: 'Base64-encoded encrypted profile content' },
-        encryptedDek: { type: 'string', description: 'Base64-encoded encrypted DEK for the viewer' },
-        userKeyPairId: { type: 'string', description: 'ID of the key pair used to encrypt the DEK' },
+        encryptedContent: {
+          type: 'string',
+          description: 'Base64-encoded encrypted profile content',
+        },
+        encryptedDek: {
+          type: 'string',
+          description: 'Base64-encoded encrypted DEK for the viewer',
+        },
+        userKeyPairId: {
+          type: 'string',
+          description: 'ID of the key pair used to encrypt the DEK',
+        },
         avatarUri: { type: 'string' },
         bannerUri: { type: 'string' },
       },

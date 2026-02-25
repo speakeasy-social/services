@@ -43,17 +43,20 @@ docker exec -it <container-id> npm run cli:addContribution -- <did> <contributio
 ```
 
 **Arguments:**
+
 - `did|handle` - User DID (`did:plc:...`) or handle (`@user.bsky.social` or `user.bsky.social`)
 - `contribution` - One of: `donor`, `contributor`, `designer`, `engineer`, `testing`
 - `json` - Optional JSON object with additional data
 
 **JSON fields:**
+
 - `feature` - Feature name (any contribution type)
 - `isRegularGift` - Regular/recurring donation flag (donor only)
 - `recognition` - Recognition level e.g. "Founding Donor" (donor only)
 - `amount` - Amount in cents (donor only, internal)
 
 **Examples:**
+
 ```bash
 pnpm cli:addContribution did:plc:abc123 donor
 pnpm cli:addContribution @user.bsky.social donor
@@ -140,13 +143,11 @@ The services are built as a collection of microservices that share a common deve
 ### Services
 
 1. **User Profiles Service**
-
    - Manages user keys and profiles
    - Schema: `user_profiles`
    - Port: 3001
 
 2. **Private Sessions Service**
-
    - Handles private session creation and management
    - Schema: `private_sessions`
    - Port: 3002
@@ -161,7 +162,6 @@ The services are built as a collection of microservices that share a common deve
 ### Shared Infrastructure
 
 - **PostgreSQL Database**
-
   - Single database instance
   - Separate schemas for each service
   - Shared PgBoss schema for job processing
@@ -215,6 +215,7 @@ The application supports multiple environments:
 - **Test**: Uses `speakeasy_test` database
 
 #### Development Environment
+
 ```bash
 # Default development setup
 pnpm dev:setup
@@ -224,6 +225,7 @@ NODE_ENV=development pnpm dev:setup
 ```
 
 #### Test Environment
+
 ```bash
 # Test environment setup
 pnpm test:setup
@@ -233,6 +235,7 @@ NODE_ENV=test pnpm dev:setup
 ```
 
 The environment is determined by the `NODE_ENV` environment variable:
+
 - `NODE_ENV=development` (or unset) → uses `speakeasy` database
 - `NODE_ENV=test` → uses `speakeasy_test` database (or modifies existing environment variables to use test database)
 - `NODE_ENV=production` → requires explicit service-specific environment variables (e.g., `PRIVATE_SESSIONS_DATABASE_URL`, `TRUSTED_USERS_DATABASE_URL`, etc.)

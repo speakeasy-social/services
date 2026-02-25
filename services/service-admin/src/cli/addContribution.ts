@@ -20,7 +20,13 @@ type JsonValue = Prisma.InputJsonValue | typeof Prisma.JsonNull;
 // Known fields from contribution.ts schemas
 const PUBLIC_FIELDS = ['feature', 'isRegularGift', 'recognition'] as const;
 const INTERNAL_FIELDS = ['amount', 'donationId', 'appeal'] as const;
-const DONOR_ONLY_FIELDS = ['amount', 'donationId', 'appeal', 'isRegularGift', 'recognition'] as const;
+const DONOR_ONLY_FIELDS = [
+  'amount',
+  'donationId',
+  'appeal',
+  'isRegularGift',
+  'recognition',
+] as const;
 
 const BSKY_PUBLIC_API = 'https://public.api.bsky.app';
 const LOCAL_PDS_API = 'http://localhost:2583';
@@ -43,7 +49,9 @@ async function resolveHandle(handle: string): Promise<string> {
   const response = await fetch(url);
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(`Failed to resolve handle "${cleanHandle}": ${response.status} ${errorText}`);
+    throw new Error(
+      `Failed to resolve handle "${cleanHandle}": ${response.status} ${errorText}`,
+    );
   }
 
   const data = (await response.json()) as { did: string };
@@ -54,8 +62,12 @@ function printUsage(): void {
   console.error('Usage: addContribution <did|handle> <contribution> [json]');
   console.error('');
   console.error('Arguments:');
-  console.error('  did|handle    User DID (did:plc:...) or handle (@user.bsky.social or user.bsky.social)');
-  console.error('  contribution  One of: donor, contributor, designer, engineer, testing');
+  console.error(
+    '  did|handle    User DID (did:plc:...) or handle (@user.bsky.social or user.bsky.social)',
+  );
+  console.error(
+    '  contribution  One of: donor, contributor, designer, engineer, testing',
+  );
   console.error('  json          Optional JSON object with contribution data');
   console.error('');
   console.error('JSON fields:');
@@ -63,7 +75,9 @@ function printUsage(): void {
   console.error('    feature        - Feature name (string)');
   console.error('');
   console.error('  Public data (donor only):');
-  console.error('    isRegularGift  - Whether this is a recurring donation (boolean)');
+  console.error(
+    '    isRegularGift  - Whether this is a recurring donation (boolean)',
+  );
   console.error('    recognition    - Recognition level/name (string)');
   console.error('');
   console.error('  Internal data (donor only):');
@@ -74,13 +88,23 @@ function printUsage(): void {
   console.error('Examples:');
   console.error('  addContribution did:plc:abc123 donor');
   console.error('  addContribution @user.bsky.social donor');
-  console.error('  addContribution user.bsky.social donor \'{"isRegularGift": true}\'');
+  console.error(
+    '  addContribution user.bsky.social donor \'{"isRegularGift": true}\'',
+  );
   console.error('  addContribution did:plc:abc123 donor \'{"amount": 5000}\'');
-  console.error('  addContribution did:plc:abc123 donor \'{"recognition": "Founding Donor"}\'');
-  console.error('  addContribution @user.bsky.social contributor \'{"feature": "dark-mode"}\'');
+  console.error(
+    '  addContribution did:plc:abc123 donor \'{"recognition": "Founding Donor"}\'',
+  );
+  console.error(
+    '  addContribution @user.bsky.social contributor \'{"feature": "dark-mode"}\'',
+  );
   console.error('  addContribution did:plc:abc123 designer');
-  console.error('  addContribution did:plc:abc123 engineer \'{"feature": "api-integration"}\'');
-  console.error('  addContribution did:plc:abc123 testing \'{"feature": "bug-fixes"}\'');
+  console.error(
+    '  addContribution did:plc:abc123 engineer \'{"feature": "api-integration"}\'',
+  );
+  console.error(
+    '  addContribution did:plc:abc123 testing \'{"feature": "bug-fixes"}\'',
+  );
   process.exit(1);
 }
 
@@ -97,7 +121,9 @@ async function resolveDidOrHandle(didOrHandle: string): Promise<string> {
   return did;
 }
 
-function validateContribution(contribution: string): contribution is ContributionType {
+function validateContribution(
+  contribution: string,
+): contribution is ContributionType {
   return CONTRIBUTION_TYPES.includes(contribution as ContributionType);
 }
 
@@ -108,14 +134,18 @@ type ContributionData = {
 
 function buildContributionData(
   contribution: ContributionType,
-  jsonArg: string | undefined
+  jsonArg: string | undefined,
 ): ContributionData {
   // Parse JSON if provided
   let parsed: Record<string, unknown> = {};
   if (jsonArg !== undefined) {
     try {
       parsed = JSON.parse(jsonArg);
-      if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+      if (
+        typeof parsed !== 'object' ||
+        parsed === null ||
+        Array.isArray(parsed)
+      ) {
         console.error('Error: JSON must be an object');
         process.exit(1);
       }
@@ -128,26 +158,37 @@ function buildContributionData(
   // Warn about donor-only fields on non-donor types
   if (contribution !== 'donor') {
     const donorOnlyUsed = Object.keys(parsed).filter((key) =>
-      DONOR_ONLY_FIELDS.includes(key as (typeof DONOR_ONLY_FIELDS)[number])
+      DONOR_ONLY_FIELDS.includes(key as (typeof DONOR_ONLY_FIELDS)[number]),
     );
     if (donorOnlyUsed.length > 0) {
-      console.warn(`Warning: ${donorOnlyUsed.join(', ')} are donor-only fields and will be ignored`);
+      console.warn(
+        `Warning: ${donorOnlyUsed.join(', ')} are donor-only fields and will be ignored`,
+      );
     }
   }
 
   // Separate fields into public vs internal
   const publicData: ContributionPublicData = {};
-  const internalData: { amount?: number; donationId?: string; appeal?: string } = {};
+  const internalData: {
+    amount?: number;
+    donationId?: string;
+    appeal?: string;
+  } = {};
 
   for (const [key, value] of Object.entries(parsed)) {
     if (PUBLIC_FIELDS.includes(key as (typeof PUBLIC_FIELDS)[number])) {
       // Public field
-      if (contribution !== 'donor' && DONOR_ONLY_FIELDS.includes(key as (typeof DONOR_ONLY_FIELDS)[number])) {
+      if (
+        contribution !== 'donor' &&
+        DONOR_ONLY_FIELDS.includes(key as (typeof DONOR_ONLY_FIELDS)[number])
+      ) {
         // Skip donor-only public fields for non-donors (already warned)
         continue;
       }
       (publicData as Record<string, unknown>)[key] = value;
-    } else if (INTERNAL_FIELDS.includes(key as (typeof INTERNAL_FIELDS)[number])) {
+    } else if (
+      INTERNAL_FIELDS.includes(key as (typeof INTERNAL_FIELDS)[number])
+    ) {
       // Internal field (donor only)
       if (contribution === 'donor') {
         (internalData as Record<string, unknown>)[key] = value;
@@ -166,7 +207,10 @@ function buildContributionData(
 
   return {
     publicData: hasPublicData ? publicData : null,
-    internalData: contribution === 'donor' && hasInternalData ? internalData as ContributionInternalData : null,
+    internalData:
+      contribution === 'donor' && hasInternalData
+        ? (internalData as ContributionInternalData)
+        : null,
   };
 }
 
@@ -174,20 +218,26 @@ async function addContribution(
   did: string,
   contribution: ContributionType,
   publicData: ContributionPublicData | null,
-  internalData: ContributionInternalData
+  internalData: ContributionInternalData,
 ): Promise<void> {
   try {
     const contributionEntry = await prisma.contribution.create({
       data: {
         did,
         contribution,
-        public: publicData === null ? Prisma.JsonNull : (publicData as JsonValue),
-        internal: internalData === null ? Prisma.JsonNull : (internalData as JsonValue),
+        public:
+          publicData === null ? Prisma.JsonNull : (publicData as JsonValue),
+        internal:
+          internalData === null ? Prisma.JsonNull : (internalData as JsonValue),
       },
     });
 
-    const publicJson = contributionEntry.public ? JSON.stringify(contributionEntry.public) : 'null';
-    console.log(`Added ${contributionEntry.contribution}: ${contributionEntry.did}, public: ${publicJson}`);
+    const publicJson = contributionEntry.public
+      ? JSON.stringify(contributionEntry.public)
+      : 'null';
+    console.log(
+      `Added ${contributionEntry.contribution}: ${contributionEntry.did}, public: ${publicJson}`,
+    );
   } catch (error) {
     console.error('Error creating contribution entry:', error);
     process.exit(1);
@@ -207,12 +257,17 @@ const [didOrHandle, contribution, jsonArg] = args;
 
 // Validate contribution type
 if (!validateContribution(contribution)) {
-  console.error(`Error: contribution must be one of: ${CONTRIBUTION_TYPES.join(', ')}`);
+  console.error(
+    `Error: contribution must be one of: ${CONTRIBUTION_TYPES.join(', ')}`,
+  );
   process.exit(1);
 }
 
 // Build and validate contribution data
-const { publicData, internalData } = buildContributionData(contribution, jsonArg);
+const { publicData, internalData } = buildContributionData(
+  contribution,
+  jsonArg,
+);
 
 // Resolve handle to DID if needed, then execute
 resolveDidOrHandle(didOrHandle)

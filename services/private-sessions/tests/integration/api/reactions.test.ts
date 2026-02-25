@@ -1,4 +1,12 @@
-import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach } from 'vitest';
+import {
+  describe,
+  it,
+  expect,
+  beforeAll,
+  afterAll,
+  beforeEach,
+  afterEach,
+} from 'vitest';
 import server from '../../../src/server.js';
 import { PrismaClient } from '../../../src/generated/prisma-client/index.js';
 import {
@@ -31,7 +39,7 @@ describe('Reactions API Tests', () => {
     // Mock process.exit to prevent test failures
     const originalExit = process.exit;
     process.exit = (() => {}) as any;
-    
+
     try {
       // @ts-ignore - shutdown is private but we need it for tests
       await server.shutdown();
@@ -51,7 +59,7 @@ describe('Reactions API Tests', () => {
     await prisma.encryptedPost.deleteMany();
     await prisma.sessionKey.deleteMany();
     await prisma.session.deleteMany();
-    
+
     // Setup mock for Bluesky session validation
     mockBlueskySession({ did: userDid, host: 'http://localhost:2583' });
   });
@@ -113,7 +121,7 @@ describe('Reactions API Tests', () => {
           uri: testPostUri,
         },
       });
-      
+
       expect(reaction).not.toBeNull();
       expect(reaction?.userDid).toBe(userDid);
       expect(reaction?.uri).toBe(testPostUri);
@@ -199,7 +207,7 @@ describe('Reactions API Tests', () => {
           uri: testPostUri,
         },
       });
-      
+
       expect(deletedReaction).toBeNull();
     });
 
@@ -217,7 +225,7 @@ describe('Reactions API Tests', () => {
 
     it('should only allow users to delete their own reactions', async () => {
       const otherUserDid = 'did:example:other-user';
-      
+
       // Create a reaction via API (this will be by the current user)
       await request(server.express)
         .post('/xrpc/social.spkeasy.reaction.createReaction')
@@ -241,7 +249,7 @@ describe('Reactions API Tests', () => {
           uri: testPostUri,
         },
       });
-      
+
       expect(userReaction).toBeNull();
     });
 
@@ -303,7 +311,7 @@ describe('Reactions API Tests', () => {
       const reactions = await prisma.reaction.findMany({
         where: { userDid, uri: testPostUri },
       });
-      
+
       expect(reactions).toHaveLength(0);
     });
 
@@ -321,7 +329,7 @@ describe('Reactions API Tests', () => {
       const reactions = await prisma.reaction.findMany({
         where: { uri: testPostUri },
       });
-      
+
       expect(reactions).toHaveLength(1);
       expect(reactions[0].userDid).toBe(userDid);
     });

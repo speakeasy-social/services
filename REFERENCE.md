@@ -86,16 +86,13 @@ A privacy extension for Bluesky enabling users to share posts with trusted follo
 The private-sessions service combines session management and post storage to maintain operational efficiency while preserving security boundaries. This design decision is based on:
 
 1. **Security Boundaries**
-
    - Critical security boundary (user private keys) remains in user-keys service
    - DEKs are always encrypted with recipient public keys
    - Posts are encrypted with DEKs
    - No unencrypted data accessible without proper authorization
 
 2. **Operational Efficiency**
-
    - Single service for related data reduces complexity
    - Atomic operations for post + key management
    - Efficient querying for post feeds
    - No unnecessary service-to-service communication
-

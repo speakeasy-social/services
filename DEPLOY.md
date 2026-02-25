@@ -116,20 +116,17 @@ docker-compose -f /home/speakeasy-services/docker-compose.prod.yml logs -f <serv
 ## Security Notes
 
 1. Docker secrets are:
-
    - Encrypted at rest
    - Only accessible to services that explicitly request them
    - Never stored in environment variables or files
    - Persist across container restarts and server reboots
 
 2. Each service has its own set of secrets for:
-
    - Database user
    - Database password
    - Database name
 
 3. Non-sensitive configuration is stored in the `.env` file:
-
    - Database host
    - Database port
 

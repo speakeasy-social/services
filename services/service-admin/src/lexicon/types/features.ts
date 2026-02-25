@@ -90,7 +90,8 @@ export const donateDef: LexiconDoc = {
   defs: {
     main: {
       type: 'procedure',
-      description: 'Prepare payment details for a Stripe checkout as either one-time payment or subscription',
+      description:
+        'Prepare payment details for a Stripe checkout as either one-time payment or subscription',
       input: {
         encoding: 'application/json',
         schema: {
@@ -99,7 +100,8 @@ export const donateDef: LexiconDoc = {
           properties: {
             unitAmount: {
               type: 'integer',
-              description: 'A positive integer in cents (or 0 for a free price) representing how much to charge.',
+              description:
+                'A positive integer in cents (or 0 for a free price) representing how much to charge.',
             },
             mode: {
               type: 'string',
@@ -107,11 +109,13 @@ export const donateDef: LexiconDoc = {
             },
             currency: {
               type: 'string',
-              description: 'Three-letter ISO currency code (e.g., USD, NZD, EUR)',
+              description:
+                'Three-letter ISO currency code (e.g., USD, NZD, EUR)',
             },
             donorEmail: {
               type: 'string',
-              description: 'Optional email address of the donor for receipt delivery',
+              description:
+                'Optional email address of the donor for receipt delivery',
             },
           },
         },

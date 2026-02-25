@@ -14,12 +14,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `pnpm dev:setup`: First-time setup (creates .env files, starts Docker, runs migrations)
 - `pnpm dev`: Start all services in development mode (API + worker for each)
 - `pnpm dev:private-sessions`: Start only the private-sessions service
-- `pnpm dev:trusted-users`: Start only the trusted-users service  
+- `pnpm dev:trusted-users`: Start only the trusted-users service
 - `pnpm dev:user-keys`: Start only the user-keys service
 
 ## Service-Specific Commands
 
 Within individual service directories (`services/*/`):
+
 - `npm run dev:api`: Start the API server
 - `npm run dev:worker`: Start the background worker
 - `npm run dev:prisma`: Watch Prisma schema changes and regenerate client
@@ -36,6 +37,7 @@ Within individual service directories (`services/*/`):
 This is a microservices monorepo for a Bluesky private messaging platform with post-quantum encryption:
 
 ### Project Structure
+
 ```
 /
 ├── packages/                    # Shared libraries
@@ -54,6 +56,7 @@ This is a microservices monorepo for a Bluesky private messaging platform with p
 ```
 
 ### Key Technologies
+
 - **Framework**: XRPC (@atproto/xrpc-server) for AT Protocol compatibility
 - **Database**: PostgreSQL with Prisma ORM (separate schema per service)
 - **Queue**: PgBoss for background job processing
@@ -62,7 +65,9 @@ This is a microservices monorepo for a Bluesky private messaging platform with p
 - **Build**: Turbo monorepo with pnpm workspaces
 
 ### Service Dependencies
+
 Services have dependencies that affect startup order:
+
 1. `user-keys` → Key management (foundation)
 2. `trusted-users` → Trust relationships
 3. `private-sessions` → Session management
@@ -70,12 +75,14 @@ Services have dependencies that affect startup order:
 5. `service-admin` → Administrative functions
 
 ### Database Schema
+
 - Each service has its own PostgreSQL schema
 - Shared `pgboss` schema for job processing
 - Connection strings: `<SERVICE>_DB_URL` environment variables
 - Migrations run via `pnpm dev:setup` or `./scripts/run-migrations.sh`
 
 ### Development Environment
+
 - Docker Compose for PostgreSQL, PgBoss web UI (port 8080)
 - Services run on ports 3001-3005
 - Environment setup via `.env.example` → `.env` copying

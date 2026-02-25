@@ -43,26 +43,31 @@ const methodHandlers = {
     // Validate input against lexicon
     const validatedQuery = validateAgainstLexicon(getPostsDef, req.query);
 
-    const { uris, authors, replyTo, limit, cursor, filter, hasReplies, hasMedia } = validatedQuery;
+    const {
+      uris,
+      authors,
+      replyTo,
+      limit,
+      cursor,
+      filter,
+      hasReplies,
+      hasMedia,
+    } = validatedQuery;
 
     // Convert limit to number if provided
     const limitNum = limit ? parseInt(limit, 10) : undefined;
 
     const userDid = getSessionDid(req);
-    const result = await privatePostsService.getPosts(
-      req,
-      userDid,
-      {
-        authorDids: authors,
-        uris,
-        replyTo,
-        limit: limitNum,
-        cursor,
-        filter,
-        hasReplies,
-        hasMedia,
-      },
-    );
+    const result = await privatePostsService.getPosts(req, userDid, {
+      authorDids: authors,
+      uris,
+      replyTo,
+      limit: limitNum,
+      cursor,
+      filter,
+      hasReplies,
+      hasMedia,
+    });
 
     authorize(req, 'list', 'private_post', result.encryptedPosts);
     authorize(req, 'list', 'session_key', result.encryptedSessionKeys);
@@ -88,14 +93,10 @@ const methodHandlers = {
     const limitNum = limit ? parseInt(limit, 10) : undefined;
 
     const userDid = getSessionDid(req);
-    const result = await privatePostsService.getPostThread(
-      req,
-      userDid,
-      {
-        uri,
-        limit: limitNum,
-      },
-    );
+    const result = await privatePostsService.getPostThread(req, userDid, {
+      uri,
+      limit: limitNum,
+    });
 
     result.encryptedPost &&
       authorize(req, 'list', 'private_post', result.encryptedPost);

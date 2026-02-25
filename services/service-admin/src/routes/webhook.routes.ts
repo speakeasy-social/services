@@ -15,7 +15,10 @@ const DONATION_DEDUP_WINDOW_DAYS = 30;
  * Stripe webhook handler for checkout.session.completed events.
  * Auto-adds donors as contributors after successful payment.
  */
-export async function handleStripeWebhook(req: Request, res: Response): Promise<void> {
+export async function handleStripeWebhook(
+  req: Request,
+  res: Response,
+): Promise<void> {
   const sig = req.headers['stripe-signature'];
 
   if (!sig) {
@@ -31,11 +34,14 @@ export async function handleStripeWebhook(req: Request, res: Response): Promise<
     event = stripe.webhooks.constructEvent(
       req.body,
       sig,
-      config.STRIPE_WEBHOOK_SECRET
+      config.STRIPE_WEBHOOK_SECRET,
     );
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown error';
-    logger.warn({ error: message }, 'Stripe webhook signature verification failed');
+    logger.warn(
+      { error: message },
+      'Stripe webhook signature verification failed',
+    );
     res.status(400).send(`Webhook signature verification failed: ${message}`);
     return;
   }
@@ -46,7 +52,9 @@ export async function handleStripeWebhook(req: Request, res: Response): Promise<
 
     const donorDid = session.metadata?.donorDid;
     if (!donorDid) {
-      logger.info('Stripe checkout completed without donorDid in metadata, skipping contribution creation');
+      logger.info(
+        'Stripe checkout completed without donorDid in metadata, skipping contribution creation',
+      );
       res.status(200).json({ received: true });
       return;
     }
@@ -55,14 +63,18 @@ export async function handleStripeWebhook(req: Request, res: Response): Promise<
     const donationId = session.id;
 
     // Check for duplicate (same donationId in last 30 days)
-    const existingDonation = await contributionService.findRecentByDidAndDonationId(
-      donorDid,
-      donationId,
-      DONATION_DEDUP_WINDOW_DAYS
-    );
+    const existingDonation =
+      await contributionService.findRecentByDidAndDonationId(
+        donorDid,
+        donationId,
+        DONATION_DEDUP_WINDOW_DAYS,
+      );
 
     if (existingDonation) {
-      logger.info({ donorDid, donationId }, 'Duplicate webhook detected, skipping');
+      logger.info(
+        { donorDid, donationId },
+        'Duplicate webhook detected, skipping',
+      );
       res.status(200).json({ received: true, duplicate: true });
       return;
     }
@@ -72,12 +84,12 @@ export async function handleStripeWebhook(req: Request, res: Response): Promise<
       donorDid,
       'donor',
       { isRegularGift: session.mode === 'subscription' },
-      { amount: amountTotal ?? 0, donationId }
+      { amount: amountTotal ?? 0, donationId },
     );
 
     logger.info(
       { contributionId: contribution.id, donorDid, amount: amountTotal },
-      'Created contribution entry from Stripe donation'
+      'Created contribution entry from Stripe donation',
     );
   }
 

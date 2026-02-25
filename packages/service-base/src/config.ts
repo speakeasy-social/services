@@ -80,10 +80,7 @@ export const baseSchema = {
     .string()
     .min(1)
     .describe('Host for trusted-users service'),
-  USER_KEYS_HOST: z
-    .string()
-    .min(1)
-    .describe('Host for user-keys service'),
+  USER_KEYS_HOST: z.string().min(1).describe('Host for user-keys service'),
   SERVICE_ADMIN_HOST: z
     .string()
     .min(1)

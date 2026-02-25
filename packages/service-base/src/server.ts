@@ -140,8 +140,10 @@ export class Server {
             throw new Error('Invalid handler output');
           }
 
-          // Send the JSON response
-          res.status(200).json(output.body);
+          // Send the JSON response only if the handler did not already send (e.g. streaming)
+          if (!res.headersSent) {
+            res.status(200).json(output.body);
+          }
 
           // Get base log data and extend it with DB metrics
           const logData = {
@@ -194,14 +196,21 @@ export class Server {
 
     try {
       await new Promise<void>((resolve, reject) => {
-        this.httpServer = this.express.listen(this.options.port, '0.0.0.0', () => {
-          const actualPort = this.httpServer?.address();
-            const port = typeof actualPort === 'object' && actualPort?.port ? actualPort.port : this.options.port;
+        this.httpServer = this.express.listen(
+          this.options.port,
+          '0.0.0.0',
+          () => {
+            const actualPort = this.httpServer?.address();
+            const port =
+              typeof actualPort === 'object' && actualPort?.port
+                ? actualPort.port
+                : this.options.port;
             this.logger.info(
               `🚀 ${this.options.name} service running on port ${port}`,
             );
             resolve();
-        });
+          },
+        );
         this.httpServer.on('error', reject);
       });
     } catch (err) {

@@ -1,4 +1,12 @@
-import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach } from 'vitest';
+import {
+  describe,
+  it,
+  expect,
+  beforeAll,
+  afterAll,
+  beforeEach,
+  afterEach,
+} from 'vitest';
 import server from '../../../src/server.js';
 import { PrismaClient } from '../../../src/generated/prisma-client/index.js';
 import {
@@ -62,7 +70,9 @@ describe('Profile API Tests', () => {
       });
 
       // Use a realistic SafeText-encoded value to catch double-encoding bugs
-      const encryptedContent = safeBtoa(new Uint8Array([10, 20, 30, 40, 50, 60, 70, 80, 90, 100]));
+      const encryptedContent = safeBtoa(
+        new Uint8Array([10, 20, 30, 40, 50, 60, 70, 80, 90, 100]),
+      );
 
       const profileData = {
         sessionId: session.id,
@@ -123,7 +133,9 @@ describe('Profile API Tests', () => {
         },
       });
 
-      const updatedEncryptedContent = safeBtoa(new Uint8Array([99, 88, 77, 66, 55, 44, 33, 22, 11]));
+      const updatedEncryptedContent = safeBtoa(
+        new Uint8Array([99, 88, 77, 66, 55, 44, 33, 22, 11]),
+      );
       const updatedProfileData = {
         sessionId: session.id,
         encryptedContent: updatedEncryptedContent,
@@ -209,8 +221,14 @@ describe('Profile API Tests', () => {
       expect(response.body.profile).toHaveProperty('did', authorDid);
       expect(response.body.profile).toHaveProperty('encryptedContent');
       expect(response.body.profile).toHaveProperty('encryptedDek');
-      expect(response.body.profile).toHaveProperty('userKeyPairId', '00000000-0000-0000-0000-000000000001');
-      expect(response.body.profile).toHaveProperty('avatarUri', 'https://example.com/avatar.jpg');
+      expect(response.body.profile).toHaveProperty(
+        'userKeyPairId',
+        '00000000-0000-0000-0000-000000000001',
+      );
+      expect(response.body.profile).toHaveProperty(
+        'avatarUri',
+        'https://example.com/avatar.jpg',
+      );
     });
 
     it('should get profile when caller is a session recipient', async () => {
@@ -258,7 +276,10 @@ describe('Profile API Tests', () => {
       expect(response.body.profile).toHaveProperty('did', authorDid);
       expect(response.body.profile).toHaveProperty('encryptedContent');
       expect(response.body.profile).toHaveProperty('encryptedDek');
-      expect(response.body.profile).toHaveProperty('userKeyPairId', '00000000-0000-0000-0000-000000000002');
+      expect(response.body.profile).toHaveProperty(
+        'userKeyPairId',
+        '00000000-0000-0000-0000-000000000002',
+      );
     });
 
     it('should return 404 when caller is not a session recipient', async () => {
@@ -391,12 +412,19 @@ describe('Profile API Tests', () => {
       expect(response.body).toHaveProperty('profiles');
       expect(response.body.profiles).toHaveLength(2);
 
-      const authorProfile = response.body.profiles.find((p: { did: string }) => p.did === authorDid);
-      const recipientProfile = response.body.profiles.find((p: { did: string }) => p.did === recipientDid);
+      const authorProfile = response.body.profiles.find(
+        (p: { did: string }) => p.did === authorDid,
+      );
+      const recipientProfile = response.body.profiles.find(
+        (p: { did: string }) => p.did === recipientDid,
+      );
 
       expect(authorProfile).toBeDefined();
       expect(authorProfile).toHaveProperty('encryptedDek');
-      expect(authorProfile).toHaveProperty('userKeyPairId', '00000000-0000-0000-0000-000000000002');
+      expect(authorProfile).toHaveProperty(
+        'userKeyPairId',
+        '00000000-0000-0000-0000-000000000002',
+      );
 
       expect(recipientProfile).toBeDefined();
       expect(recipientProfile).toHaveProperty('encryptedDek');

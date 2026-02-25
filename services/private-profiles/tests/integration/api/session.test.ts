@@ -1,4 +1,12 @@
-import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach } from 'vitest';
+import {
+  describe,
+  it,
+  expect,
+  beforeAll,
+  afterAll,
+  beforeEach,
+  afterEach,
+} from 'vitest';
 import server from '../../../src/server.js';
 import { PrismaClient } from '../../../src/generated/prisma-client/index.js';
 import {
@@ -164,7 +172,10 @@ describe('Profile Session API Tests', () => {
         .expect(200);
 
       expect(response.body).toHaveProperty('encryptedSessionKey');
-      expect(response.body.encryptedSessionKey).toHaveProperty('recipientDid', authorDid);
+      expect(response.body.encryptedSessionKey).toHaveProperty(
+        'recipientDid',
+        authorDid,
+      );
       expect(response.body.encryptedSessionKey).toHaveProperty('encryptedDek');
     });
 
@@ -193,7 +204,9 @@ describe('Profile Session API Tests', () => {
       });
 
       // Use a realistic SafeText-encoded value to catch double-encoding bugs
-      const encryptedDek = safeBtoa(new Uint8Array([10, 20, 30, 40, 50, 60, 70, 80, 90, 100]));
+      const encryptedDek = safeBtoa(
+        new Uint8Array([10, 20, 30, 40, 50, 60, 70, 80, 90, 100]),
+      );
       const newRecipientToken = generateTestToken(newRecipientDid);
 
       const newRecipientData = {
@@ -228,7 +241,10 @@ describe('Profile Session API Tests', () => {
       });
 
       cleanupBlueskySessionMocks();
-      mockBlueskySession({ did: newRecipientDid, host: 'http://localhost:2583' });
+      mockBlueskySession({
+        did: newRecipientDid,
+        host: 'http://localhost:2583',
+      });
 
       const getResponse = await request(server.express)
         .get('/xrpc/social.spkeasy.actor.getProfile')
@@ -329,9 +345,7 @@ describe('Profile Session API Tests', () => {
 
   describe('Health Check', () => {
     it('should return healthy status', async () => {
-      await request(server.express)
-        .get('/health')
-        .expect(200);
+      await request(server.express).get('/health').expect(200);
     });
   });
 });

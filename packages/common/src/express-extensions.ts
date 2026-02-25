@@ -57,20 +57,22 @@ export function getSessionDid(req: ExtendedRequest): string {
   if (!req.user) {
     throw new NoSessionError('User not authenticated');
   }
-  
+
   if (req.user.type !== 'user') {
     throw new NoSessionError('Request is not from an authenticated user');
   }
-  
+
   const userDid = (req.user as User).did;
   if (!userDid || typeof userDid !== 'string' || userDid.trim() === '') {
-    throw new NoSessionError('User DID is missing or invalid - possible malformed authentication response', {
-      userType: req.user.type,
-      didValue: userDid,
-      didType: typeof userDid
-    });
+    throw new NoSessionError(
+      'User DID is missing or invalid - possible malformed authentication response',
+      {
+        userType: req.user.type,
+        didValue: userDid,
+        didType: typeof userDid,
+      },
+    );
   }
-  
+
   return userDid;
 }
-
