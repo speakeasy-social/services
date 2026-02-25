@@ -78,6 +78,7 @@ const methodHandlers = {
       'image/gif',
       'image/webp',
       'image/avif',
+      'application/x-spkeasy-encrypted-media'
     ];
 
     if (!allowedImageTypes.includes(mimeType)) {
