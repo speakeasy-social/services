@@ -59,6 +59,11 @@ export function createSessionRoutes(config: SessionRouteConfig) {
       // Validate input against lexicon
       validateAgainstLexicon(revokeLexicon, req.body);
 
+      // authorDid is accepted from the body to allow the caller to name the target session.
+      // Authorization ensures it must equal the authenticated user's DID — users can only
+      // revoke their own sessions. No service has the 'revoke' ability; services trigger
+      // revocation via background jobs (createRevokeSessionHandler) which call Prisma directly.
+      // See security review finding Z4.
       const { authorDid } = req.body;
 
       authorize(req, 'revoke', authorizationRecord, {

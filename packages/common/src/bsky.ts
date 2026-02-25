@@ -95,6 +95,15 @@ export async function blueskyFetch(path: string, options: BlueskyFetchOptions) {
  * Verifies a session token by routing to the correct PDS based on the JWT audience.
  * Uses allowlist for trusted servers and domain verification for others.
  *
+ * SECURITY NOTE — JWT routing before signature verification:
+ * The JWT claims (aud, sub) are decoded without signature verification to determine which
+ * PDS to route to. The token is then validated by calling getSession on that PDS.
+ * Risk assessment: an attacker controlling their own PDS could only authenticate users
+ * whose handles belong to their domain — they cannot impersonate users on trusted servers
+ * (bsky.social, blacksky.app, bsky.network). The handle/domain match check for untrusted
+ * servers provides meaningful protection. This trade-off was accepted to support multi-PDS
+ * federation. See security review finding Z1.
+ *
  * @param token - The JWT token to verify
  * @returns A Promise that resolves to a BlueskySession object containing the user's DID, handle, and tokens
  * @throws AuthenticationError if the token is invalid or the session verification fails
