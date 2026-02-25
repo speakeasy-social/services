@@ -24,8 +24,14 @@ export interface DeleteSessionKeysJob {
 export interface UpdateSessionKeysJob {
   prevKeyId: string;
   newKeyId: string;
+  // SECURITY: These fields contain private key material stored in the job queue (PostgreSQL).
+  // Encrypted at rest using Queue.encryptField() when JOB_QUEUE_ENCRYPTION_KEY is set.
+  // The architecture still requires the server to hold private keys during key rotation.
+  // Future work should move to a client-side key management model where private keys never
+  // reach the server. See security review findings A1/A2.
   prevPrivateKey: string;
   newPublicKey: string;
+  _encrypted?: 'v1';
 }
 
 export interface PopulateDidCacheJob {
@@ -40,7 +46,12 @@ export interface NotifyReactionJob {
 
 export interface NotifyReplyJob {
   uri: string;
+  // SECURITY: Contains the user's Bluesky access JWT stored in the job queue (PostgreSQL).
+  // Encrypted at rest using Queue.encryptField() when JOB_QUEUE_ENCRYPTION_KEY is set.
+  // Future work should avoid passing user tokens through the job queue entirely.
+  // See security review finding Z5.
   token: string;
+  _encrypted?: 'v1';
 }
 
 export interface DeleteMediaJob {

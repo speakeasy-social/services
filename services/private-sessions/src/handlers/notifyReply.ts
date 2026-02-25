@@ -1,5 +1,6 @@
 import { v4 as uuidv4 } from 'uuid';
 import { fetchBlueskyPosts } from '@speakeasy-services/common';
+import { Queue } from '@speakeasy-services/queue';
 import type { PrismaClient } from '../generated/prisma-client/index.js';
 import type { NotifyReplyJob } from './types.js';
 
@@ -58,7 +59,10 @@ async function fetchPost(
 
 export function createNotifyReplyHandler(prisma: PrismaClient) {
   return async (job: { data: NotifyReplyJob }) => {
-    const { uri } = job.data;
+    const { uri, token: rawToken, _encrypted } = job.data;
+    const token = _encrypted === 'v1'
+      ? Queue.decryptField(rawToken)
+      : rawToken;
 
     const latestReply = await prisma.encryptedPost.findUnique({
       where: { uri },
@@ -79,7 +83,7 @@ export function createNotifyReplyHandler(prisma: PrismaClient) {
     while (currentPost?.replyUri) {
       currentPost = await fetchPost(
         prisma,
-        job.data.token,
+        token,
         currentPost.replyUri,
         latestReply.authorDid,
       );
@@ -99,7 +103,7 @@ export function createNotifyReplyHandler(prisma: PrismaClient) {
     ) {
       const replyRoot = await fetchPost(
         prisma,
-        job.data.token,
+        token,
         latestReply.replyRootUri,
         latestReply.authorDid,
       );

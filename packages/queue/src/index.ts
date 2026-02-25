@@ -1,4 +1,5 @@
 import fs from 'fs';
+import { createCipheriv, createDecipheriv, createHash, randomBytes } from 'crypto';
 
 import PgBoss, { SendOptions, JobInsert } from 'pg-boss';
 import { z } from 'zod';
@@ -55,8 +56,52 @@ export const DEFAULT_RETRY_CONFIG = {
 
 export type QueueConfig = z.infer<typeof queueConfigSchema>;
 
+function getEncryptionKey(): Buffer {
+  const secret = process.env.JOB_QUEUE_ENCRYPTION_KEY;
+  if (!secret) {
+    throw new Error(
+      'JOB_QUEUE_ENCRYPTION_KEY is not set — cannot encrypt/decrypt job field',
+    );
+  }
+  return createHash('sha256').update(secret).digest();
+}
+
 export class Queue {
   private static instance: PgBoss;
+
+  /**
+   * Encrypts a sensitive string field for storage in the job queue.
+   * Output is base64-encoded: 12-byte IV + 16-byte auth tag + ciphertext.
+   * Requires JOB_QUEUE_ENCRYPTION_KEY to be set in the environment.
+   * Publish sites should also set _encrypted: 'v1' on the job payload.
+   */
+  static encryptField(plaintext: string): string {
+    const key = getEncryptionKey();
+    const iv = randomBytes(12);
+    const cipher = createCipheriv('aes-256-gcm', key, iv);
+    const encrypted = Buffer.concat([
+      cipher.update(plaintext, 'utf8'),
+      cipher.final(),
+    ]);
+    const tag = cipher.getAuthTag();
+    return Buffer.concat([iv, tag, encrypted]).toString('base64');
+  }
+
+  /**
+   * Decrypts a field encrypted with encryptField().
+   * Requires JOB_QUEUE_ENCRYPTION_KEY to be set in the environment.
+   * Consume sites should check job.data._encrypted === 'v1' before calling this.
+   */
+  static decryptField(ciphertext: string): string {
+    const key = getEncryptionKey();
+    const buf = Buffer.from(ciphertext, 'base64');
+    const iv = buf.subarray(0, 12);
+    const tag = buf.subarray(12, 28);
+    const encrypted = buf.subarray(28);
+    const decipher = createDecipheriv('aes-256-gcm', key, iv);
+    decipher.setAuthTag(tag);
+    return decipher.update(encrypted) + decipher.final('utf8');
+  }
 
   private constructor() {}
 
@@ -89,6 +134,11 @@ export class Queue {
   }
 
   static async start(): Promise<void> {
+    if (!process.env.JOB_QUEUE_ENCRYPTION_KEY) {
+      throw new Error(
+        'JOB_QUEUE_ENCRYPTION_KEY must be set. Job queue field encryption is required.',
+      );
+    }
     const instance = Queue.getInstance();
     await instance.start();
   }
