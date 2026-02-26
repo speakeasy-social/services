@@ -9,6 +9,7 @@ import {
   ValidationError,
   validateAgainstLexicon,
 } from '@speakeasy-services/common';
+import { CACHE_SHORT_PUBLIC } from '@speakeasy-services/service-base';
 import {
   checkContributionDef,
   createTestimonialDef,
@@ -190,12 +191,16 @@ const methodHandlers = {
 } as const;
 
 // Define methods using XRPC lexicon
-export const methods: Record<MethodName, { handler: RequestHandler }> = {
+export const methods: Record<
+  MethodName,
+  { handler: RequestHandler; cacheControl?: string }
+> = {
   'social.spkeasy.actor.createTestimonial': {
     handler: methodHandlers['social.spkeasy.actor.createTestimonial'],
   },
   'social.spkeasy.actor.listTestimonials': {
     handler: methodHandlers['social.spkeasy.actor.listTestimonials'],
+    cacheControl: CACHE_SHORT_PUBLIC,
   },
   'social.spkeasy.actor.updateTestimonial': {
     handler: methodHandlers['social.spkeasy.actor.updateTestimonial'],

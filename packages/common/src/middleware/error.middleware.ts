@@ -148,6 +148,7 @@ export const errorHandler: ErrorRequestHandler = async (
     return next(error);
   }
 
+  res.set('Cache-Control', 'no-store');
   res.status(statusCode).send(
     responseObject || {
       error: 'InternalServerError',

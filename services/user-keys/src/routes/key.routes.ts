@@ -14,6 +14,7 @@ import {
   User,
   getSessionDid,
 } from '@speakeasy-services/common';
+import { CACHE_SHORT_PRIVATE } from '@speakeasy-services/service-base';
 import {
   getPublicKeyDef,
   getPrivateKeysDef,
@@ -153,12 +154,17 @@ const methodHandlers = {
 
 type MethodName = keyof typeof methodHandlers;
 
-export const methods: Record<MethodName, { handler: RequestHandler }> = {
+export const methods: Record<
+  MethodName,
+  { handler: RequestHandler; cacheControl?: string }
+> = {
   'social.spkeasy.key.getPublicKey': {
     handler: methodHandlers['social.spkeasy.key.getPublicKey'],
+    cacheControl: CACHE_SHORT_PRIVATE,
   },
   'social.spkeasy.key.getPublicKeys': {
     handler: methodHandlers['social.spkeasy.key.getPublicKeys'],
+    cacheControl: CACHE_SHORT_PRIVATE,
   },
   'social.spkeasy.key.getPrivateKey': {
     handler: methodHandlers['social.spkeasy.key.getPrivateKey'],

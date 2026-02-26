@@ -9,6 +9,7 @@ import {
   NotFoundError,
   ValidationError,
 } from '@speakeasy-services/common';
+import { CACHE_IMMUTABLE_PRIVATE } from '@speakeasy-services/service-base';
 
 type Response = Parameters<RequestHandler>[1];
 import {
@@ -125,6 +126,7 @@ const methodHandlers = {
 
     const stream = await getFromS3(key);
     res.setHeader('Content-Type', record.mimeType);
+    res.setHeader('Cache-Control', CACHE_IMMUTABLE_PRIVATE);
     res.status(200);
     await pipeline(stream, res);
 
