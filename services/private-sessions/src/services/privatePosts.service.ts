@@ -133,7 +133,8 @@ export class PrivatePostsService {
     if (body.encryptedPosts[0].reply) {
       await Queue.publish(JOB_NAMES.NOTIFY_REPLY, {
         uri: body.encryptedPosts[0].uri,
-        token,
+        token: Queue.encryptField(token),
+        _encrypted: 'v1' as const,
       });
     }
 

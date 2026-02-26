@@ -279,6 +279,13 @@ export class SessionService<
       JOB_NAMES.UPDATE_SESSION_KEYS,
     );
 
-    await Queue.publish(jobName, params);
+    const jobData = {
+      ...params,
+      prevPrivateKey: Queue.encryptField(params.prevPrivateKey as string),
+      newPublicKey: Queue.encryptField(params.newPublicKey as string),
+      _encrypted: 'v1' as const,
+    };
+
+    await Queue.publish(jobName, jobData);
   }
 }

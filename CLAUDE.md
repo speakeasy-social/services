@@ -31,6 +31,7 @@ Within individual service directories (`services/*/`):
 
 - **All services**: Vitest with supertest for API testing
 - Test files located in `tests/integration/api/` within each service
+- **If tests fail due to missing tables or DB errors**, run `pnpm test:setup` to reset the test database before investigating further
 
 ## Architecture Overview
 

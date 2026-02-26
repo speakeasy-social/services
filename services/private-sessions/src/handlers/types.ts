@@ -13,6 +13,7 @@ export interface UpdateSessionKeysJob {
   newKeyId: string;
   prevPrivateKey: SafeText;
   newPublicKey: SafeText;
+  _encrypted?: 'v1';
 }
 
 export interface PopulateDidCacheJob {
@@ -28,6 +29,7 @@ export interface NotifyReactionJob {
 export interface NotifyReplyJob {
   uri: string;
   token: string;
+  _encrypted?: 'v1';
 }
 
 export interface DeleteMediaJob {
