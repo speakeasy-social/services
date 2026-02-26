@@ -36,6 +36,7 @@ export interface ServerOptions {
     string,
     {
       handler: RequestHandler;
+      cacheControl?: string;
     }
   >;
   middleware?: any[];
@@ -69,6 +70,10 @@ export class Server {
 
   private createServer(): Express {
     const app = express();
+
+    // Disable Express ETag generation — responses are user-specific and
+    // Cache-Control is set explicitly per route.
+    app.set('etag', false);
 
     // Enable CORS for Bluesky client
     app.use((req, res, next) => {
@@ -141,6 +146,10 @@ export class Server {
 
           // Send the JSON response only if the handler did not already send (e.g. streaming)
           if (!res.headersSent) {
+            res.set(
+              'Cache-Control',
+              methodHandler.cacheControl ?? 'no-store',
+            );
             res.status(200).json(output.body);
           }
 

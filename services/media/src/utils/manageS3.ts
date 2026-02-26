@@ -3,6 +3,7 @@ import { Readable } from 'stream';
 
 import axios, { AxiosError } from 'axios';
 
+import { CACHE_IMMUTABLE_PRIVATE } from '@speakeasy-services/service-base';
 import config from '../config.js';
 
 const MAX_FILE_SIZE = 2_000_000; // 2MB in bytes
@@ -88,10 +89,7 @@ function getSignatureV4Headers(
     'X-Amz-Content-SHA256': 'UNSIGNED-PAYLOAD',
     Authorization: authorizationHeader,
     'x-amz-acl': 'public-read',
-    // Cache images in the browser for a week
-    // Images never change, so no need to send HEAD
-    // requests to check if they changed
-    'Cache-Control': 'private, max-age=604800, immutable',
+    'Cache-Control': CACHE_IMMUTABLE_PRIVATE,
   };
 }
 
