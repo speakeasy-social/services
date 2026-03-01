@@ -6,7 +6,20 @@ import axios, { AxiosError } from 'axios';
 import { CACHE_IMMUTABLE_PRIVATE } from '@speakeasy-services/service-base';
 import config from '../config.js';
 
-const MAX_FILE_SIZE = 2_000_000; // 2MB in bytes
+const MAX_FILE_SIZE = 2_000_000; // 4MB in bytes
+
+/**
+ * Extracts hostname from endpoint URL
+ */
+function getHostnameFromEndpoint(endpoint: string): string {
+  try {
+    const url = new URL(endpoint);
+    return url.hostname;
+  } catch {
+    // If it's not a valid URL, assume it's just a hostname
+    return endpoint;
+  }
+}
 
 /**
  * Generates the URL for a media file
@@ -16,10 +29,11 @@ const MAX_FILE_SIZE = 2_000_000; // 2MB in bytes
 function generateMediaUrl(id: string): string {
   if (config.MEDIA_S3_ENDPOINT.includes('localhost')) {
     // For localstack, use the direct endpoint format with port
-    return `http://${config.MEDIA_S3_ENDPOINT}/${config.MEDIA_S3_BUCKET}/${id}`;
+    return `${config.MEDIA_S3_ENDPOINT}/${config.MEDIA_S3_BUCKET}/${id}`;
   } else {
     // For production services, use virtual hosted-style access
-    return `https://${config.MEDIA_S3_ENDPOINT}.${config.MEDIA_S3_BUCKET}/${id}`;
+    const hostname = getHostnameFromEndpoint(config.MEDIA_S3_ENDPOINT);
+    return `https://${hostname}.${config.MEDIA_S3_BUCKET}/${id}`;
   }
 }
 
@@ -41,13 +55,16 @@ function getSignatureV4Headers(
   const amzDate = date.toISOString().replace(/[:-]|\.\d{3}/g, '');
   const dateStamp = amzDate.substring(0, 8);
 
+  // Extract hostname from endpoint (removing protocol if present)
+  const host = getHostnameFromEndpoint(endpoint);
+
   // Create canonical request
   const canonicalUri = fullPath;
   const canonicalQueryString = '';
   const canonicalHeaders =
     `content-length:${contentLength}\n` +
     `content-type:${contentType}\n` +
-    `host:${endpoint}\n` +
+    `host:${host}\n` +
     `x-amz-content-sha256:UNSIGNED-PAYLOAD\n` +
     `x-amz-date:${amzDate}\n`;
 
@@ -94,10 +111,18 @@ function getSignatureV4Headers(
 }
 
 function buildS3RequestUrl(fullPath: string): string {
-  if (config.MEDIA_S3_ENDPOINT.includes('localhost')) {
-    return `http://${config.MEDIA_S3_ENDPOINT}${fullPath}`;
+  const endpoint = config.MEDIA_S3_ENDPOINT;
+
+  // If endpoint already has a protocol, use it as-is
+  if (endpoint.startsWith('http://') || endpoint.startsWith('https://')) {
+    return `${endpoint}${fullPath}`;
   }
-  return `https://${config.MEDIA_S3_ENDPOINT}${fullPath}`;
+
+  // Otherwise, add the appropriate protocol
+  if (endpoint.includes('localhost')) {
+    return `http://${endpoint}${fullPath}`;
+  }
+  return `https://${endpoint}${fullPath}`;
 }
 
 function rethrowWithS3Context(err: unknown): never {
