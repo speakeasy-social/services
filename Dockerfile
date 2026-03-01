@@ -47,6 +47,7 @@ RUN chmod +x supervisor.js
 
 # Set environment variables
 ENV NODE_ENV=production
+ENV NODE_OPTIONS=--enable-source-maps
 
 # The service to run will be determined by the SERVICE_NAME environment variable
 CMD ["node", "supervisor.js"] 
