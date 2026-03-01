@@ -58,18 +58,23 @@ function getSignatureV4Headers(
   // Extract hostname from endpoint (removing protocol if present)
   const host = getHostnameFromEndpoint(endpoint);
 
+  // Only sign content headers for requests with a body
+  const hasBody = contentType !== '';
+
   // Create canonical request
   const canonicalUri = fullPath;
   const canonicalQueryString = '';
   const canonicalHeaders =
-    `content-length:${contentLength}\n` +
-    `content-type:${contentType}\n` +
+    (hasBody
+      ? `content-length:${contentLength}\ncontent-type:${contentType}\n`
+      : '') +
     `host:${host}\n` +
     `x-amz-content-sha256:UNSIGNED-PAYLOAD\n` +
     `x-amz-date:${amzDate}\n`;
 
   const signedHeaders =
-    'content-length;content-type;host;x-amz-content-sha256;x-amz-date';
+    (hasBody ? 'content-length;content-type;' : '') +
+    'host;x-amz-content-sha256;x-amz-date';
   const payloadHash = 'UNSIGNED-PAYLOAD';
 
   const canonicalRequest = `${method}\n${canonicalUri}\n${canonicalQueryString}\n${canonicalHeaders}\n${signedHeaders}\n${payloadHash}`;
@@ -99,15 +104,23 @@ function getSignatureV4Headers(
     `SignedHeaders=${signedHeaders}, ` +
     `Signature=${signature}`;
 
-  return {
-    'Content-Type': contentType,
-    'Content-Length': contentLength,
+  const baseHeaders = {
     'X-Amz-Date': amzDate,
     'X-Amz-Content-SHA256': 'UNSIGNED-PAYLOAD',
     Authorization: authorizationHeader,
     'x-amz-acl': 'public-read',
     'Cache-Control': CACHE_IMMUTABLE_PRIVATE,
   };
+
+  if (hasBody) {
+    return {
+      ...baseHeaders,
+      'Content-Type': contentType,
+      'Content-Length': contentLength,
+    };
+  }
+
+  return baseHeaders;
 }
 
 function buildS3RequestUrl(fullPath: string): string {
@@ -210,11 +223,7 @@ export async function getFromS3(path: string): Promise<Readable> {
   try {
     const response = await axios.get<Readable>(url, {
       responseType: 'stream',
-      headers: {
-        'X-Amz-Date': authHeaders['X-Amz-Date'],
-        'X-Amz-Content-SHA256': authHeaders['X-Amz-Content-SHA256'],
-        Authorization: authHeaders.Authorization,
-      },
+      headers: authHeaders,
     });
     return response.data;
   } catch (err: unknown) {
