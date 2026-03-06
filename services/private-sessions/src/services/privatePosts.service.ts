@@ -15,6 +15,8 @@ import {
   fetchFollowingDids,
   getHostFromToken,
   safeAtob,
+  speakeasyApiRequest,
+  asyncCache,
 } from '@speakeasy-services/common';
 import type { SafeText } from '@speakeasy-services/common';
 import { getPrismaClient } from '../db.js';
@@ -24,6 +26,10 @@ import { JOB_NAMES } from '@speakeasy-services/queue';
 const prisma = getPrismaClient();
 
 const DEFAULT_LIMIT = 40;
+const EMPTY_POSTS_RESULT = { encryptedPosts: [], encryptedSessionKeys: [], cursor: undefined };
+// Trusted DIDs are cached to avoid repeated cross-service calls during pagination
+const TRUSTED_DIDS_CACHE_TTL = 300;
+const VALID_FILTERS = ['follows', 'discover', 'likedByTrusted'] as const;
 
 export type AnnotatedEncryptedPost = EncryptedPost & {
   viewer?: {
@@ -37,7 +43,7 @@ interface GetPostsOptions {
   authorDids?: string[];
   uris?: string[];
   replyTo?: string;
-  filter?: string;
+  filter?: (typeof VALID_FILTERS)[number];
   hasReplies?: boolean;
   hasMedia?: boolean;
 }
@@ -182,21 +188,28 @@ export class PrivatePostsService {
 
     const promises: Promise<void>[] = [];
 
-    if (options.filter === 'follows') {
-      let followingDids;
-      if (req.prefetch?.followingDidsPromise) {
-        followingDids = await req.prefetch.followingDidsPromise;
+    // Filters are ignored when specific URIs are requested
+    if (options.filter && !options.uris) {
+      if (!VALID_FILTERS.includes(options.filter)) {
+        throw new ValidationError(`Unknown filter: ${options.filter}`);
       }
-      if (!followingDids) {
-        followingDids = await fetchFollowingDids(
-          req,
-          (req.user as User).token as string,
-          recipientDid,
-        );
+
+      if (options.filter === 'follows') {
+        let followingDids;
+        if (req.prefetch?.followingDidsPromise) {
+          followingDids = await req.prefetch.followingDidsPromise;
+        }
+        if (!followingDids) {
+          followingDids = await fetchFollowingDids(
+            req,
+            (req.user as User).token as string,
+            recipientDid,
+          );
+        }
+        options.authorDids = [...(options.authorDids || []), ...followingDids];
       }
-      // Merge options.authorDids with followingDids
-      options.authorDids = [...(options.authorDids || []), ...followingDids];
     }
+
     // Fetch posts from database
     // Post visibility is determined by session_key presence, not session state.
     // Session expiry/revocation controls whether NEW posts can use the session,
@@ -214,6 +227,46 @@ export class PrivatePostsService {
 
     if (options.authorDids) {
       where.authorDid = { in: options.authorDids };
+    }
+
+    if (options.filter && !options.uris) {
+      if (options.filter === 'discover') {
+        const popularPostUris = await prisma.$queryRaw<Array<{ uri: string }>>(
+          Prisma.sql`
+            SELECT r.uri
+            FROM reactions r
+            JOIN encrypted_posts ep ON ep.uri = r.uri
+            WHERE ep."sessionId" IN (
+              SELECT sk."sessionId"
+              FROM session_keys sk
+              WHERE sk."recipientDid" = ${recipientDid}
+            )
+            GROUP BY r.uri
+            HAVING COUNT(*) >= 2
+            LIMIT 1000
+          `,
+        );
+        const uris = popularPostUris.map((r) => r.uri);
+        if (uris.length === 0) {
+          return { ...EMPTY_POSTS_RESULT };
+        }
+        where.uri = { in: uris };
+      }
+
+      if (options.filter === 'likedByTrusted') {
+        const trustedDids = await asyncCache(
+          `trusted:${recipientDid}`,
+          TRUSTED_DIDS_CACHE_TTL,
+          fetchTrustedDids,
+          [recipientDid],
+        );
+        if (trustedDids.length === 0) {
+          return { ...EMPTY_POSTS_RESULT };
+        }
+        where.reactions = {
+          some: { userDid: { in: trustedDids } },
+        };
+      }
     }
 
     if (options.uris) {
@@ -781,4 +834,20 @@ function shouldHideReply(
     return false;
   }
   return !accessibleReplyUris.has(replyUri);
+}
+
+async function fetchTrustedDids(recipientDid: string): Promise<string[]> {
+  const trustedResult = await speakeasyApiRequest(
+    {
+      method: 'GET',
+      path: 'social.spkeasy.graph.getTrusted',
+      fromService: 'private-sessions',
+      toService: 'trusted-users',
+    },
+    { authorDid: recipientDid },
+  );
+  // trusted-users view type says `did` but createView preserves the model field name `recipientDid`
+  return trustedResult.trusted.map(
+    (t: { recipientDid: string }) => t.recipientDid,
+  );
 }

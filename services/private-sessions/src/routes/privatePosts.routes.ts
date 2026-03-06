@@ -32,7 +32,7 @@ const methodHandlers = {
    * The posts can be filtered in the following ways:
    * - author= Specific post authors (comma separated list of DIDs)
    * - replyTo= Posts in the thread for the given post URI
-   * - filter= If follows, then limit the posts to those authored by user you follow
+   * - filter= Filter mode: "follows" (people you follow), "discover" (posts with 2+ likes), or "likedByTrusted" (liked by someone you trust)
    *
    * @param req - The request containing recipient DIDs and pagination parameters
    * @returns Promise containing encrypted posts and session keys

@@ -36,7 +36,7 @@ export const getPostsDef: LexiconDoc = {
           filter: {
             type: 'string',
             description:
-              'Set to "follows" to only get posts from people you follow',
+              'Filter mode: "follows" (people you follow), "discover" (posts with 2+ likes), or "likedByTrusted" (liked by someone you trust)',
           },
           hasReplies: {
             type: 'boolean',

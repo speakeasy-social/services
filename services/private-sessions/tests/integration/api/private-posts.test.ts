@@ -14,6 +14,8 @@ import {
   cleanupBlueskySessionMocks,
   verifyBlueskySessionMocks,
   generateTestToken,
+  mockInterServiceCall,
+  cleanupInterServiceMocks,
 } from '@speakeasy-services/test-utils';
 import request from 'supertest';
 
@@ -24,6 +26,25 @@ const testPostUri = `at://${authorDid}/social.spkeasy.privatePost/test-post`;
 describe('Private Posts API Tests', () => {
   let prisma: PrismaClient;
   const validToken = generateTestToken(authorDid);
+
+  async function createTestSession(
+    sessionAuthorDid: string,
+    sessionRecipientDid: string = sessionAuthorDid,
+  ) {
+    return prisma.session.create({
+      data: {
+        authorDid: sessionAuthorDid,
+        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+        sessionKeys: {
+          create: {
+            recipientDid: sessionRecipientDid,
+            userKeyPairId: '00000000-0000-0000-0000-000000000001',
+            encryptedDek: Buffer.from('key'),
+          },
+        },
+      },
+    });
+  }
 
   beforeAll(async () => {
     // Initialize Prisma client
@@ -1223,6 +1244,222 @@ describe('Private Posts API Tests', () => {
         expect(response.body.encryptedPost.uri).toBe(postUri);
         expect(response.body.encryptedPost.authorDid).toBe(authorDid);
       });
+    });
+  });
+
+  describe('GET /xrpc/social.spkeasy.privatePost.getPosts - Discover Filter', () => {
+    it('should return only posts with 2+ reactions', async () => {
+      const session = await createTestSession(authorDid);
+
+      // Post with 0 likes
+      const noLikesUri = `at://${authorDid}/social.spkeasy.feed.privatePost/no-likes`;
+      await prisma.encryptedPost.create({
+        data: {
+          uri: noLikesUri,
+          rkey: 'no-likes',
+          authorDid,
+          sessionId: session.id,
+          langs: ['en'],
+          encryptedContent: Buffer.from('no-likes-content'),
+        },
+      });
+
+      // Post with 1 like
+      const oneLikeUri = `at://${authorDid}/social.spkeasy.feed.privatePost/one-like`;
+      await prisma.encryptedPost.create({
+        data: {
+          uri: oneLikeUri,
+          rkey: 'one-like',
+          authorDid,
+          sessionId: session.id,
+          langs: ['en'],
+          encryptedContent: Buffer.from('one-like-content'),
+        },
+      });
+      await prisma.reaction.create({
+        data: { id: crypto.randomUUID(), userDid: 'did:example:liker1', uri: oneLikeUri },
+      });
+
+      // Post with 2 likes
+      const twoLikesUri = `at://${authorDid}/social.spkeasy.feed.privatePost/two-likes`;
+      await prisma.encryptedPost.create({
+        data: {
+          uri: twoLikesUri,
+          rkey: 'two-likes',
+          authorDid,
+          sessionId: session.id,
+          langs: ['en'],
+          encryptedContent: Buffer.from('two-likes-content'),
+        },
+      });
+      await prisma.reaction.createMany({
+        data: [
+          { id: crypto.randomUUID(), userDid: 'did:example:liker1', uri: twoLikesUri },
+          { id: crypto.randomUUID(), userDid: 'did:example:liker2', uri: twoLikesUri },
+        ],
+      });
+
+      const response = await request(server.express)
+        .get('/xrpc/social.spkeasy.privatePost.getPosts')
+        .set('Authorization', `Bearer ${validToken}`)
+        .query({ filter: 'discover' })
+        .expect(200);
+
+      expect(response.body.encryptedPosts).toHaveLength(1);
+      expect(response.body.encryptedPosts[0].uri).toBe(twoLikesUri);
+    });
+
+    it('should return empty when no posts have 2+ reactions', async () => {
+      const session = await createTestSession(authorDid);
+
+      const postUri = `at://${authorDid}/social.spkeasy.feed.privatePost/lonely`;
+      await prisma.encryptedPost.create({
+        data: {
+          uri: postUri,
+          rkey: 'lonely',
+          authorDid,
+          sessionId: session.id,
+          langs: ['en'],
+          encryptedContent: Buffer.from('lonely-content'),
+        },
+      });
+      await prisma.reaction.create({
+        data: { id: crypto.randomUUID(), userDid: 'did:example:liker1', uri: postUri },
+      });
+
+      const response = await request(server.express)
+        .get('/xrpc/social.spkeasy.privatePost.getPosts')
+        .set('Authorization', `Bearer ${validToken}`)
+        .query({ filter: 'discover' })
+        .expect(200);
+
+      expect(response.body.encryptedPosts).toHaveLength(0);
+    });
+  });
+
+  describe('GET /xrpc/social.spkeasy.privatePost.getPosts - LikedByTrusted Filter', () => {
+    const trustedUserDid = 'did:example:trusted-friend';
+    const untrustedUserDid = 'did:example:untrusted-rando';
+
+    afterEach(() => {
+      cleanupInterServiceMocks();
+    });
+
+    it('should return only posts liked by trusted users', async () => {
+      mockInterServiceCall({
+        method: 'GET',
+        path: 'social.spkeasy.graph.getTrusted',
+        toService: 'trusted-users',
+        response: {
+          trusted: [
+            {
+              recipientDid: trustedUserDid,
+              createdAt: new Date().toISOString(),
+            },
+          ],
+        },
+      });
+
+      const session = await createTestSession(authorDid);
+
+      // Post liked only by trusted user
+      const trustedLikedUri = `at://${authorDid}/social.spkeasy.feed.privatePost/trusted-liked`;
+      await prisma.encryptedPost.create({
+        data: {
+          uri: trustedLikedUri,
+          rkey: 'trusted-liked',
+          authorDid,
+          sessionId: session.id,
+          langs: ['en'],
+          encryptedContent: Buffer.from('trusted-liked-content'),
+        },
+      });
+      await prisma.reaction.create({
+        data: { id: crypto.randomUUID(), userDid: trustedUserDid, uri: trustedLikedUri },
+      });
+
+      // Post liked only by untrusted user
+      const untrustedLikedUri = `at://${authorDid}/social.spkeasy.feed.privatePost/untrusted-liked`;
+      await prisma.encryptedPost.create({
+        data: {
+          uri: untrustedLikedUri,
+          rkey: 'untrusted-liked',
+          authorDid,
+          sessionId: session.id,
+          langs: ['en'],
+          encryptedContent: Buffer.from('untrusted-liked-content'),
+        },
+      });
+      await prisma.reaction.create({
+        data: { id: crypto.randomUUID(), userDid: untrustedUserDid, uri: untrustedLikedUri },
+      });
+
+      // Post liked by both trusted and untrusted
+      const bothLikedUri = `at://${authorDid}/social.spkeasy.feed.privatePost/both-liked`;
+      await prisma.encryptedPost.create({
+        data: {
+          uri: bothLikedUri,
+          rkey: 'both-liked',
+          authorDid,
+          sessionId: session.id,
+          langs: ['en'],
+          encryptedContent: Buffer.from('both-liked-content'),
+        },
+      });
+      await prisma.reaction.createMany({
+        data: [
+          { id: crypto.randomUUID(), userDid: trustedUserDid, uri: bothLikedUri },
+          { id: crypto.randomUUID(), userDid: untrustedUserDid, uri: bothLikedUri },
+        ],
+      });
+
+      const response = await request(server.express)
+        .get('/xrpc/social.spkeasy.privatePost.getPosts')
+        .set('Authorization', `Bearer ${validToken}`)
+        .query({ filter: 'likedByTrusted' })
+        .expect(200);
+
+      const returnedUris = response.body.encryptedPosts.map(
+        (p: { uri: string }) => p.uri,
+      );
+      expect(returnedUris).toHaveLength(2);
+      expect(returnedUris).toContain(trustedLikedUri);
+      expect(returnedUris).toContain(bothLikedUri);
+      expect(returnedUris).not.toContain(untrustedLikedUri);
+    });
+
+    it('should return empty when user has no trusted users', async () => {
+      mockInterServiceCall({
+        method: 'GET',
+        path: 'social.spkeasy.graph.getTrusted',
+        toService: 'trusted-users',
+        response: { trusted: [] },
+      });
+
+      const session = await createTestSession(authorDid);
+
+      const postUri = `at://${authorDid}/social.spkeasy.feed.privatePost/liked-post`;
+      await prisma.encryptedPost.create({
+        data: {
+          uri: postUri,
+          rkey: 'liked-post',
+          authorDid,
+          sessionId: session.id,
+          langs: ['en'],
+          encryptedContent: Buffer.from('liked-content'),
+        },
+      });
+      await prisma.reaction.create({
+        data: { id: crypto.randomUUID(), userDid: 'did:example:someone', uri: postUri },
+      });
+
+      const response = await request(server.express)
+        .get('/xrpc/social.spkeasy.privatePost.getPosts')
+        .set('Authorization', `Bearer ${validToken}`)
+        .query({ filter: 'likedByTrusted' })
+        .expect(200);
+
+      expect(response.body.encryptedPosts).toHaveLength(0);
     });
   });
 });
