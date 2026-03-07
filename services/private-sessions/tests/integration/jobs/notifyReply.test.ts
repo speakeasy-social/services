@@ -1,6 +1,17 @@
-import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from 'vitest';
 import { PrismaClient } from '../../../src/generated/prisma-client/index.js';
 import { v4 as uuidv4 } from 'uuid';
+
+vi.mock('@speakeasy-services/common', async () => {
+  const actual = await vi.importActual<typeof import('@speakeasy-services/common')>('@speakeasy-services/common');
+  return {
+    ...actual,
+    speakeasyApiRequest: vi.fn().mockResolvedValue({ trusted: [] }),
+    checkIfFollowedBy: vi.fn().mockResolvedValue(false),
+  };
+});
+
+import { speakeasyApiRequest, checkIfFollowedBy } from '@speakeasy-services/common';
 
 // Note: The notifyReply handler makes external calls to Bluesky's public API for non-Speakeasy posts.
 // We test the database operations and notification creation for Speakeasy posts.
@@ -268,5 +279,178 @@ describe('notifyReply database operations', () => {
     expect(parentPost?.session?.sessionKeys[0].userKeyPairId).toBe(
       '00000000-0000-0000-0000-000000000001',
     );
+  });
+});
+
+describe('notifyReply pending behavior', () => {
+  let prisma: PrismaClient;
+
+  // Set up a thread: parentAuthor wrote a post, replyAuthor replied
+  const replyAuthorDid = 'did:example:reply-author';
+  const parentPostAuthorDid = 'did:example:parent-post-author';
+
+  beforeAll(async () => {
+    prisma = new PrismaClient();
+    await prisma.$connect();
+  });
+
+  afterAll(async () => {
+    await prisma.$disconnect();
+  });
+
+  beforeEach(async () => {
+    vi.clearAllMocks();
+    vi.mocked(speakeasyApiRequest).mockResolvedValue({ trusted: [] });
+    vi.mocked(checkIfFollowedBy).mockResolvedValue(false);
+
+    await prisma.reaction.deleteMany();
+    await prisma.mediaPost.deleteMany();
+    await prisma.notification.deleteMany();
+    await prisma.seenNotifications.deleteMany();
+    await prisma.encryptedPost.deleteMany();
+    await prisma.sessionKey.deleteMany();
+    await prisma.session.deleteMany();
+  });
+
+  async function createThreadWithReply() {
+    const sessionId = uuidv4();
+    const parentUri = `at://${parentPostAuthorDid}/social.spkeasy.feed.privatePost/parent1`;
+    const replyUri = `at://${replyAuthorDid}/social.spkeasy.feed.privatePost/reply1`;
+
+    await prisma.session.create({
+      data: {
+        id: sessionId,
+        authorDid: parentPostAuthorDid,
+        expiresAt: new Date(Date.now() + 86400000),
+      },
+    });
+
+    // Parent post
+    await prisma.encryptedPost.create({
+      data: {
+        uri: parentUri,
+        authorDid: parentPostAuthorDid,
+        rkey: 'parent1',
+        langs: ['en'],
+        encryptedContent: Buffer.from('parent-content'),
+        sessionId,
+      },
+    });
+
+    // Reply post
+    await prisma.encryptedPost.create({
+      data: {
+        uri: replyUri,
+        authorDid: replyAuthorDid,
+        rkey: 'reply1',
+        langs: ['en'],
+        encryptedContent: Buffer.from('reply-content'),
+        sessionId,
+        replyUri: parentUri,
+        replyRootUri: parentUri,
+      },
+    });
+
+    // Session keys: both can see each other's posts
+    await prisma.sessionKey.createMany({
+      data: [
+        {
+          sessionId,
+          recipientDid: parentPostAuthorDid,
+          encryptedDek: Buffer.from('dek-1'),
+          userKeyPairId: '00000000-0000-0000-0000-000000000001',
+        },
+        {
+          sessionId,
+          recipientDid: replyAuthorDid,
+          encryptedDek: Buffer.from('dek-2'),
+          userKeyPairId: '00000000-0000-0000-0000-000000000002',
+        },
+      ],
+    });
+
+    return { sessionId, parentUri, replyUri };
+  }
+
+  it('should create pending notification when reply author is not trusted or followed', async () => {
+    const { createNotifyReplyHandler } = await import('../../../src/handlers/notifyReply.js');
+    const handler = createNotifyReplyHandler(prisma);
+    const { replyUri } = await createThreadWithReply();
+
+    // Neither trusted nor followed (defaults from beforeEach)
+    await handler({
+      data: { uri: replyUri, token: 'fake-token', _encrypted: undefined },
+    });
+
+    const notifications = await prisma.notification.findMany({
+      where: { reason: 'reply', reasonSubject: replyUri },
+    });
+
+    expect(notifications).toHaveLength(1);
+    expect(notifications[0].userDid).toBe(parentPostAuthorDid);
+    expect(notifications[0].pending).toBe(true);
+    expect(notifications[0].notifiedAt).toEqual(new Date(0));
+  });
+
+  it('should create non-pending notification when reply author is trusted', async () => {
+    const { createNotifyReplyHandler } = await import('../../../src/handlers/notifyReply.js');
+    const handler = createNotifyReplyHandler(prisma);
+    const { replyUri } = await createThreadWithReply();
+
+    // Reply author IS trusted by parent post author
+    vi.mocked(speakeasyApiRequest).mockResolvedValue({
+      trusted: [{ recipientDid: replyAuthorDid }],
+    });
+
+    await handler({
+      data: { uri: replyUri, token: 'fake-token', _encrypted: undefined },
+    });
+
+    const notifications = await prisma.notification.findMany({
+      where: { reason: 'reply', reasonSubject: replyUri },
+    });
+
+    expect(notifications).toHaveLength(1);
+    expect(notifications[0].pending).toBe(false);
+    expect(notifications[0].notifiedAt.getTime()).toBeGreaterThan(0);
+  });
+
+  it('should create non-pending notification when reply author is followed', async () => {
+    const { createNotifyReplyHandler } = await import('../../../src/handlers/notifyReply.js');
+    const handler = createNotifyReplyHandler(prisma);
+    const { replyUri } = await createThreadWithReply();
+
+    // Not trusted, but IS followed
+    vi.mocked(speakeasyApiRequest).mockResolvedValue({ trusted: [] });
+    vi.mocked(checkIfFollowedBy).mockResolvedValue(true);
+
+    await handler({
+      data: { uri: replyUri, token: 'fake-token', _encrypted: undefined },
+    });
+
+    const notifications = await prisma.notification.findMany({
+      where: { reason: 'reply', reasonSubject: replyUri },
+    });
+
+    expect(notifications).toHaveLength(1);
+    expect(notifications[0].pending).toBe(false);
+  });
+
+  it('should not check follows if already trusted (optimization)', async () => {
+    const { createNotifyReplyHandler } = await import('../../../src/handlers/notifyReply.js');
+    const handler = createNotifyReplyHandler(prisma);
+    const { replyUri } = await createThreadWithReply();
+
+    // Trusted
+    vi.mocked(speakeasyApiRequest).mockResolvedValue({
+      trusted: [{ recipientDid: replyAuthorDid }],
+    });
+
+    await handler({
+      data: { uri: replyUri, token: 'fake-token', _encrypted: undefined },
+    });
+
+    // checkIfFollowedBy should not have been called since trust check passed
+    expect(checkIfFollowedBy).not.toHaveBeenCalled();
   });
 });

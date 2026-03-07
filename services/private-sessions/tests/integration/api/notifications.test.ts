@@ -295,6 +295,7 @@ describe('Notifications API Tests', () => {
           authorDid: otherUserDid,
           reasonSubject: `at://${otherUserDid}/social.spkeasy.privatePost/post1`,
           createdAt: baseTime,
+          notifiedAt: baseTime,
           readAt: null,
           updatedAt: new Date(),
         },
@@ -309,6 +310,7 @@ describe('Notifications API Tests', () => {
           authorDid: otherUserDid,
           reasonSubject: `at://${otherUserDid}/social.spkeasy.privatePost/post2`,
           createdAt: new Date(baseTime.getTime() + 2000), // 2 seconds after base
+          notifiedAt: new Date(baseTime.getTime() + 2000),
           readAt: null,
           updatedAt: new Date(),
         },
