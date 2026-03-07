@@ -1,5 +1,5 @@
 import {
-  createCursorWhereClause,
+  decodeCursor,
   encodeCursor,
 } from '@speakeasy-services/common';
 import { getPrismaClient } from '../db.js';
@@ -10,16 +10,39 @@ import {
 
 const prisma = getPrismaClient();
 
+/**
+ * Creates a cursor-based where clause that uses notifiedAt instead of createdAt.
+ * Notifications are ordered by notifiedAt (when they became visible) rather than
+ * createdAt (when the underlying reply was made).
+ */
+function createNotificationCursorWhereClause(cursor: string | undefined) {
+  if (!cursor) {
+    return {};
+  }
+
+  // The cursor encodes a timestamp and id. We reuse the standard decoder
+  // but apply the decoded timestamp to notifiedAt instead of createdAt.
+  const { createdAt: notifiedAt, id } = decodeCursor(cursor);
+  return {
+    OR: [
+      { notifiedAt: { lt: notifiedAt } },
+      {
+        AND: [{ notifiedAt }, { id: { lt: id } }],
+      },
+    ],
+  };
+}
+
 export class NotificationService {
   /**
-   * Gets the count of unread notifications for a user
-   * @param did - The DID of the user to get unread count for
-   * @returns The number of unread notifications
+   * Gets the count of unread notifications for a user.
+   * Only counts non-pending (visible) notifications.
    */
   async getUnreadCount(did: string): Promise<number> {
     const count = await prisma.notification.count({
       where: {
         userDid: did,
+        pending: false,
         readAt: null,
       },
     });
@@ -28,12 +51,9 @@ export class NotificationService {
   }
 
   /**
-   * Gets a paginated list of notifications for a user
-   * @param did - The DID of the user to get notifications for
-   * @param cursor - Optional cursor for pagination
-   * @param limit - Maximum number of notifications to return (default: 50)
-   * @param priority - Optional priority filter for notifications
-   * @returns Object containing the notifications array and next cursor for pagination
+   * Gets a paginated list of notifications for a user.
+   * By default only returns non-pending (visible) notifications,
+   * ordered by notifiedAt (when the notification became visible).
    */
   async getNotifications({
     did,
@@ -54,21 +74,26 @@ export class NotificationService {
     const notifications = await prisma.notification.findMany({
       where: {
         userDid: did,
-        ...(priority ? { priority } : {}),
-        ...createCursorWhereClause(cursor),
+        // The priority param controls pending filtering:
+        // - undefined/true: show only non-pending (default)
+        // - false: show all including pending
+        pending: priority === false ? undefined : false,
+        ...createNotificationCursorWhereClause(cursor),
       },
       take: limit,
       orderBy: [
-        { createdAt: 'desc' },
+        { notifiedAt: 'desc' },
         { id: 'asc' }, // Secondary sort for stable pagination
       ],
     });
 
-    // Only create a cursor if we got exactly the limit number of items
-    // This indicates there might be more results
+    // Encode cursor using notifiedAt as the timestamp
     const nextCursor =
       notifications.length === limit
-        ? encodeCursor(notifications[notifications.length - 1])
+        ? encodeCursor({
+            createdAt: notifications[notifications.length - 1].notifiedAt,
+            id: notifications[notifications.length - 1].id,
+          })
         : null;
 
     return {
@@ -78,16 +103,17 @@ export class NotificationService {
   }
 
   /**
-   * Marks notifications as read for a user up to a specific timestamp
-   * @param did - The DID of the user whose notifications to mark as read
-   * @param seenAt - The timestamp to mark notifications as read up to
+   * Marks non-pending notifications as read for a user up to a specific timestamp.
+   * Uses notifiedAt for comparison so that pending notifications that are later
+   * activated won't be incorrectly marked as already seen.
    */
   async updateSeen(did: string, seenAt: string): Promise<void> {
     await prisma.notification.updateMany({
       where: {
         userDid: did,
+        pending: false,
         readAt: null,
-        createdAt: {
+        notifiedAt: {
           lte: new Date(seenAt),
         },
       },

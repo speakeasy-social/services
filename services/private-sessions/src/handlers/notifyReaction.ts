@@ -5,9 +5,10 @@ import type { NotifyReactionJob } from './types.js';
 
 export function createNotifyReactionHandler(prisma: PrismaClient) {
   return async (job: { data: NotifyReactionJob }) => {
-    const userDid = job.data.uri.split('/')[2];
+    const { uri, authorDid } = job.data;
+    const userDid = uri.split('/')[2];
 
-    if (userDid === job.data.authorDid) {
+    if (userDid === authorDid) {
       return;
     }
 
@@ -16,9 +17,9 @@ export function createNotifyReactionHandler(prisma: PrismaClient) {
         data: {
           id: uuidv4(),
           userDid,
-          authorDid: job.data.authorDid,
+          authorDid,
           reason: 'like',
-          reasonSubject: job.data.uri,
+          reasonSubject: uri,
           updatedAt: new Date(),
         },
       });
@@ -28,9 +29,34 @@ export function createNotifyReactionHandler(prisma: PrismaClient) {
         error instanceof Prisma.PrismaClientKnownRequestError &&
         error.code === 'P2002'
       ) {
-        return;
+        // Continue to check activation of pending reply notifications
+      } else {
+        throw error;
       }
-      throw error;
+    }
+
+    // When a post reaches 2+ likes, activate any pending reply notifications.
+    // This handles the case where a reply was from an untrusted/unfollowed user
+    // but has now been validated by community engagement.
+    const reactionCount = await prisma.reaction.count({
+      where: { uri },
+    });
+
+    if (reactionCount >= 2) {
+      const now = new Date();
+      await prisma.notification.updateMany({
+        where: {
+          reasonSubject: uri,
+          reason: 'reply',
+          pending: true,
+        },
+        data: {
+          pending: false,
+          readAt: null,
+          notifiedAt: now,
+          updatedAt: now,
+        },
+      });
     }
   };
 }
