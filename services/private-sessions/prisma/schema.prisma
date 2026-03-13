@@ -94,14 +94,16 @@ model Notification {
   authorDid    String
   reason       String
   reasonSubject String
+  pending      Boolean   @default(false)
+  notifiedAt   DateTime  @default(now())
   readAt       DateTime?
-  createdAt    DateTime  @default(now()) 
+  createdAt    DateTime  @default(now())
   updatedAt    DateTime?
 
   // Relationships
   post         EncryptedPost? @relation(fields: [reasonSubject], references: [uri])
 
-  @@index([userDid, createdAt], name: "idx_notifications_user_did_created_at_index")
+  @@index([userDid, notifiedAt], name: "idx_notifications_user_did_notified_at_index")
   @@index([userDid, readAt], name: "idx_notifications_user_did_read_at_index")
   @@unique([userDid, authorDid, reasonSubject, reason], name: "idx_notifications_user_author_subject_reason_unique")
   @@map("notifications")

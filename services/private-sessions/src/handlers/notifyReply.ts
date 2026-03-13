@@ -1,5 +1,9 @@
 import { v4 as uuidv4 } from 'uuid';
-import { fetchBlueskyPosts } from '@speakeasy-services/common';
+import {
+  fetchBlueskyPosts,
+  checkIfFollowedBy,
+  speakeasyApiRequest,
+} from '@speakeasy-services/common';
 import { Queue } from '@speakeasy-services/queue';
 import type { PrismaClient } from '../generated/prisma-client/index.js';
 import type { NotifyReplyJob } from './types.js';
@@ -145,16 +149,65 @@ export function createNotifyReplyHandler(prisma: PrismaClient) {
       },
     });
 
+    // For each recipient, check if they trust or follow the reply author.
+    // If not, the notification is created as pending (hidden until 2+ likes).
+    const notificationData = await Promise.all(
+      authorsThatMaySeeReply.map(async (author) => {
+        const isPending = !(await isFollowedOrTrusted(
+          token,
+          author.recipientDid,
+          latestReply.authorDid,
+        ));
+
+        const now = new Date();
+        return {
+          id: uuidv4(),
+          userDid: author.recipientDid,
+          authorDid: latestReply.authorDid,
+          reason: 'reply',
+          reasonSubject: uri,
+          pending: isPending,
+          notifiedAt: isPending ? new Date(0) : now,
+          updatedAt: now,
+        };
+      }),
+    );
+
     await prisma.notification.createMany({
-      data: Array.from(authorsThatMaySeeReply).map((author) => ({
-        id: uuidv4(),
-        userDid: author.recipientDid,
-        authorDid: latestReply.authorDid,
-        reason: 'reply',
-        reasonSubject: uri,
-        updatedAt: new Date(),
-      })),
+      data: notificationData,
       skipDuplicates: true,
     });
   };
+}
+
+/**
+ * Checks if the recipientDid trusts or follows the subjectDid.
+ * Trust is checked via inter-service call to trusted-users.
+ * Follow is checked via Bluesky API (public data, any token works).
+ */
+async function isFollowedOrTrusted(
+  token: string,
+  recipientDid: string,
+  subjectDid: string,
+): Promise<boolean> {
+  // Check trust first (fast inter-service call)
+  try {
+    const trustedResult = await speakeasyApiRequest(
+      {
+        method: 'GET',
+        path: 'social.spkeasy.graph.getTrusted',
+        fromService: 'private-sessions',
+        toService: 'trusted-users',
+      },
+      { authorDid: recipientDid, recipientDid: subjectDid },
+    );
+    if (trustedResult.trusted?.length > 0) {
+      return true;
+    }
+  } catch {
+    // Trust check failed, fall through to follow check
+  }
+
+  // Check Bluesky follows (slower, external API call)
+  return checkIfFollowedBy(token, recipientDid, subjectDid);
 }

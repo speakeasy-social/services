@@ -15,12 +15,13 @@ export type NotificationView = {
   reasonSubject: string;
   readAt: string | null;
   createdAt: string;
+  notifiedAt: string;
   post: EncryptedPostView | null;
 };
 
 type NotificationSubset = Pick<
   Notification,
-  'userDid' | 'authorDid' | 'reason' | 'reasonSubject' | 'readAt' | 'createdAt'
+  'userDid' | 'authorDid' | 'reason' | 'reasonSubject' | 'readAt' | 'createdAt' | 'notifiedAt'
 > & {
   post?: (EncryptedPost & { _count: { reactions: number } }) | null;
 };
@@ -35,6 +36,7 @@ export function toNotificationView(
     reasonSubject: notification.reasonSubject,
     readAt: notification.readAt?.toISOString() ?? null,
     createdAt: notification.createdAt.toISOString(),
+    notifiedAt: notification.notifiedAt.toISOString(),
     post: notification.post ? toEncryptedPostView(notification.post) : null,
   };
 }

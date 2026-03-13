@@ -73,6 +73,7 @@ export const listNotificationsDef: LexiconDoc = {
         reasonSubject: { type: 'string' },
         readAt: { type: 'string', format: 'datetime' },
         createdAt: { type: 'string', format: 'datetime' },
+        notifiedAt: { type: 'string', format: 'datetime' },
       },
     },
   },

@@ -306,6 +306,62 @@ export async function fetchFollowingDids(
   }
 }
 
+/**
+ * Checks if actorDid follows targetDid on Bluesky.
+ * Worker-compatible (no ExtendedRequest dependency).
+ * Follows are public, so any valid token can query any user's follows.
+ * Short-circuits on match for efficiency.
+ *
+ * @param token - Any valid Bluesky auth token
+ * @param actorDid - The DID of the user whose follows to check
+ * @param targetDid - The DID to look for in the actor's follows
+ * @returns true if actorDid follows targetDid, false otherwise (including on error)
+ */
+export async function checkIfFollowedBy(
+  token: string,
+  actorDid: string,
+  targetDid: string,
+): Promise<boolean> {
+  const host = getHostFromToken(token);
+  let cursor: string | undefined;
+
+  try {
+    do {
+      const query = new URLSearchParams({
+        actor: actorDid,
+        limit: '100',
+      });
+
+      if (cursor) {
+        query.append('cursor', cursor);
+      }
+
+      const response = await fetch(
+        `${host}/xrpc/app.bsky.graph.getFollows?${query.toString()}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
+
+      if (!response.ok) {
+        return false;
+      }
+
+      const data = (await response.json()) as BlueskyFollows;
+      if (data.follows?.some((follow) => follow.did === targetDid)) {
+        return true;
+      }
+      cursor = data.cursor;
+    } while (cursor);
+  } catch {
+    return false;
+  }
+
+  return false;
+}
+
 export interface PostView {
   uri: string;
   cid: string;
