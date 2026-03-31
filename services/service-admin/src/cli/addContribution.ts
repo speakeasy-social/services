@@ -66,7 +66,7 @@ function printUsage(): void {
     '  did|handle    User DID (did:plc:...) or handle (@user.bsky.social or user.bsky.social)',
   );
   console.error(
-    '  contribution  One of: donor, contributor, designer, engineer, testing',
+    '  contribution  One of: donor, contributor, community, designer, engineer, testing',
   );
   console.error('  json          Optional JSON object with contribution data');
   console.error('');

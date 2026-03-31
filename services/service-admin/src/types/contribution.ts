@@ -7,6 +7,7 @@ import { z } from 'zod';
 export const CONTRIBUTION_TYPES = [
   'donor',
   'contributor',
+  'community',
   'designer',
   'engineer',
   'testing',
