@@ -1,4 +1,5 @@
 import {
+  asyncCache,
   authorize,
   ExtendedRequest,
   ForbiddenError,
@@ -6,6 +7,7 @@ import {
   NotFoundError,
   RequestHandler,
   RequestHandlerReturn,
+  speakeasyApiRequest,
   ValidationError,
   validateAgainstLexicon,
 } from '@speakeasy-services/common';
@@ -23,6 +25,9 @@ import { toTestimonialListView } from '../views/testimonial.views.js';
 
 const testimonialService = new TestimonialService();
 const contributionService = new ContributionService();
+
+// Cache TTL for excluded profile DIDs (60 seconds)
+const EXCLUDED_DIDS_CACHE_TTL = 60;
 
 type TestimonialContent = {
   text: string;
@@ -86,17 +91,35 @@ const methodHandlers = {
     // Validate input against lexicon
     validateAgainstLexicon(listTestimonialsDef, req.query);
 
-    const { did, limit, cursor } = req.query as {
-      did?: string;
+    const { limit, cursor } = req.query as {
       limit?: string;
       cursor?: string;
     };
+    const rawDids = req.query.dids;
+    const dids = rawDids
+      ? Array.isArray(rawDids)
+        ? (rawDids as string[])
+        : [rawDids as string]
+      : undefined;
 
     const parsedLimit = limit ? parseInt(limit, 10) : 50;
     const effectiveLimit = Math.min(Math.max(parsedLimit, 1), 100);
 
+    // Determine viewer DID (undefined for unauthenticated users)
+    const viewerDid =
+      req.user?.type === 'user' ? (req.user as { did: string }).did : undefined;
+
+    // Get excluded DIDs (private profile users the viewer can't access)
+    const excludeDids = await asyncCache(
+      `excluded-testimonial-dids:${viewerDid || 'anon'}`,
+      EXCLUDED_DIDS_CACHE_TTL,
+      fetchExcludedProfileDids,
+      [viewerDid],
+    );
+
     const result = await testimonialService.listTestimonials({
-      did,
+      dids,
+      excludeDids,
       limit: effectiveLimit,
       cursor,
     });
@@ -189,6 +212,30 @@ const methodHandlers = {
     };
   },
 } as const;
+
+/**
+ * Fetches DIDs that should be excluded from testimonial results
+ * because they have private profiles the viewer can't access.
+ */
+async function fetchExcludedProfileDids(viewerDid?: string): Promise<string[]> {
+  const authorDids = await testimonialService.getTestimonialAuthorDids();
+  if (authorDids.length === 0) return [];
+
+  const result = await speakeasyApiRequest(
+    {
+      method: 'GET',
+      path: 'social.spkeasy.actor.getExcludedProfileDids',
+      fromService: 'service-admin',
+      toService: 'private-profiles',
+    },
+    {
+      dids: authorDids,
+      ...(viewerDid && { viewerDid }),
+    },
+  );
+
+  return result.excludedDids;
+}
 
 // Define methods using XRPC lexicon
 export const methods: Record<
