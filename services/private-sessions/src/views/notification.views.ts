@@ -23,7 +23,7 @@ type NotificationSubset = Pick<
   Notification,
   'userDid' | 'authorDid' | 'reason' | 'reasonSubject' | 'readAt' | 'createdAt' | 'notifiedAt'
 > & {
-  post?: (EncryptedPost & { _count: { reactions: number } }) | null;
+  post?: (EncryptedPost & { _count: { reactions: number; replies: number }; reactions: { id: string }[] }) | null;
 };
 
 export function toNotificationView(
@@ -37,7 +37,14 @@ export function toNotificationView(
     readAt: notification.readAt?.toISOString() ?? null,
     createdAt: notification.createdAt.toISOString(),
     notifiedAt: notification.notifiedAt.toISOString(),
-    post: notification.post ? toEncryptedPostView(notification.post) : null,
+    post: notification.post
+      ? toEncryptedPostView({
+          ...notification.post,
+          likeCount: notification.post._count.reactions,
+          replyCount: notification.post._count.replies,
+          viewer: { like: notification.post.reactions.length > 0 },
+        })
+      : null,
   };
 }
 

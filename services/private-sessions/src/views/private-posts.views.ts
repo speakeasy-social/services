@@ -14,6 +14,8 @@ export type EncryptedPostView = {
     parent: { uri: string };
   } | null;
   langs: string[];
+  likeCount: number;
+  replyCount: number;
   viewer?: {
     like: boolean;
   };
@@ -40,6 +42,8 @@ export function toEncryptedPostView(
           }
         : null,
     langs: post.langs,
+    likeCount: post.likeCount,
+    replyCount: post.replyCount,
     viewer: post.viewer,
   };
 }

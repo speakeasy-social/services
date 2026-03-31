@@ -67,7 +67,7 @@ export class NotificationService {
     priority?: boolean;
   }): Promise<{
     notifications: (Notification & {
-      post?: (EncryptedPost & { _count: { reactions: number } }) | null;
+      post?: (EncryptedPost & { _count: { reactions: number; replies: number }; reactions: { id: string }[] }) | null;
     })[];
     cursor: string | null;
   }> {
