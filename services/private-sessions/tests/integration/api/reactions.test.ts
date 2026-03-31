@@ -11,6 +11,7 @@ import server from '../../../src/server.js';
 import { PrismaClient } from '../../../src/generated/prisma-client/index.js';
 import {
   mockBlueskySession,
+  mockTwoUserBlueskySession,
   cleanupBlueskySessionMocks,
   verifyBlueskySessionMocks,
   generateTestToken,
@@ -332,6 +333,89 @@ describe('Reactions API Tests', () => {
 
       expect(reactions).toHaveLength(1);
       expect(reactions[0].userDid).toBe(userDid);
+    });
+  });
+
+  describe('viewer.like scoping', () => {
+    const aliceDid = 'did:example:alice';
+    const carlaDid = 'did:example:carla';
+    const aliceToken = generateTestToken(aliceDid);
+    const carlaToken = generateTestToken(carlaDid);
+    const postUri = `at://${authorDid}/social.spkeasy.feed.privatePost/scoping-test`;
+
+    it('should show viewer.like=true only for the user who liked the post', async () => {
+      // Override the single-user mock from beforeEach
+      cleanupBlueskySessionMocks();
+      mockTwoUserBlueskySession({
+        validToken: aliceToken,
+        validUser: { did: aliceDid, handle: 'alice.test' },
+        wrongUserToken: carlaToken,
+        wrongUser: { did: carlaDid, handle: 'carla.test' },
+        host: 'http://localhost:2583',
+      });
+
+      // Create a session with both Alice and Carla as recipients
+      const session = await prisma.session.create({
+        data: {
+          authorDid,
+          expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+          sessionKeys: {
+            create: [
+              {
+                recipientDid: aliceDid,
+                userKeyPairId: '00000000-0000-0000-0000-000000000001',
+                encryptedDek: Buffer.from('alice-dek'),
+              },
+              {
+                recipientDid: carlaDid,
+                userKeyPairId: '00000000-0000-0000-0000-000000000002',
+                encryptedDek: Buffer.from('carla-dek'),
+              },
+            ],
+          },
+        },
+      });
+
+      // Create a post in that session
+      await prisma.encryptedPost.create({
+        data: {
+          uri: postUri,
+          rkey: 'scoping-test',
+          authorDid,
+          sessionId: session.id,
+          langs: ['en'],
+          encryptedContent: Buffer.from('test-content'),
+          createdAt: new Date(),
+        },
+      });
+
+      // Alice likes the post
+      await request(server.express)
+        .post('/xrpc/social.spkeasy.reaction.createReaction')
+        .set('Authorization', `Bearer ${aliceToken}`)
+        .set('Content-Type', 'application/json')
+        .send({ uri: postUri })
+        .expect(200);
+
+      // Alice fetches posts — should see viewer.like=true
+      const aliceResponse = await request(server.express)
+        .get('/xrpc/social.spkeasy.privatePost.getPosts')
+        .set('Authorization', `Bearer ${aliceToken}`)
+        .query({ limit: '10' })
+        .expect(200);
+
+      expect(aliceResponse.body.encryptedPosts).toHaveLength(1);
+      expect(aliceResponse.body.encryptedPosts[0].viewer.like).toBe(true);
+
+      // Carla fetches the same posts — should see viewer.like=false
+      const carlaResponse = await request(server.express)
+        .get('/xrpc/social.spkeasy.privatePost.getPosts')
+        .set('Authorization', `Bearer ${carlaToken}`)
+        .query({ limit: '10' })
+        .expect(200);
+
+      expect(carlaResponse.body.encryptedPosts).toHaveLength(1);
+      expect(carlaResponse.body.encryptedPosts[0].viewer.like).toBe(false);
     });
   });
 });
