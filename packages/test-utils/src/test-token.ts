@@ -51,6 +51,7 @@ export function generateTestToken(
 export function generateTestServiceToken(serviceName: string): string {
   const envKeyMap: Record<string, string> = {
     'private-sessions': 'PRIVATE_SESSIONS_API_KEY',
+    'private-profiles': 'PRIVATE_PROFILES_API_KEY',
     'trusted-users': 'TRUSTED_USERS_API_KEY',
     'user-keys': 'USER_KEYS_API_KEY',
     media: 'MEDIA_API_KEY',

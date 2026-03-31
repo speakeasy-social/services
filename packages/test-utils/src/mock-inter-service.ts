@@ -7,6 +7,7 @@ import {
 
 type ServiceName =
   | 'private-sessions'
+  | 'private-profiles'
   | 'trusted-users'
   | 'user-keys'
   | 'service-admin'
@@ -25,6 +26,8 @@ interface MockOptions {
 const SERVICE_HOSTS: Record<ServiceName, string> = {
   'private-sessions':
     process.env.PRIVATE_SESSIONS_HOST || 'http://localhost:3001',
+  'private-profiles':
+    process.env.PRIVATE_PROFILES_HOST || 'http://localhost:3006',
   'trusted-users': process.env.TRUSTED_USERS_HOST || 'http://localhost:3002',
   'user-keys': process.env.USER_KEYS_HOST || 'http://localhost:3003',
   'service-admin': process.env.SERVICE_ADMIN_HOST || 'http://localhost:3004',
@@ -45,6 +48,10 @@ async function loadLexicons(): Promise<void> {
     { name: 'trusted-users', path: '@speakeasy-services/trusted-users' },
     { name: 'user-keys', path: '@speakeasy-services/user-keys' },
     { name: 'private-sessions', path: '@speakeasy-services/private-sessions' },
+    {
+      name: 'private-profiles',
+      path: '@speakeasy-services/private-profiles',
+    },
     { name: 'media', path: '@speakeasy-services/media' },
     { name: 'service-admin', path: '@speakeasy-services/service-admin' },
   ];
