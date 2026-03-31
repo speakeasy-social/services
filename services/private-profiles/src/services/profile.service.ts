@@ -95,6 +95,45 @@ export class ProfileService {
     }
   }
 
+  async getExcludedProfileDids(
+    dids: string[],
+    viewerDid?: string,
+  ): Promise<string[]> {
+    if (dids.length === 0) return [];
+
+    // Find which input DIDs have a private profile
+    const profileDids = await prisma.privateProfile.findMany({
+      where: { authorDid: { in: dids } },
+      select: { authorDid: true, sessionId: true },
+    });
+
+    if (profileDids.length === 0) return [];
+
+    // If no viewer, all DIDs with private profiles are excluded
+    if (!viewerDid) {
+      return profileDids.map((p) => p.authorDid);
+    }
+
+    // Find which of those profiles the viewer has session key access to
+    const sessionIds = profileDids.map((p) => p.sessionId);
+    const accessibleKeys = await prisma.sessionKey.findMany({
+      where: {
+        sessionId: { in: sessionIds },
+        recipientDid: viewerDid,
+      },
+      select: { sessionId: true },
+    });
+
+    const accessibleSessionIds = new Set(
+      accessibleKeys.map((k) => k.sessionId),
+    );
+
+    // Return DIDs where the viewer does NOT have access
+    return profileDids
+      .filter((p) => !accessibleSessionIds.has(p.sessionId))
+      .map((p) => p.authorDid);
+  }
+
   async deleteProfile(authorDid: string) {
     const profile = await prisma.privateProfile.findFirst({
       where: {

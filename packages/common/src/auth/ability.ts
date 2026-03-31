@@ -424,6 +424,13 @@ const serviceAbilities = [
     userProperty: 'name',
     equalsLiteral: 'private-sessions',
   }),
+
+  // service-admin can query private profiles for exclusion filtering
+  // service.name must equal 'service-admin'
+  canIf('list', 'private_profile', {
+    userProperty: 'name',
+    equalsLiteral: 'service-admin',
+  }),
 ];
 
 /**
