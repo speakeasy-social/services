@@ -88,10 +88,12 @@ export const baseSchema = {
   PRIVATE_PROFILES_API_KEY: z
     .string()
     .min(1)
+    .optional()
     .describe('API key for private-profiles service'),
   PRIVATE_PROFILES_HOST: z
     .string()
     .min(1)
+    .optional()
     .describe('Host for private-profiles service'),
 
   HMAC_SECRET: z.string().min(1).describe('Secret key for HMAC hashing'),
