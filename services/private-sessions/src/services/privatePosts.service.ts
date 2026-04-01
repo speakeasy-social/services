@@ -32,6 +32,8 @@ const TRUSTED_DIDS_CACHE_TTL = 300;
 const VALID_FILTERS = ['follows', 'discover', 'likedByTrusted'] as const;
 
 export type AnnotatedEncryptedPost = EncryptedPost & {
+  likeCount: number;
+  replyCount: number;
   viewer?: {
     like: boolean;
   };
@@ -426,10 +428,15 @@ export class PrivatePostsService {
 
     // Load reply posts
     // Load parent post
+    type PostWithCounts = EncryptedPost & {
+      _count: { reactions: number; replies: number };
+      reactions?: { id: string }[];
+    };
+
     const promises: [
-      Promise<EncryptedPost & { _count: { reactions: number } }>,
-      Promise<(EncryptedPost & { _count: { reactions: number } })[]>,
-      Promise<(EncryptedPost & { _count: { reactions: number } })[]>,
+      Promise<PostWithCounts>,
+      Promise<PostWithCounts[]>,
+      Promise<PostWithCounts[]>,
     ] = [
       prisma.encryptedPost
         .findFirst({
@@ -497,7 +504,7 @@ export class PrivatePostsService {
 
       prisma
         .$queryRaw<
-          Array<EncryptedPost & { reaction_count: number; depth: number }>
+          Array<EncryptedPost & { reaction_count: number; like_count: bigint; reply_count: bigint; depth: number }>
         >(
           Prisma.sql`
             WITH RECURSIVE post_chain AS (
@@ -508,6 +515,8 @@ export class PrivatePostsService {
                   SELECT 1 FROM reactions r
                   WHERE r.uri = ep.uri AND r."userDid" = ${recipientDid}
                 ))::int as reaction_count,
+                (SELECT COUNT(*) FROM reactions r WHERE r.uri = ep.uri) as like_count,
+                (SELECT COUNT(*) FROM encrypted_posts child WHERE child."replyUri" = ep.uri) as reply_count,
                 1 as depth
               FROM encrypted_posts ep
               WHERE ep.uri = ${canonicalUri}
@@ -526,6 +535,8 @@ export class PrivatePostsService {
                   SELECT 1 FROM reactions r
                   WHERE r.uri = parent.uri AND r."userDid" = ${recipientDid}
                 ))::int as reaction_count,
+                (SELECT COUNT(*) FROM reactions r WHERE r.uri = parent.uri) as like_count,
+                (SELECT COUNT(*) FROM encrypted_posts child WHERE child."replyUri" = parent.uri) as reply_count,
                 pc.depth + 1
               FROM encrypted_posts parent
               INNER JOIN post_chain pc ON parent.uri = pc."replyUri"
@@ -546,7 +557,8 @@ export class PrivatePostsService {
         .then((posts) =>
           posts.map((post) => ({
             ...post,
-            _count: { reactions: post.reaction_count },
+            _count: { reactions: Number(post.like_count), replies: Number(post.reply_count) },
+            reactions: post.reaction_count > 0 ? [{ id: 'raw' }] : [],
           })),
         ),
     ];
@@ -678,7 +690,7 @@ export class PrivatePostsService {
 async function loadPrivatePost(
   cannonicalUri: string,
   recipientDid: string,
-): Promise<(EncryptedPost & { _count: { reactions: number } }) | null> {
+): Promise<(EncryptedPost & { _count: { reactions: number; replies: number }; reactions: { id: string }[] }) | null> {
   return prisma.encryptedPost.findFirst({
     where: {
       session: {
@@ -787,15 +799,18 @@ export function getDIDFromUri(uri: string) {
 
 function annotatePost(
   post: EncryptedPost & {
-    _count: { reactions: number };
+    _count: { reactions: number; replies: number };
+    reactions?: { id: string }[];
     parent?: { sessionId: string } | null;
     root?: { sessionId: string } | null;
   },
 ) {
   return {
     ...post,
+    likeCount: post._count.reactions,
+    replyCount: post._count.replies,
     viewer: {
-      like: post._count.reactions > 0,
+      like: post.reactions ? post.reactions.length > 0 : post._count.reactions > 0,
     },
   };
 }
@@ -811,7 +826,15 @@ function annotatePost(
 function postIncludeForViewer(recipientDid: string) {
   return {
     _count: {
-      select: { reactions: { where: { userDid: recipientDid } } },
+      select: {
+        reactions: true,
+        replies: true,
+      },
+    },
+    reactions: {
+      where: { userDid: recipientDid },
+      select: { id: true },
+      take: 1,
     },
     session: {
       select: {
