@@ -85,6 +85,14 @@ export const baseSchema = {
     .string()
     .min(1)
     .describe('Host for service-admin service'),
+  PRIVATE_PROFILES_API_KEY: z
+    .string()
+    .min(1)
+    .describe('API key for private-profiles service'),
+  PRIVATE_PROFILES_HOST: z
+    .string()
+    .min(1)
+    .describe('Host for private-profiles service'),
 
   HMAC_SECRET: z.string().min(1).describe('Secret key for HMAC hashing'),
   LOG_SALT: z.string().min(1).describe('Salt for HMAC hashing'),

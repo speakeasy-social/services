@@ -1,5 +1,6 @@
 import { ProfileService } from '../services/profile.service.js';
 import {
+  authorize,
   validateAgainstLexicon,
   ExtendedRequest,
   RequestHandlerReturn,
@@ -8,6 +9,7 @@ import {
 import {
   getProfileDef,
   getProfilesDef,
+  getExcludedProfileDidsDef,
   putProfileDef,
 } from '../lexicon/types/profile.js';
 import { toProfileView, toProfileListView } from '../views/profile.views.js';
@@ -44,6 +46,24 @@ const methodHandlers = {
     await profileService.updateProfile(did, req.body);
     return { body: { success: true } };
   },
+  'social.spkeasy.actor.getExcludedProfileDids': async (
+    req: ExtendedRequest,
+  ): RequestHandlerReturn => {
+    validateAgainstLexicon(getExcludedProfileDidsDef, req.query);
+    authorize(req, 'list', 'private_profile', {});
+
+    const rawDids = req.query.dids;
+    const dids = Array.isArray(rawDids)
+      ? (rawDids as string[])
+      : [rawDids as string];
+    const viewerDid = req.query.viewerDid as string | undefined;
+
+    const excludedDids = await profileService.getExcludedProfileDids(
+      dids,
+      viewerDid,
+    );
+    return { body: { excludedDids } };
+  },
   'social.spkeasy.actor.deleteProfile': async (
     req: ExtendedRequest,
   ): RequestHandlerReturn => {
@@ -62,6 +82,9 @@ export const methods = {
   },
   'social.spkeasy.actor.putProfile': {
     handler: methodHandlers['social.spkeasy.actor.putProfile'],
+  },
+  'social.spkeasy.actor.getExcludedProfileDids': {
+    handler: methodHandlers['social.spkeasy.actor.getExcludedProfileDids'],
   },
   'social.spkeasy.actor.deleteProfile': {
     handler: methodHandlers['social.spkeasy.actor.deleteProfile'],

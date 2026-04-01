@@ -39,23 +39,43 @@ export class TestimonialService {
   }
 
   /**
+   * Returns all distinct DIDs that have non-deleted testimonials.
+   * Used to scope the private-profiles exclusion check.
+   */
+  async getTestimonialAuthorDids(): Promise<string[]> {
+    const results = await prisma.testimonial.findMany({
+      where: { deletedAt: null },
+      select: { did: true },
+      distinct: ['did'],
+    });
+    return results.map((r) => r.did);
+  }
+
+  /**
    * Lists testimonials with optional filtering and pagination
    * @param options - Filtering and pagination options
    * @returns Testimonials and cursor for next page
    */
   async listTestimonials(options: {
-    did?: string;
+    dids?: string[];
+    excludeDids?: string[];
     limit: number;
     cursor?: string;
   }): Promise<{
     testimonials: TestimonialWithContributions[];
     cursor: string | null;
   }> {
-    const { did, limit, cursor } = options;
+    const { dids, excludeDids, limit, cursor } = options;
 
     const where: Prisma.TestimonialWhereInput = { deletedAt: null };
-    if (did) {
-      where.did = did;
+    if (dids && dids.length > 0) {
+      where.did = { in: dids };
+    }
+    if (excludeDids && excludeDids.length > 0) {
+      where.did = {
+        ...(typeof where.did === 'object' ? where.did : {}),
+        notIn: excludeDids,
+      };
     }
 
     const testimonials = await prisma.testimonial.findMany({
@@ -73,10 +93,10 @@ export class TestimonialService {
     const nextCursor = hasMore ? results[results.length - 1].id : null;
 
     // Fetch contributions for all testimonial DIDs
-    const dids = [...new Set(results.map((t) => t.did))];
+    const resultDids = [...new Set(results.map((t) => t.did))];
     const contributionRecords = await prisma.contribution.findMany({
       where: {
-        did: { in: dids },
+        did: { in: resultDids },
         deletedAt: null,
       },
       select: {

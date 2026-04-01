@@ -1,6 +1,7 @@
 import { createSessionLexicons } from '@speakeasy-services/session-management';
 import {
   getProfileDef,
+  getExcludedProfileDidsDef,
   profileViewDef,
   putProfileDef,
 } from './types/profile.js';
@@ -13,6 +14,7 @@ const sessionLexiconsArray = Object.values(
 export const lexicons = [
   ...sessionLexiconsArray,
   getProfileDef,
+  getExcludedProfileDidsDef,
   profileViewDef,
   putProfileDef,
 ];

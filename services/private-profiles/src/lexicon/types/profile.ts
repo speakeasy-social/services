@@ -134,6 +134,49 @@ export const putProfileDef: LexiconDoc = {
   },
 };
 
+export const getExcludedProfileDidsDef: LexiconDoc = {
+  lexicon: 1,
+  id: 'social.spkeasy.actor.getExcludedProfileDids',
+  defs: {
+    main: {
+      type: 'query',
+      description:
+        'Returns DIDs from the input list that have private profiles the viewer cannot access. Service-only endpoint.',
+      parameters: {
+        type: 'params',
+        required: ['dids'],
+        properties: {
+          dids: {
+            type: 'array',
+            items: { type: 'string' },
+            description: 'DIDs to check for private profiles',
+          },
+          viewerDid: {
+            type: 'string',
+            description:
+              'DID of the viewing user. If omitted, all DIDs with private profiles are excluded.',
+          },
+        },
+      },
+      output: {
+        encoding: 'application/json',
+        schema: {
+          type: 'object',
+          required: ['excludedDids'],
+          properties: {
+            excludedDids: {
+              type: 'array',
+              items: { type: 'string' },
+              description:
+                'DIDs that have private profiles the viewer cannot access',
+            },
+          },
+        },
+      },
+    },
+  },
+};
+
 export const deleteProfileDef: LexiconDoc = {
   lexicon: 1,
   id: 'social.spkeasy.actor.deleteProfile',

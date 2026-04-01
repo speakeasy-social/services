@@ -46,7 +46,11 @@ export const listTestimonialsDef: LexiconDoc = {
       parameters: {
         type: 'params',
         properties: {
-          did: { type: 'string', description: 'Filter by specific user DID' },
+          dids: {
+            type: 'array',
+            items: { type: 'string' },
+            description: 'Filter by specific user DIDs',
+          },
           limit: {
             type: 'integer',
             minimum: 1,

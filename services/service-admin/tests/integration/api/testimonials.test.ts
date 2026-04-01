@@ -14,13 +14,17 @@ import {
   cleanupBlueskySessionMocks,
   verifyBlueskySessionMocks,
   generateTestToken,
+  mockInterServiceCall,
+  cleanupInterServiceMocks,
 } from '@speakeasy-services/test-utils';
+import { cache } from '@speakeasy-services/common';
 import request from 'supertest';
 
 // Use unique DIDs for this test file to avoid conflicts with parallel test execution
 const contributorDid = 'did:plc:testimonial-contributor';
 const nonContributorDid = 'did:plc:testimonial-non-contributor';
 const anotherContributorDid = 'did:plc:another-contributor';
+const privateProfileDid = 'did:plc:private-profile-user';
 
 describe('Testimonials API Tests', () => {
   let prisma: PrismaClient;
@@ -43,21 +47,47 @@ describe('Testimonials API Tests', () => {
     // Clear test data for DIDs used in this test file only (avoid conflicts with parallel tests)
     await prisma.testimonial.deleteMany({
       where: {
-        did: { in: [contributorDid, nonContributorDid, anotherContributorDid] },
+        did: {
+          in: [
+            contributorDid,
+            nonContributorDid,
+            anotherContributorDid,
+            privateProfileDid,
+          ],
+        },
       },
     });
     await prisma.contribution.deleteMany({
       where: {
-        did: { in: [contributorDid, nonContributorDid, anotherContributorDid] },
+        did: {
+          in: [
+            contributorDid,
+            nonContributorDid,
+            anotherContributorDid,
+            privateProfileDid,
+          ],
+        },
       },
     });
 
+    // Clear asyncCache to avoid stale exclusion data between tests
+    cache.flushAll();
+
     // Setup mock for Bluesky session validation
     mockBlueskySession({ did: contributorDid, host: 'http://localhost:2583' });
+
+    // Mock private-profiles inter-service call (default: no exclusions)
+    mockInterServiceCall({
+      method: 'GET',
+      path: 'social.spkeasy.actor.getExcludedProfileDids',
+      toService: 'private-profiles',
+      response: { excludedDids: [] },
+    });
   });
 
   afterEach(() => {
     cleanupBlueskySessionMocks();
+    cleanupInterServiceMocks();
     verifyBlueskySessionMocks();
   });
 
@@ -273,7 +303,7 @@ describe('Testimonials API Tests', () => {
       expect(secondPage.body.cursor).toBeNull();
     });
 
-    it('should filter by did', async () => {
+    it('should filter by dids', async () => {
       await prisma.contribution.createMany({
         data: [
           {
@@ -303,7 +333,7 @@ describe('Testimonials API Tests', () => {
 
       const response = await request(server.express)
         .get('/xrpc/social.spkeasy.actor.listTestimonials')
-        .query({ did: contributorDid })
+        .query({ dids: [contributorDid] })
         .expect(200);
 
       expect(response.body.testimonials).toHaveLength(1);
@@ -555,6 +585,98 @@ describe('Testimonials API Tests', () => {
       });
       expect(deleted).not.toBeNull();
       expect(deleted?.deletedAt).not.toBeNull();
+    });
+  });
+
+  describe('private profile filtering', () => {
+    it('should exclude testimonials from users with private profiles', async () => {
+      // Clear default mock and set up one that excludes privateProfileDid
+      cleanupInterServiceMocks();
+      mockInterServiceCall({
+        method: 'GET',
+        path: 'social.spkeasy.actor.getExcludedProfileDids',
+        toService: 'private-profiles',
+        response: { excludedDids: [privateProfileDid] },
+      });
+
+      await prisma.contribution.createMany({
+        data: [
+          {
+            did: contributorDid,
+            contribution: 'donor',
+            public: { isRegularGift: false },
+            internal: { amount: 1000 },
+          },
+          {
+            did: privateProfileDid,
+            contribution: 'donor',
+            public: { isRegularGift: false },
+            internal: { amount: 500 },
+          },
+        ],
+      });
+
+      await prisma.testimonial.create({
+        data: {
+          did: contributorDid,
+          content: { text: 'Public contributor' },
+        },
+      });
+      await prisma.testimonial.create({
+        data: {
+          did: privateProfileDid,
+          content: { text: 'Private profile user' },
+        },
+      });
+
+      const response = await request(server.express)
+        .get('/xrpc/social.spkeasy.actor.listTestimonials')
+        .expect(200);
+
+      expect(response.body.testimonials).toHaveLength(1);
+      expect(response.body.testimonials[0].did).toBe(contributorDid);
+    });
+
+    it('should not exclude testimonials when viewer has access', async () => {
+      // Mock returns empty exclusion list (viewer trusts the private profile user)
+      // Default mock already returns { excludedDids: [] }
+
+      await prisma.contribution.createMany({
+        data: [
+          {
+            did: contributorDid,
+            contribution: 'donor',
+            public: { isRegularGift: false },
+            internal: { amount: 1000 },
+          },
+          {
+            did: privateProfileDid,
+            contribution: 'donor',
+            public: { isRegularGift: false },
+            internal: { amount: 500 },
+          },
+        ],
+      });
+
+      await prisma.testimonial.create({
+        data: {
+          did: contributorDid,
+          content: { text: 'Public contributor' },
+        },
+      });
+      await prisma.testimonial.create({
+        data: {
+          did: privateProfileDid,
+          content: { text: 'Private profile user' },
+        },
+      });
+
+      const response = await request(server.express)
+        .get('/xrpc/social.spkeasy.actor.listTestimonials')
+        .expect(200);
+
+      // Both testimonials returned since no DIDs are excluded
+      expect(response.body.testimonials).toHaveLength(2);
     });
   });
 });
