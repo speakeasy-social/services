@@ -6,3 +6,5 @@ onlyBuiltDependencies:
   - '@prisma/client'
   - '@prisma/engines'
   - prisma
+
+minimumReleaseAge: 20160
